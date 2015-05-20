@@ -1,0 +1,25 @@
+language: python
+
+python:
+  - "3.4.3"
+
+notifications:
+  email: false
+
+install:
+  - pip install --upgrade pip
+  - pip install -r dev-requirements.txt
+  - pip install coveralls
+
+script:
+  #- coverage run -m ci_setup_check core.py test_core.py
+  - nosetests --with-cov --cov ci_setup_check --cov-config .coverage.rc --logging-level=INFO
+  #- nosetests --with-cov --cov ci_setup_check --logging-level=INFO
+
+# Calculate coverage
+after_success:
+  #- coveralls --config_file .coverage.rc
+  - coveralls
+
+#addons:
+#  artifacts: true
