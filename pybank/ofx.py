@@ -30,12 +30,12 @@ from os import urandom
 
 # Third-Party
 from docopt import docopt
-import ofxparse
 
 # Package / Application
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 from __init__ import VERSION
+from pybank.parseofx import ParseOFX
 
 
 ### #------------------------------------------------------------------------
@@ -362,25 +362,6 @@ def list_accounts():
 
 
     return b
-
-
-class ParseOFX(object):
-    """ Hacked together OFX Parser, because ofxparse seems dead """
-    def __init__(self, ofx_data):
-        # TODO: accept a file, opened file, stream, or string
-        #       for now, just accept Python3 text
-        self.ofx_data = ofx_data
-
-        self.bankid = []
-        self.descr = []
-
-    def parse_accounts(self):
-        for line in self.ofx_data.split('\r\n'):
-            if line.startswith("<DESC>"):
-                self.descr.append(line[6:])
-            if line.startswith("<BANKID>"):
-                self.bankid.append(line[8:])
-
 
 
 def choose_institution():
