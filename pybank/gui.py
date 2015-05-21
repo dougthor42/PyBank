@@ -21,6 +21,7 @@ import os.path as osp
 
 # Third Party
 import wx
+import wx.lib.mixins.listctrl as listmix
 from wx.lib.splitter import MultiSplitterWindow
 try:
     from agw import foldpanelbar as fpb
@@ -203,7 +204,7 @@ class MainNotebook(wx.Notebook):
         self.AddPage(p0, "Summary")
 
 #        p1 = SamplePanel(self, 'pink', "hafsdf")
-        p1 = Ledger(self)
+        p1 = LedgerPanel(self)
         self.AddPage(p1, "Ledger")
 
         p2 = SamplePanel(self, "green", "sdfdfsdfsdfsdfsd")
@@ -213,7 +214,7 @@ class MainNotebook(wx.Notebook):
         self.AddPage(p3, "Even more stuff")
 
 
-class Ledger(wx.Panel):
+class LedgerPanel(wx.Panel):
     """
     The transaction ledger
 
@@ -238,32 +239,75 @@ class Ledger(wx.Panel):
 
     def _init_ui(self):
         """ Initialize UI components """
-        self.ledger = wx.ListCtrl(self, wx.ID_ANY,
-#                                  size=(300, 300),
-#                                  style=wx.LC_VIRTUAL,
-                                  style=wx.LC_REPORT #| wx.LC_VIRTUAL,
-                                  )
+#        self.ledger = wx.ListCtrl(self, wx.ID_ANY,
+##                                  size=(300, 300),
+##                                  style=wx.LC_VIRTUAL,
+#                                  style=wx.LC_REPORT #| wx.LC_VIRTUAL,
+#                                  )
+#
+#        self.ledger.AppendColumn("Date")
+##        self.ledger.AppendColumn("Entered Date")
+#        self.ledger.AppendColumn("CheckNum")
+#        self.ledger.AppendColumn("Payee")
+#        self.ledger.AppendColumn("Downloaded Payee")
+#        self.ledger.AppendColumn("Memo")
+#        self.ledger.AppendColumn("Category")
+#        self.ledger.AppendColumn("Label")
+#        self.ledger.AppendColumn("Amount")
+#        self.ledger.AppendColumn("Balance")
+#
+#        item1 = wx.ListItem().SetData(1)
+#        item2 = wx.ListItem().SetData(2)
+#
+#        self.ledger.InsertItem(1, "string")
+#        self.ledger.InsertItem(2, "item2")
 
-        self.ledger.AppendColumn("Date")
-#        self.ledger.AppendColumn("Entered Date")
-        self.ledger.AppendColumn("CheckNum")
-        self.ledger.AppendColumn("Payee")
-        self.ledger.AppendColumn("Downloaded Payee")
-        self.ledger.AppendColumn("Memo")
-        self.ledger.AppendColumn("Category")
-        self.ledger.AppendColumn("Label")
-        self.ledger.AppendColumn("Amount")
-        self.ledger.AppendColumn("Balance")
-
-        item1 = wx.ListItem().SetData(1)
-        item2 = wx.ListItem().SetData(2)
-
-        self.ledger.InsertItem(1, "string")
-        self.ledger.InsertItem(2, "item2")
+        self.ledger = Ledger(self)
 
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         self.hbox.Add(self.ledger, 1, wx.EXPAND)
         self.SetSizer(self.hbox)
+
+
+class Ledger(wx.ListCtrl,
+             listmix.ListCtrlAutoWidthMixin,
+             listmix.TextEditMixin):
+    """
+
+    """
+    def __init__(self, parent):
+        wx.ListCtrl.__init__(self, parent,
+                             wx.ID_ANY,
+                             style=wx.LC_REPORT,
+                             )
+
+        listmix.ListCtrlAutoWidthMixin.__init__(self)
+        self.populate()
+        listmix.TextEditMixin.__init__(self)
+
+    def populate(self):
+        self.InsertColumn(0, "Column 1")
+        self.InsertColumn(1, "Column 2")
+        self.InsertColumn(2, "Column 3")
+        self.InsertColumn(3, "Len 1", wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(4, "Len 2", wx.LIST_FORMAT_RIGHT)
+        self.InsertColumn(5, "Len 3", wx.LIST_FORMAT_RIGHT)
+
+        listctrldata = {
+        1 : ("Hey!", "You can edit", "me!"),
+        2 : ("Try changing the contents", "by", "clicking"),
+        3 : ("in", "a", "cell"),
+        4 : ("See how the length columns", "change", "?"),
+        5 : ("You can use", "TAB,", "cursor down,"),
+        6 : ("and cursor up", "to", "navigate"),
+        }
+
+#        items = listctrldata.items()
+#        for key, data in items:
+#            index = self.InsertStringItem(sys.maxsize, data[0])
+#            self.SetStringItem(index, 1, data[1])
+#            self.SetStringItem(index, 2, data[2])
+#            self.SetItemData(index, key)
 
 
 class AccountList(wx.Panel):

@@ -60,6 +60,7 @@ Other Items:
 # Standard Library
 import sys
 import io
+import re
 import os.path as osp
 from enum import Enum
 
@@ -90,18 +91,60 @@ class OFX(object):
     pass
 
 
+class ProceesOFXData(object):
+    """
+    Processes the OFX data into a valid XML schema
+    """
+    pass
+
+
 class ParseOFX(object):
     """
     Main entry point for parsing OFX files and strings.
 
     Hacked together OFX Parser, because ofxparse seems dead
+
+    Parameters:
+    -----------
+    ofx_data : string, string stream (io.StringIO), or opened file stream
+        The ofx data to parse.
+    newline : string, optional
+        The character that denotes a new line in ofx_data.
+
+    Returns:
+    --------
+    something : something
+        Something something something something's something.
+
+    Notes:
+    ------
+    If ofx_data is a string, a io.StringIO stream is created from it upon
+    __init__. All all actions act on this stream.
+
+    ParseOFX does *not* close any streams (# XXX: is this what I want?)
+
+    Public Attributes:
+    ------------------
+    stuff
+
+    Public Methods:
+    ---------------
+    None
+
+    Private Attributes:
+    -------------------
+    None
+
+    Private Methods:
+    ----------------
+    None
+
     """
     def __init__(self, ofx_data, newline=LINE_ENDING):
         self.newline = newline
 
         # convert ofx_data to a stream
         # TODO: Handle closing of opened streams
-        print(type(ofx_data))
         if type(ofx_data) == str:
             ofx_data = io.StringIO(ofx_data, newline=self.newline)
         elif type(ofx_data) == bytes:
@@ -148,8 +191,8 @@ class ParseOFX(object):
         self.ofx = OFX()
 
         # Process the file to make it valid XML for BeautifulSoup
-        #   Remove and save header
-        #   Add closing tags
+        self.ofx_data, self.header = strip_header(self.ofx_data)
+        self.ofx_data = close_tags(self.ofx_data)
 
         # Parse it with BeautifulSoup
         self.soup = BeautifulSoup(self.ofx_data, "xml")
@@ -174,7 +217,6 @@ class ParseOFX(object):
         # Find the single Sign On Response
         self.ofx_sonrs = self.soup.find("SONRS")
         if self.ofx_sonrs is not None:
-            print(self.ofx_sonrs)
             self._parse_sonrs()
 
         # Find all of the Statement Responses
@@ -287,6 +329,117 @@ def parse_datetime(soup):
             continue
     else:
         raise AttributeError("Datetime tag not found")
+
+
+def strip_header(ofx_stream):
+    """
+    Strips and saves the header from the OFX data.
+
+    Parameters:
+    -----------
+    ofx_stream : io.IOBase object
+        The opened file object stream or StringIO stream of OFX data
+
+    Returns:
+    --------
+    ofx_stream : io.IOBase object
+        An opened file object or StringIO stream of OFX data with the
+        header removed.
+
+    header : dict
+        A dictionary containing the header.
+
+    """
+    header = {}
+
+    # Read subset of the file in case it's huge; find where the header ends
+    header_str = ofx_stream.read(2048)
+    header_end = header_str.find('<OFX>')
+    header_str = header_str[:header_end]
+
+    # iterate though the header, saving key-value pairs and skipping blanks
+    for line in header_str.splitlines():
+        if line.strip() == "":
+            continue
+
+        key, value = line.split(":")
+        key, value = key.strip().upper(), value.strip().upper()
+        if value == 'NONE':
+            value = None
+
+        header[key] = value
+
+    # Seek back to the end of the header and overwrite the original stream.
+    ofx_stream.seek(header_end, 0)
+    ofx_stream = io.StringIO(ofx_stream.read())
+
+    return ofx_stream, header
+
+
+def close_tags(ofx_stream):
+    """
+    Closes any open tags, thus turning ofx_data into a valid XML stream.
+
+    Also removes any processing tags "<?Processing_tag>" and comments
+    "<!-- comment -->".
+
+    Parameters:
+    -----------
+    ofx_stream : io.IOBase object
+        The opened file object stream or StringIO stream of OFX data
+
+    Returns :
+    ---------
+    new_stream : io.IOBase object
+        A new stream with the same OFX data, but now with closed tags.
+
+    Notes:
+    ------
+    This was taken from Jerry's ofxparse.OfxPreprocessedFile.__init__ code
+    and modified to be cleaner and easier to read. The core algorithm remains
+    the same.
+    """
+    # Read the file and create a new stream.
+    ofx_string = ofx_stream.read()
+    new_stream = io.StringIO()
+
+    # We'll need some regex...
+    opening_tag_re = re.compile(r"<([\w\.]+)>")     # <t_.x>   group: t_.x
+    closing_tag_re = re.compile(r"</([\w\.]+)>")    # </t_.x>  group: t_.x
+    token_re = re.compile(r"(</?[\w\.]+>)")         # <t_.x>   group: <t_.x>
+
+    # Find all the closing tags
+    closing_tags = [tag.upper()
+                    for tag
+                    in re.findall(closing_tag_re, ofx_string)]
+
+    # Read all of the tokens
+    tag_tokens = re.split(token_re, ofx_string)
+
+    # Iterate through the tokens, writing them to the new string and adding
+    # closing tags as needed.
+    last_open_tag = None
+    for num, token in enumerate(tag_tokens):
+        # Determine what type of tag it is
+        is_closing_tag = token.startswith("</")
+        is_processing_tag = token.startswith("<?")
+        is_cdata = token.startswith("<!")           # comment?
+        is_tag = token.startswith("<") and not is_cdata
+        is_open_tag = is_tag and not is_closing_tag and not is_processing_tag
+
+        # if it's a tag
+        if is_tag:
+            if last_open_tag is not None:
+                new_stream.write("</{}>".format(last_open_tag.strip()))
+                last_open_tag = None
+        if is_open_tag:
+            tag_name = re.findall(opening_tag_re, token)[0]
+            if tag_name.upper() not in closing_tags:
+                last_open_tag = tag_name
+        new_stream.write(token.strip())
+    new_stream.seek(0)
+
+    return new_stream
 
 
 class Header(object):
@@ -468,14 +621,21 @@ class Status(object):
         self.severity = None
         self.message = None
 
-    def __str__(self):
-        return "OFXStatus: {}::{}::{}".format(self.code,
-                                              self.severity,
-                                              self.message)
+#    def __str__(self):
+#        return "OFXStatus: {}::{}::{}".format(self.code,
+#                                              self.severity,
+#                                              self.message)
 
     # TODO: make __repr__ look standard
-#    def __repr__(self):
-#        return "
+    def __repr__(self):
+        repr_str = "<{}.{} object `{}::{}::{}` at 0x{}>"
+        return repr_str.format(self.__class__.__module__,
+                               self.__class__.__name__,
+                               self.code,
+                               self.severity,
+                               self.message,
+                               hex(id(self)).upper()[2:],
+                               )
 
 
 class OFXDateTime(object):
@@ -704,12 +864,31 @@ EXAMPLE_OFX_ACCOUNT_LIST_CLOSED = """
 </OFX>
 """
 
+EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
+<OFX>
+    <SIGNONMSGSRSV1>
+        <SONRS>
+            <STATUS>
+                <CODE>0
+                <SEVERITY>INFO
+            </STATUS>
+            <DTSERVER>20150520232950.608[0:GMT]
+            <LANGUAGE>ENG
+            <FI>
+                <ORG>FI_ORGNAME
+                <FID>123456
+            </FI>
+        </SONRS>
+    </SIGNONMSGSRSV1>
+</OFX>
+"""
+
 
 def main():
     """ Code to run when module called directly, just some quick checks. """
     docopt(__doc__, version=VERSION)
     file = "example_ofx_acct_list.ofx"
-    a = ParseOFX(EXAMPLE_OFX_ACCOUNT_LIST_CLOSED)
+    a = ParseOFX(EXAMPLE_OFX_ACCOUNT_LIST)
 #    a = ParseOFX(str(EXAMPLE_OFX_ACCOUNT_LIST, encoding='utf-8'))
 #    with open(file, 'rb') as openf:
 #        a = ParseOFX(openf)
@@ -719,11 +898,26 @@ def main():
     print(a.sonrs)
     print(a.sonrs.status)
     print(a.sonrs.dt_server)
-    print(a.sonrs.language)
+
+#    stream = io.StringIO(str(EXAMPLE_OFX_ACCOUNT_LIST, encoding='utf-8'))
+##    stream = io.StringIO(EXAMPLE_OFX_ACCOUNT_LIST_CLOSED)
+#    _, d = strip_header(stream)
+#    print(d)
+
+#    print("========================")
+#    stream = io.StringIO(EXAMPLE_OFX_ACCOUNT_LIST_OPEN)
+#    new = close_tags(stream)
+#    print(new.read())
+#    new.seek(0)
+#    soup = BeautifulSoup(new, 'xml')
+#    print(soup.prettify())
+
 #    print(a.header)
 
 #    import ofxparse
 #    with open(file, 'rb') as openf:
+#        print(type(openf))
+#        print(isinstance(openf, io.IOBase))
 #        a = ofxparse.OfxParser.parse(openf)
 #    print(a)
 #    print(a.accounts)
