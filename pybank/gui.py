@@ -202,7 +202,8 @@ class MainNotebook(wx.Notebook):
         p0 = SamplePanel(self, "yellow", "Summary Page")
         self.AddPage(p0, "Summary")
 
-        p1 = SamplePanel(self, 'pink', "hafsdf")
+#        p1 = SamplePanel(self, 'pink', "hafsdf")
+        p1 = Ledger(self)
         self.AddPage(p1, "Ledger")
 
         p2 = SamplePanel(self, "green", "sdfdfsdfsdfsdfsd")
@@ -213,7 +214,22 @@ class MainNotebook(wx.Notebook):
 
 
 class Ledger(wx.Panel):
-    """ The transaction ledger """
+    """
+    The transaction ledger
+
+    Should contain the following columns:
+
+    + Transaction Date
+    + Entered Date
+    + CheckNum
+    + Payee DisplayName
+    + Downloaded Payee
+    + Memo
+    + Category
+    + Label
+    + Amount  # do I want separate payment/income columns? probably red/black
+    + Balance
+    """
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self.parent = parent
@@ -222,7 +238,32 @@ class Ledger(wx.Panel):
 
     def _init_ui(self):
         """ Initialize UI components """
-        pass
+        self.ledger = wx.ListCtrl(self, wx.ID_ANY,
+#                                  size=(300, 300),
+#                                  style=wx.LC_VIRTUAL,
+                                  style=wx.LC_REPORT #| wx.LC_VIRTUAL,
+                                  )
+
+        self.ledger.AppendColumn("Date")
+#        self.ledger.AppendColumn("Entered Date")
+        self.ledger.AppendColumn("CheckNum")
+        self.ledger.AppendColumn("Payee")
+        self.ledger.AppendColumn("Downloaded Payee")
+        self.ledger.AppendColumn("Memo")
+        self.ledger.AppendColumn("Category")
+        self.ledger.AppendColumn("Label")
+        self.ledger.AppendColumn("Amount")
+        self.ledger.AppendColumn("Balance")
+
+        item1 = wx.ListItem().SetData(1)
+        item2 = wx.ListItem().SetData(2)
+
+        self.ledger.InsertItem(1, "string")
+        self.ledger.InsertItem(2, "item2")
+
+        self.hbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.hbox.Add(self.ledger, 1, wx.EXPAND)
+        self.SetSizer(self.hbox)
 
 
 class AccountList(wx.Panel):
