@@ -48,6 +48,14 @@ DEFAULT_OFX_VERSION = '102'
 LINE_ENDING = "\r\n"
 
 
+# TODO: AMEX: authentication failed: Your request could not be processed
+#       because you supplied an invalid identification code or your
+#       password was incorrect
+
+# TODO: ChaseCC: authentication failed: USER NOT AUTHORIZED TO ACCESS THE
+#       SYSTEM WITH THIS APPLICATION
+
+
 CHECKING = """
 OFXHEADER:100
 DATA:OFXSGML

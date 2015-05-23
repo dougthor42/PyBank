@@ -1030,8 +1030,8 @@ NEWFILEUID:newfileuid
                     <BANKACCTINFO>"""          # Bank Account Info
 b"""
                         <BANKACCTFROM>
-                            <BANKID>bankid_bank_account_num
-                            <ACCTID>acctid_routing_num
+                            <BANKID>routing_num
+                            <ACCTID>bank_account_num
                             <ACCTTYPE>CHECKING
                         </BANKACCTFROM>
                         <SUPTXDL>Y
@@ -1042,8 +1042,8 @@ b"""
                     <BPACCTINFO>"""         # Bank *Payment* Account Info
 b"""
                         <BANKACCTFROM>
-                            <BANKID>bankid_bank_account_num
-                            <ACCTID>acctid_routing_num
+                            <BANKID>routing_num
+                            <ACCTID>bank_account_num
                             <ACCTTYPE>CHECKING
                         </BANKACCTFROM>
                         <SVCSTATUS>ACTIVE
@@ -1098,8 +1098,8 @@ EXAMPLE_OFX_ACCOUNT_LIST_CLOSED = """
                     <DESC>Checking</DESC>
                     <BANKACCTINFO>
                         <BANKACCTFROM>
-                            <BANKID>bankid_bank_account_num</BANKID>
-                            <ACCTID>acctid_routing_num</ACCTID>
+                            <BANKID>routing_num</BANKID>
+                            <ACCTID>bank_account_num</ACCTID>
                             <ACCTTYPE>CHECKING</ACCTYPE>
                         </BANKACCTFROM>
                         <SUPTXDL>Y</SUPTXDL>
@@ -1109,8 +1109,8 @@ EXAMPLE_OFX_ACCOUNT_LIST_CLOSED = """
                     </BANKACCTINFO>
                     <BPACCTINFO>
                         <BANKACCTFROM>
-                            <BANKID>bankid_bank_account_num</BANKID>
-                            <ACCTID>acctid_routing_num</ACCTID>
+                            <BANKID>routing_num</BANKID>
+                            <ACCTID>bank_account_num</ACCTID>
                             <ACCTTYPE>CHECKING</ACCTYPE>
                         </BANKACCTFROM>
                         <SVCSTATUS>ACTIVE</SVCSTATUS>
