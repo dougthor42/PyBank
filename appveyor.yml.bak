@@ -1,0 +1,167 @@
+# This file taken directly from DRMaclver's hypothesis package.
+# https://github.com/DRMacIver/hypothesis
+# I will edit accordingly once I get my project going
+#
+# Also taken from
+# https://github.com/ogrisel/python-appveyor-demo/blob/master/appveyor.yml
+
+#   - Minimal appveyor.yml file is an empty file. All sections are optional.
+#   - Indent each level of configuration with 2 spaces. Do not use tabs!
+#   - All section names are case-sensitive.
+#   - Section names should be unique on each level.
+
+### ----------------------
+### General Configuration
+### ----------------------
+
+# version format
+#version: 0.0.1.{build}-{branch}
+
+# Do not build on tags (GitHub only)
+#skip_tags: false
+
+# Skipping commits with particular message or user
+#skip_commits:
+#  message: /Created.*\.(png|jpg|jpeg|bmp|gif)/      # Regex for match commit
+#  author: John      # Commit author's username, name, email, or regexp
+
+
+### --------------------------
+### Environment Configuration
+### --------------------------
+
+# Operating system (build VM template)
+#os: Windows Server 2012
+
+# scripts called at very begining, before repo cloning
+#init:
+#  - git-config --global core.autocrlf input
+
+# clone directory
+#clone_folder : C:\projects\myproject
+
+# fetch repo as zip
+#shallow_clone: true         # default is 'false'
+
+# set clone depth
+#clone_depth: 5              # clone entire repo history if not defined
+
+# Set up etc\hosts file
+#hosts:
+#  queue-server: 127.0.0.1
+#  db.server.com: 127.0.0.2
+
+# environment variables
+environment:
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
+
+  matrix:
+    - PYTHON: "C:\\Python34-x64"
+      PYTHON_VERSION: "3.4.3"
+      PYTHON_ARCH: "64"
+
+# enable services required for build/tests
+#services:
+#  - mysql               # start MySQL 5.6 service
+
+# scripts that run after cloning repo
+install:
+  - ECHO "Filesystem root:"
+  - ps: "ls \"C:/\""
+
+  - ECHO "Installed SDKs:"
+  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
+
+  # Install Python (from the official .msi of http://python.org) and pip when
+  # not already installed.
+  - "powershell ./appveyor/install.ps1"
+
+  # Prepend newly installed Python to the PATH of this build (this cannot be
+  # done from inside the powershell script as it would require to restart
+  # the parent CMD process).
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+
+  # Check that we have the expected version and architecture for Python
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+
+  # install dependencies
+  - "%CMD_IN_ENV% pip install --upgrade pip
+#  - "%CMD_IN_ENV% pip install wheel"
+  - "%CMD_IN_ENV% pip install -r dev-requirements.txt"
+#  - "%CMD_IN_ENV% pip install setuptools pip"
+#  - "%CMD_IN_ENV% pip install ."
+#  - "%CMD_IN_ENV% pip install ./hypothesis-extra/hypothesis-datetime/"
+#  - "%CMD_IN_ENV% pip install ./hypothesis-extra/hypothesis-pytest/"
+
+
+### --------------------
+### Build Configuration
+### --------------------
+
+build: false  # Not a C# project, build stuff at the test step instead.
+
+
+### -------------------
+### Test Configuration
+### -------------------
+
+# scripts to run before tests
+#before_test:
+#  - echo script1
+
+# scripts to run tests
+test_script:
+  # Build the compiled extension and run the project tests
+#  - "%CMD_IN_ENV% nosetests"
+   - %CMD_IN_ENV% python --version
+#  - "%CMD_IN_ENV% python -m pytest hypothesis-extra/hypothesis-datetime/tests"
+#  - "%CMD_IN_ENV% python -m pytest hypothesis-extra/hypothesis-pytest/tests"
+
+# scripts to run after tests
+#after_test:
+  # if tests OK, create whl package
+#  - "%CMD_IN_ENV% python setup.py bdist_wheel bdist_wininst"
+#  - ps: "ls dist"
+
+### ------------------------
+### Artifacts Configuration
+### ------------------------
+
+#artifacts:
+  # Archive the generated wheel package in the ci.appveyor.com build report.
+#  - path: dist\*
+
+
+### ----------------
+### Global Handlers
+### ----------------
+
+# on successful build
+#on_success:
+#  - do something
+#
+#on_failure:
+#  - do something else
+#
+#on_finish:
+#  - do another thing
+
+
+### ---------------
+### Notifications
+### ---------------
+
+#notifications:
+#  # Email
+#  - provider: Email
+#    to:
+#      - user1@email.com
+#      - user2@email.com
+#    subject: "Build {{status}}"                 # optional
+#    message: "{{message}}, {{commitID}}, ..."   # optional
+#    on_build_status_changed: true
