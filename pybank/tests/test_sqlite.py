@@ -47,8 +47,8 @@ class TestTestFunc(unittest.TestCase):
         """
         pass
 
-    def test_testfunc(self):
-        self.assertEqual(sqlite.my_func(), 5)
+#    def test_testfunc(self):
+#        self.assertEqual(sqlite.my_func(), 5)
 
 
 class TestMock(unittest.TestCase):
@@ -58,7 +58,6 @@ class TestMock(unittest.TestCase):
         thing = MyProductionClass()
         thing.method = mock.MagicMock(return_value=3)
         a = thing.method(3, 4, 5, key='value')
-        print(a)
         thing.method.assert_called_with(3, 4, 5, key='value')
 
 

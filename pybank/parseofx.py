@@ -52,6 +52,7 @@ Other Items:
 + Will need Merchant Category Codes (MCC). See
   https://github.com/greggles/mcc-codes for a good source. Would also like
   to auto-update that...
+
 """
 
 ### #------------------------------------------------------------------------
@@ -86,7 +87,7 @@ LINE_ENDING = "\r\n"
 
 class OFX(object):
     """
-
+    ???
     """
     pass
 
@@ -123,11 +124,11 @@ class ParseOFX(object):
 
     ParseOFX does *not* close any streams (# XXX: is this what I want?)
 
-    Public Attributes:
+    Attributes:
     ------------------
     stuff
 
-    Public Methods:
+    Methods:
     ---------------
     None
 
@@ -145,15 +146,19 @@ class ParseOFX(object):
 
         # convert ofx_data to a stream
         # TODO: Handle closing of opened streams
+        print(type(ofx_data))
         if type(ofx_data) == str:
             ofx_data = io.StringIO(ofx_data, newline=self.newline)
         elif type(ofx_data) == bytes:
             ofx_data = str(ofx_data, encoding='utf-8')
             ofx_data = io.StringIO(ofx_data, newline=self.newline)
         elif type(ofx_data) == io.BufferedReader:
-            pass
+            ofx_data = io.StringIO(ofx_data.read(), newline=self.newline)
+#            pass
         elif type(ofx_data) == io.StringIO:
             pass
+        elif type(ofx_data) == io.TextIOWrapper:
+            ofx_data = io.StringIO(ofx_data.read(), newline=self.newline)
         else:
             error_text = ("Arguement `ofx_data` must be a string, opened",
                           " file stream, or StringIO stream.",
@@ -163,6 +168,7 @@ class ParseOFX(object):
         self.ofx_data = ofx_data
 
         self.insitution = None
+        self.accounts = []
         self.accounts = []
 
         # TODO: decide if I want the file preprocessing to happen here
@@ -214,52 +220,97 @@ class ParseOFX(object):
         #       Looks like I could make one or two generic functions
         #       and then just pass the tag string (and perhaps the method).
 
+
+        ### Sign On Message Responses #######################################
+
         # Find the single Sign On Response
-        self.ofx_sonrs = self.soup.find("SONRS")
-        if self.ofx_sonrs is not None:
+        self.sonrs_soup = self.soup.find("SONRS")
+        if self.sonrs_soup is not None:
             self._parse_sonrs()
 
-        # Find all of the Statement Responses
-        # note I could use soup("STMTRS"); its the same as soup.findAll()
-        self.stmtrs = self.soup.findAll("STMTRS")
-        if len(self.stmtrs) != 0:                       # I prefer explicit
-            self._parse_statement_response()
-
-        # Find all of the Credit Card Statement Response
-        self.ccstmtrs = self.soup.findAll("CCSTMTRS")
-        if len(self.ccstmtrs) != 0:
-            self._parse_statement_response()
-
-        # Find all of the Investment Statement Response
-        self.invstmtrs = self.soup.findAll("INVSTMTRS")
-        if len(self.invstmtrs) != 0:
-            self._parse_statement_response()
-
-        # Find the Account Info Response
-        self.acctinfors = self.soup.find("ACCTINFORS")
-        if self.acctinfors is not None:
-            self._parse_acct_info_response()
+        # Find the single Sign On Request
+        self.sonrq_soup = self.soup.find("SONRQ")
+        if self.sonrq_soup is not None:
+            self._parse_sonrq()
 
         # Find the Financial Institution
-        self.fi = self.soup.find("FI")
-        if self.fi is not None:
+        self.fi_soup = self.soup.find("FI")
+        if self.fi_soup is not None:
             self._parse_financial_institution()
+
+
+        ### Statements ######################################################
+
+        # Find the Account Info Response
+        self.acctinfors_soup = self.soup.find("ACCTINFORS")
+        if self.acctinfors_soup is not None:
+            self._parse_acct_info_response()
+
+        # Find all of the Bank Statement Responses
+        # Note: Could use soup("STMTRS"); its the same as soup.findAll()
+        self.stmttrnsrs_soup = self.soup.find("STMTTRNRS")
+        if len(self.stmttrnsrs_soup) != 0:                  # I prefer explicit
+            self._parse_bank_statement_response()
+
+        # Find all of the Credit Card Statement Responses
+        self.ccstmtrs_soup = self.soup.findAll("CCSTMTRS")
+        if len(self.ccstmtrs_soup) != 0:
+            self._parse_cc_statement_response()
+
+        # Find all of the Investment Statement Responses
+        self.invstmtrs_soup = self.soup.findAll("INVSTMTRS")
+        if len(self.invstmtrs_soup) != 0:
+            self._parse_inv_statement_response()
 
     def _parse_sonrs(self):
         """
         Parses the Sign On Response (SONRS)
         """
         self.sonrs = SignOnResponse()
-        self.sonrs.status = parse_status(self.ofx_sonrs)
-        self.sonrs.dt_server = parse_datetime(self.ofx_sonrs)
-        self.sonrs.language = self.soup.find('LANGUAGE').contents[0]
+        self.sonrs.status = parse_status(self.sonrs_soup)
+        self.sonrs.dt_server = parse_datetime(self.sonrs_soup)
+        self.sonrs.language = self.soup.find("LANGUAGE").contents[0]
 #        self.sonrs.fi = self._parse_financial_institution()
 
-    def _parse_statement_response(self):
+    def _parse_sonrq(self):
+        """
+        Parses the Sign On Request (SONRQ)
+        """
+        self.sonrq = SignOnRequest()
+        self.sonrq.dt_client = parse_datetime(self.sonrq_soup)
+        self.sonrq.user_id = self.soup.find("USERID").contents[0]
+        self.sonrq.user_password = self.soup.find("USERPASS").contents[0]
+        self.sonrq.language = self.soup.find("LANGUAGE").contents[0]
+        self.sonrq.app_id = self.soup.find("APPID").contents[0]
+        self.sonrq.app_version = self.soup.find("APPVER").contents[0]
+
+    def _parse_bank_statement_response(self):
         """
         Parses the Statement Response (STMTRS)
         """
-        pass
+        stmt = OFXStatement()
+        stmt.dtstart = parse_datetime(self.stmttrnsrs_soup, "DTSTART")
+        stmt.dtend = parse_datetime(self.stmttrnsrs_soup, "DTEND")
+
+        # TODO: enum?
+        stmt.curdef = self.stmttrnsrs_soup.find("CURDEF").contents[0]
+
+        # TODO: decimal.Decimal
+        ledger_bal_soup = self.stmttrnsrs_soup.find("LEDGERBAL")
+        stmt.ledger_balance = parse_balance(ledger_bal_soup)
+        avail_bal_soup = self.stmttrnsrs_soup.find("AVAILBAL")
+        stmt.available_balance = parse_balance(avail_bal_soup)
+
+        # Find every transaction
+        trans = OFXTransaction()
+        stmt.transactions = []
+        for transaction_soup in self.stmttrnsrs_soup.findAll("STMTTRN"):
+            #
+            trans = parse_transaction(transaction_soup)
+            stmt.transactions.append(trans)
+
+        self.statement = stmt
+
 
     def _parse_cc_statement_response(self):
         """
@@ -275,24 +326,70 @@ class ParseOFX(object):
 
     def _parse_acct_info_response(self):
         """
-        Parses the Account Information Response (ACCTINFORS)
+        Parses the Account Info Response (ACCTINFORS)
         """
-        pass
+        dt = parse_datetime(self.acctinfors_soup)
+
+        for _acct_info in self.acctinfors_soup.findAll("ACCTINFO"):
+            acct = Account()
+
+            # TODO: optimize
+            if _acct_info.find("INVACCTINFO"):
+                acct = InvestmentAccount()
+                acct.account_type = AccountType.Investment
+                # TODO: more investment account items
+            elif _acct_info.find("CCACCTINFO"):
+                acct = CreditCardAccount()
+                acct.account_type = AccountType.CreditCard
+            elif _acct_info.find("BANKACCTINFO"):
+                acct = BankAccount()
+                acct.account_type = AccountType.Bank
+                acct.bank_id = _acct_info.find("BANKID").contents[0]
+            else:
+                raise TypeError("Unknown Account Type")
+
+            # Items in every Account
+            acct.desc = _acct_info.find("DESC").contents[0]
+            acct.account_id = _acct_info.find("ACCTID").contents[0]
+            acct.suptxdl = _acct_info.find("SUPTXDL").contents[0]
+            acct.xfersrc = _acct_info.find("XFERSRC").contents[0]
+            acct.xferdest = _acct_info.find("XFERDEST").contents[0]
+            acct.svcstatus = _acct_info.find("SVCSTATUS").contents[0]
+
+            acct.dt_acct_up = dt
+
+            self.accounts.append(acct)
 
     def _parse_financial_institution(self):
         """
         Parses the Financial Institution (FI)
         """
-        pass
+        self.fi = FinancialInstitution()
+        self.fi.org = self.fi_soup.find('ORG').contents[0]
+        self.fi.fid = self.fi_soup.find('FID').contents[0]
 
 
 def parse_status(soup):
     """
     Slurps up the OFX Status from the soup.
+
+    Parameters:
+    -----------
+    soup : BeautifulSoup4 XML object
+        The XML to parse for status.
+
+    Returns:
+    --------
+    status : parseofx.Status object
+        The OXF status.
+
     """
     status = Status()
-    status.code = int(soup.find('CODE').contents[0])
-    status.severity = soup.find('SEVERITY').contents[0]
+    try:
+        status.code = int(soup.find('CODE').contents[0])
+        status.severity = soup.find('SEVERITY').contents[0]
+    except AttributeError:
+        raise AttributeError("Could not find 'CODE' or 'SEVERITY' tag.")
     try:
         status.message = soup.find('MESSAGE').contents[0]
     except AttributeError:
@@ -301,9 +398,9 @@ def parse_status(soup):
     return status
 
 
-def parse_datetime(soup):
+def parse_datetime(soup, tag=None):
     """
-    Parses the OFX datetime
+    Parses the OFX datetime.
 
     Tries DTACCTUP, DTSTART, DTCLIENT, DTSERVER
 
@@ -318,11 +415,26 @@ def parse_datetime(soup):
     This will need to handle partial times too.
 
     For now, just grab the string.
+
+    Parameters:
+    -----------
+    soup : BeautifulSoup4 XML object
+        The XML to parse the datetime from.
+
+    Returns:
+    --------
+    ofx_dt : parseofx.OFXDateTime object
+        The parsed date.
+
     """
-    dt_tags = ["DTACCTUP", "DTCLIENT", "DTSERVER", "DTSTART"]
+    if tag is None:
+        dt_tags = ["DTACCTUP", "DTCLIENT", "DTSERVER", "DTSTART"]
+    else:
+        dt_tags = [tag]
     ofx_dt = OFXDateTime()
     for tag in dt_tags:
         try:
+            # TODO: SONRS can have more than one DT!
             ofx_dt.dt_string = soup.find(tag).contents[0]
             return ofx_dt
         except AttributeError:
@@ -330,6 +442,62 @@ def parse_datetime(soup):
     else:
         raise AttributeError("Datetime tag not found")
 
+
+def parse_transaction(soup):
+    """
+    Parses an OFX Transaction
+
+    Parameters:
+    -----------
+    soup : bs4.BeautifulSoup object
+        The XML to parse
+
+    Returns:
+    --------
+    transaction : OFXTransaction object
+        The parsed transaction object.
+
+    """
+    transaction = OFXTransaction()
+    transaction = BankTransaction()
+
+    transaction.trntype = soup.find("TRNTYPE").contents[0]     # TODO: Enum?
+    transaction.dtposted = parse_datetime(soup, "DTPOSTED")
+    transaction.dtuser = parse_datetime(soup, "DTUSER")
+    transaction.trnamt = soup.find("TRNAMT").contents[0]    # TODO: Decimal
+    transaction.fitid = soup.find("FITID").contents[0]      # TODO: int?
+    try:
+        transaction.checknum = soup.find("CHECKNUM").contents[0]    # TODO: int?
+    except AttributeError:
+        transaction.checknum = None
+
+    transaction.name = soup.find("NAME").contents[0]
+    try:
+        transaction.memo = soup.find("MEMO").contents[0]
+    except AttributeError:
+        transaction.memo = None
+
+    return transaction
+
+
+def parse_balance(soup):
+    """
+    Parses an OFX Balance object from the soup.
+
+    Parameters:
+    -----------
+    soup : bs4.BeautifulSoup object
+        The XML to parse.
+
+    Returns:
+    --------
+    balance : OFXBalance object
+        The parsed balance object.
+    """
+    balance = OFXBalance()
+    balance.balance = soup.find("BALAMT").contents[0]
+    balance.as_of_date = parse_datetime(soup, "DTASOF")
+    return balance
 
 def strip_header(ofx_stream):
     """
@@ -376,6 +544,12 @@ def strip_header(ofx_stream):
     return ofx_stream, header
 
 
+# TODO: close_tags fails if there are no closing tags already
+#       Example:
+#       >>> close_tags("<CODE>0<SEVERITY>INFO")
+#       <CODE>0</CODE><SEVERITY>INFO
+#       # Should be:
+#       <CODE>0</CODE><SEVERITY>INFO</SEVERITY>
 def close_tags(ofx_stream):
     """
     Closes any open tags, thus turning ofx_data into a valid XML stream.
@@ -611,6 +785,9 @@ class CreditCardAccountFrom(object):
     def __init__(self):
         self.acct_id = None
 
+### #------------------------------------------------------------------------
+### Misc.
+### #------------------------------------------------------------------------
 
 class Status(object):
     """
@@ -628,7 +805,7 @@ class Status(object):
 
     # TODO: make __repr__ look standard
     def __repr__(self):
-        repr_str = "<{}.{} object `{}::{}::{}` at 0x{}>"
+        repr_str = "<{}.{} object `{}::{}::{}` at 0x{:>016}>"
         return repr_str.format(self.__class__.__module__,
                                self.__class__.__name__,
                                self.code,
@@ -642,9 +819,22 @@ class OFXDateTime(object):
     """
     An OFX DateTime object
     """
+    # TODO: actually parse the date instead of leaving a string.
     def __init__(self):
         self.dt_string = None
 
+
+class OFXBalance(object):
+    """
+    An OFX Balance object
+    """
+    def __init__(self):
+        self.balance = None         # TODO: decimal.Decimal
+        self.as_of_date = None
+
+### #------------------------------------------------------------------------
+### Accounts
+### #------------------------------------------------------------------------
 
 class AccountType(Enum):
     """ Account Types """
@@ -660,12 +850,18 @@ class Account(object):
     """
     def __init__(self):
         self.statement = None
-        self.account_id = ''
         self.routing_number = ''
         self.branch_id = ''
         self.account_type = ''
         self.institution = None
         self.type = AccountType.Unknown
+
+        self.desc = None
+        self.account_id = None
+        self.suptxdl = None
+        self.xfersrc = None
+        self.xferdest = None
+        self.svcstatus = None
         # Used for error tracking
         self.warnings = []
 
@@ -675,36 +871,110 @@ class InvestmentAccount(Account):
     An OFX Investment Account object
     """
     def __init__(self):
-        super(InvestmentAccount, self).__init__()
+#        super(InvestmentAccount, self).__init__()
+        super().__init__()
         self.brokerid = ''
 
+class BankAccount(Account):
+    """
+    An OFX Bank Account object
+    """
+    def __init__(self):
+        super().__init__()
+        self.bank_id = None
+        self.bank_account_type = None
 
-class Statement(object):
+
+class CreditCardAccount(Account):
+    """
+    And OFX Credit Card Account object
+    """
+    def __init__(self):
+        super().__init__()
+
+
+### #------------------------------------------------------------------------
+### Statements
+### #------------------------------------------------------------------------
+
+class OFXStatement(object):
     """
     An OFX Statement object
     """
-    pass
+    def __init__(self):
+        self.transactions = None
+        self.curdef = None
+        self.bank_acct_from = None
+        self.dtstart = None
+        self.dtend = None
+        self.ledger_balance = None
+        self.available_balance = None
 
 
-class InvestmentStatement(object):
+class BankStatement(OFXStatement):
+    """
+    An OFX Bank (standard) Statement object
+    """
+    def __init__(self):
+        super().__init__()
+
+
+class CreditCardStatement(OFXStatement):
+    """
+    An OFX Credit Card Statement Object
+    """
+    def __init__(self):
+        super().__init__()
+
+
+class InvestmentStatement(OFXStatement):
     """
     An OFX Investment Statement object
     """
-    pass
+    def __init__(self):
+        super().__init__()
 
 
-class Transaction(object):
+### #------------------------------------------------------------------------
+### Transactions
+### #------------------------------------------------------------------------
+
+class OFXTransaction(object):
     """
     An OFX Tranaction object
     """
     pass
 
 
-class InvestmentTransaction(object):
+class BankTransaction(OFXTransaction):
+    """
+    An OFX Bank (checking, savings, other?) Transaction object.
+    """
+    def __init__(self):
+        super().__init__()
+        self.trntype = None         # TODO: enum
+        self.dtposted = None
+        self.dtuser = None
+        self.trnamt = None
+        self.fitid = None
+        self.checknum = None
+        self.name = None
+        self.memo = None
+
+
+class CreditCardTransaction(OFXTransaction):
+    """
+    An OFX Credit Card Transaction object
+    """
+    def __init__(self):
+        super().__init__()
+
+class InvestmentTransaction(OFXTransaction):
     """
     An OFX Investment Transaction object
     """
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 class FinancialInstitution(object):
@@ -887,17 +1157,52 @@ EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
 def main():
     """ Code to run when module called directly, just some quick checks. """
     docopt(__doc__, version=VERSION)
-    file = "example_ofx_acct_list.ofx"
-    a = ParseOFX(EXAMPLE_OFX_ACCOUNT_LIST)
+    file = "tests\\data\\rs_2credit_1checkdebit.ofx"
+    with open(file, 'r') as openf:
+        a = ParseOFX(openf)
+
+    print(a)
+    print(a.fi.fid)
+    print(a.statement)
+    print(a.statement.transactions)
+    for trans in a.statement.transactions:
+        print(trans.fitid)
+    print(a.statement.available_balance.balance)
+    print(a.statement.ledger_balance.balance)
+
+
+#    a = ParseOFX(EXAMPLE_OFX_ACCOUNT_LIST)
 #    a = ParseOFX(str(EXAMPLE_OFX_ACCOUNT_LIST, encoding='utf-8'))
 #    with open(file, 'rb') as openf:
 #        a = ParseOFX(openf)
 #    b = a.parse()
 #    print(a)
-    print("============")
-    print(a.sonrs)
-    print(a.sonrs.status)
-    print(a.sonrs.dt_server)
+#    print("============")
+#    print(a.sonrs)
+#    print(a.sonrs.status)
+#    print(a.sonrs.dt_server)
+#    print(a.fi)
+#    print(a.accounts)
+#    print(a.accounts[1].account_type)
+#    acct = a.accounts[1]
+#
+#    print(acct.desc)
+#    print(acct.account_id)
+#    print(acct.suptxdl)
+#    print(acct.xfersrc)
+#    print(acct.xferdest)
+#    print(acct.svcstatus)
+#    print(acct.dt_acct_up)
+#    print(a.header)
+#
+#    soup = BeautifulSoup("""
+#            <STATUS>
+#                <CODE>0</SCODES>
+#                <SEVERITY>INFO</SSEVERITY>
+#            </STATUS>
+#            """, 'xml')
+#    result = parse_status(soup)
+#    print("`{}`".format(result.severity))
 
 #    stream = io.StringIO(str(EXAMPLE_OFX_ACCOUNT_LIST, encoding='utf-8'))
 ##    stream = io.StringIO(EXAMPLE_OFX_ACCOUNT_LIST_CLOSED)
@@ -931,3 +1236,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+#    pass
+

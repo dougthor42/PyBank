@@ -1,3 +1,6 @@
 nose
 wheel
 nose-cov
+beautifulsoup4
+docopt
+keyring

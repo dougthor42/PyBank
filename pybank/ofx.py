@@ -25,17 +25,17 @@ import http.client
 import urllib.parse
 import time
 import getpass
-import keyring
 from os import urandom
 
 # Third-Party
 from docopt import docopt
+import keyring
 
 # Package / Application
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 from __init__ import VERSION
-from pybank.parseofx import ParseOFX
+from parseofx import ParseOFX
 
 
 ### #------------------------------------------------------------------------
