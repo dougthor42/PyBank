@@ -15,15 +15,15 @@
 ### ----------------------
 
 # version format
-version: 0.0.1.{build}-{branch}
+#version: 0.0.1.{build}-{branch}
 
 # Do not build on tags (GitHub only)
-skip_tags: false
+#skip_tags: false
 
 # Skipping commits with particular message or user
-skip_commits:
-  message: /Created.*\.(png|jpg|jpeg|bmp|gif)/      # Regex for match commit
-  author: John      # Commit author's username, name, email, or regexp
+#skip_commits:
+#  message: /Created.*\.(png|jpg|jpeg|bmp|gif)/      # Regex for match commit
+#  author: John      # Commit author's username, name, email, or regexp
 
 
 ### --------------------------
@@ -31,7 +31,7 @@ skip_commits:
 ### --------------------------
 
 # Operating system (build VM template)
-os: Windows Server 2012
+#os: Windows Server 2012
 
 # scripts called at very begining, before repo cloning
 #init:

@@ -25,7 +25,7 @@ from docopt import docopt
 # Package / Application
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-from __init__ import VERSION
+#from __init__ import VERSION
 import ofx
 
 
@@ -72,7 +72,7 @@ def main():
     """
     Main entry point
     """
-    docopt(__doc__, version=VERSION)
+    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
     unittest.main(verbosity=2)
 
 
