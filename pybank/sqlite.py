@@ -28,7 +28,7 @@ from docopt import docopt
 # Package / Application
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-from __init__ import VERSION
+#from __init__ import VERSION
 
 
 def docstring():
@@ -784,7 +784,7 @@ def main():
     ------
     RuntimeError
     """
-    docopt(__doc__, version=VERSION)
+    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
     raise RuntimeError("This module is not meant to be run by itself")
 
 

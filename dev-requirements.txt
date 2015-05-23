@@ -4,3 +4,4 @@ nose-cov
 beautifulsoup4
 docopt
 keyring
+coverage

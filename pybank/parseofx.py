@@ -72,7 +72,7 @@ from bs4 import BeautifulSoup
 # Package / Application
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-from __init__ import VERSION
+#from __init__ import VERSION
 
 
 ### #------------------------------------------------------------------------
@@ -1156,7 +1156,7 @@ EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
 
 def main():
     """ Code to run when module called directly, just some quick checks. """
-    docopt(__doc__, version=VERSION)
+    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
     file = "tests\\data\\rs_2credit_1checkdebit.ofx"
     with open(file, 'r') as openf:
         a = ParseOFX(openf)
