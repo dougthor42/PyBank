@@ -100,6 +100,8 @@ Notes:
 ------
 I may have to re-write an OFX parser...
 
+Transaction matching and download start date = previous download date.
+
 """
 import logging
 
