@@ -62,6 +62,8 @@ Other Items:
 import sys
 import io
 import re
+import datetime
+import decimal
 import os.path as osp
 from enum import Enum
 
@@ -83,20 +85,6 @@ DEFAULT_APP_ID = 'QWIN'
 DEFAULT_APP_VERSION = '2200'
 DEFAULT_OFX_VERSION = '102'
 LINE_ENDING = "\r\n"
-
-
-class OFX(object):
-    """
-    ???
-    """
-    pass
-
-
-class ProceesOFXData(object):
-    """
-    Processes the OFX data into a valid XML schema
-    """
-    pass
 
 
 class ParseOFX(object):
@@ -143,6 +131,16 @@ class ParseOFX(object):
     """
     def __init__(self, ofx_data, newline=LINE_ENDING):
         self.newline = newline
+        self.insitution = None
+        self.accounts = []
+        self.bankid = []
+        self.descr = []
+        self.header = None
+        self.soup = None
+        self.sonrs = None
+        self.sonrq = None
+        self.statement = None
+        self.fi = None
 
         # convert ofx_data to a stream
         # TODO: Handle closing of opened streams
@@ -169,7 +167,6 @@ class ParseOFX(object):
 
         self.insitution = None
         self.accounts = []
-        self.accounts = []
 
         # TODO: decide if I want the file preprocessing to happen here
         #       or within parse().
@@ -194,8 +191,6 @@ class ParseOFX(object):
         """
         Parses the entire file or string
         """
-        self.ofx = OFX()
-
         # Process the file to make it valid XML for BeautifulSoup
         self.ofx_data, self.header = strip_header(self.ofx_data)
         self.ofx_data = close_tags(self.ofx_data)
@@ -249,7 +244,8 @@ class ParseOFX(object):
         # Find all of the Bank Statement Responses
         # Note: Could use soup("STMTRS"); its the same as soup.findAll()
         self.stmttrnsrs_soup = self.soup.find("STMTTRNRS")
-        if len(self.stmttrnsrs_soup) != 0:                  # I prefer explicit
+        if (self.stmttrnsrs_soup is not None
+            and len(self.stmttrnsrs_soup) != 0):        # I prefer explicit
             self._parse_bank_statement_response()
 
         # Find all of the Credit Card Statement Responses
@@ -336,14 +332,14 @@ class ParseOFX(object):
             # TODO: optimize
             if _acct_info.find("INVACCTINFO"):
                 acct = InvestmentAccount()
-                acct.account_type = AccountType.Investment
+                acct.account_type = AccountType.investment
                 # TODO: more investment account items
             elif _acct_info.find("CCACCTINFO"):
                 acct = CreditCardAccount()
-                acct.account_type = AccountType.CreditCard
+                acct.account_type = AccountType.creditcard
             elif _acct_info.find("BANKACCTINFO"):
                 acct = BankAccount()
-                acct.account_type = AccountType.Bank
+                acct.account_type = AccountType.bank
                 acct.bank_id = _acct_info.find("BANKID").contents[0]
             else:
                 raise TypeError("Unknown Account Type")
@@ -423,24 +419,84 @@ def parse_datetime(soup, tag=None):
 
     Returns:
     --------
-    ofx_dt : parseofx.OFXDateTime object
+    ofx_dt : datetime.datetime object
         The parsed date.
 
     """
     if tag is None:
-        dt_tags = ["DTACCTUP", "DTCLIENT", "DTSERVER", "DTSTART"]
+        dt_tags = ["DTACCTUP", "DTCLIENT", "DTSERVER", "DTSTART", "DTEND",
+                   "DTPOSTED", "DTASOF"]
     else:
         dt_tags = [tag]
-    ofx_dt = OFXDateTime()
     for tag in dt_tags:
         try:
             # TODO: SONRS can have more than one DT!
-            ofx_dt.dt_string = soup.find(tag).contents[0]
+            ofx_dt = convert_datetime(soup.find(tag).contents[0])
             return ofx_dt
         except AttributeError:
             continue
     else:
         raise AttributeError("Datetime tag not found")
+
+
+def convert_datetime(ofx_dt):
+    """
+    Converts an OXF datetime string to a Python datetime object.
+
+    Raises error if the string is ont a recognized format (such as missing
+    seconds). Raises error if the conversion to datetime fails.
+        XXX: But if I've verified the string with regex, why would it fail?
+
+    Parameters:
+    -----------
+    ofx_dt : string
+        An OFX datetime-formatted string.
+
+    Returns:
+    --------
+    timestamp : datetime.datetime object
+        The unaware (naive) timestamp in GMT time.
+
+    Notes:
+    ------
+    See OFX Standard 2.1.1, section 3.2.8 for more information.
+
+    """
+    # Get the time zone
+    tz_type = re.search("\[(?P<tz>[-+]?\d+\.?\d*)\:\w*\]$", ofx_dt)
+    if tz_type is not None:
+        tz = float(tz_type.group('tz'))
+    else:
+        tz = 0
+
+    tz_offset = datetime.timedelta(hours=tz)
+
+    strptime = datetime.datetime.strptime
+
+    # Parse the string, falling back on various formats
+    # TODO: Change logic to use regex instead.
+    #       1st, match string to re. if no match, then raise ValueError
+    #       2nd, parse string to datetime object. If fail, raise.
+    try:
+        fmt = "%Y%m%d%H%M%S.%f[%z:%Z]"
+        local_dt = strptime(ofx_dt, fmt)
+    except ValueError:
+        try:
+            fmt = "%Y%m%d%H%M%S.%f"
+            local_dt = strptime(ofx_dt[:18], fmt)
+        except ValueError:
+            try:
+                fmt = "%Y%m%d%H%M%S"
+                local_dt = strptime(ofx_dt[:14], fmt)
+            except ValueError:
+                try:
+                    fmt = "%Y%m%d"
+                    local_dt = strptime(ofx_dt[:8], fmt)
+                except ValueError:
+                    raise ValueError("Unknown OFX datetime format")
+
+    timestamp = local_dt - tz_offset
+    return timestamp
 
 
 def parse_transaction(soup):
@@ -463,7 +519,10 @@ def parse_transaction(soup):
 
     transaction.trntype = soup.find("TRNTYPE").contents[0]     # TODO: Enum?
     transaction.dtposted = parse_datetime(soup, "DTPOSTED")
-    transaction.dtuser = parse_datetime(soup, "DTUSER")
+    try:
+        transaction.dtuser = parse_datetime(soup, "DTUSER")
+    except AttributeError:
+        transaction.dtuser = None
     transaction.trnamt = soup.find("TRNAMT").contents[0]    # TODO: Decimal
     transaction.fitid = soup.find("FITID").contents[0]      # TODO: int?
     try:
@@ -495,7 +554,7 @@ def parse_balance(soup):
         The parsed balance object.
     """
     balance = OFXBalance()
-    balance.balance = soup.find("BALAMT").contents[0]
+    balance.balance = decimal.Decimal(soup.find("BALAMT").contents[0])
     balance.as_of_date = parse_datetime(soup, "DTASOF")
     return balance
 
@@ -522,7 +581,7 @@ def strip_header(ofx_stream):
 
     # Read subset of the file in case it's huge; find where the header ends
     header_str = ofx_stream.read(2048)
-    header_end = header_str.find('<OFX>')
+    header_end = header_str.find('<')
     header_str = header_str[:header_end]
 
     # iterate though the header, saving key-value pairs and skipping blanks
@@ -653,12 +712,12 @@ class Header(object):
             raise KeyError
 
 
-class SignOnMessageResponse(object):
-    """
-    An OFX SignOnMessageResponse (SIGNONMSGSRSV1) object
-    """
-    def __init__(self):
-        self.sonrs = SignOnResponse()
+#class SignOnMessageResponse(object):
+#    """
+#    An OFX SignOnMessageResponse (SIGNONMSGSRSV1) object
+#    """
+#    def __init__(self):
+#        self.sonrs = SignOnResponse()
 
 
 class SignOnResponse(object):
@@ -696,13 +755,13 @@ class SignOnRequest(object):
         self.app_version = None
 
 
-class SignUpMessageResponse(object):
-    """
-    An OFX SignUpMessageResponse (SIGNUPMSGSRSV1) object
-    """
-    # TODO: probably can remove
-    def __init__(self):
-        self.acct_info_trn_rs = AccountInfoTranscationResponse()
+#class SignUpMessageResponse(object):
+#    """
+#    An OFX SignUpMessageResponse (SIGNUPMSGSRSV1) object
+#    """
+#    # TODO: probably can remove
+#    def __init__(self):
+#        self.acct_info_trn_rs = AccountInfoTranscationResponse()
 
 
 class AccountInfoTranscationResponse(object):
@@ -744,7 +803,7 @@ class BankAccountInfo(object):
         self.suptxdl = None
         self.xfersrc = None
         self.xferdest = None
-        self.svcstatus = None
+        self.svcstatus = SVCStatus.unknown
 
 
 class BankAccountFrom(object):
@@ -752,8 +811,8 @@ class BankAccountFrom(object):
     An OFX BankAccountFrom (BANKACCTFROM) object
     """
     def __init__(self):
-        self.bank_id = None         # Account number
-        self.acct_id = None         # Routing number
+        self.bank_id = None         # Routing number
+        self.acct_id = None         # Account number
         self.acct_type = None
 
 
@@ -763,7 +822,7 @@ class BankPaymentAccountInfo(object):
     """
     def __init__(self):
         self.bank_acct_from = BankAccountFrom()
-        self.svcstatus = None
+        self.svcstatus = SVCStatus.unknown
 
 
 class CreditCardAccountInfo(object):
@@ -775,7 +834,7 @@ class CreditCardAccountInfo(object):
         self.suptxdl = None
         self.xfersrc = None
         self.xferdest = None
-        self.svcstatus = None
+        self.svcstatus = SVCStatus.unknown
 
 
 class CreditCardAccountFrom(object):
@@ -803,7 +862,6 @@ class Status(object):
 #                                              self.severity,
 #                                              self.message)
 
-    # TODO: make __repr__ look standard
     def __repr__(self):
         repr_str = "<{}.{} object `{}::{}::{}` at 0x{:>016}>"
         return repr_str.format(self.__class__.__module__,
@@ -815,34 +873,70 @@ class Status(object):
                                )
 
 
-class OFXDateTime(object):
+class SVCStatus(Enum):
     """
-    An OFX DateTime object
+    An OFX SVC Status object (SVCSTATUS)
     """
-    # TODO: actually parse the date instead of leaving a string.
-    def __init__(self):
-        self.dt_string = None
+    unknown = 0
+    available = 1           # available, but not yet requested
+    pending = 2             # requested, but not yet available
+    active = 3              # in use
+
+
+#class OFXDateTime(object):
+#    """
+#    An OFX DateTime object
+#    """
+#    # TODO: actually parse the date instead of leaving a string.
+#    def __init__(self):
+#        self.dt_string = None
 
 
 class OFXBalance(object):
     """
     An OFX Balance object
+
+    Parameters:
+    -----------
+    None
+
+    Attributes:
+    -----------
+    balance : decimal.Decimal or None
+    as_of_date : datetime.datetime or None
     """
     def __init__(self):
-        self.balance = None         # TODO: decimal.Decimal
+        self.balance = None
         self.as_of_date = None
+
 
 ### #------------------------------------------------------------------------
 ### Accounts
 ### #------------------------------------------------------------------------
 
 class AccountType(Enum):
-    """ Account Types """
-    Unknown = 0
-    Bank = 1
-    CreditCard = 2
-    Investment = 3
+    """
+    Account Types (ACCTTYPE)
 
+    See page 600 of OFX Standard 2.1.1 (Section 16.1)
+    """
+    unknown = 0
+    checking = 1
+    savings = 2
+    mnymarket = 3
+    creditline = 4
+    creditcrd = 5
+    investment = 6
+    retirement = 7
+
+
+class BankAccountType(Enum):
+    """
+    Bank AccountTypes
+    """
+    unknown = 0
+    checking = 1
+    savings = 2
 
 class Account(object):
     """
@@ -854,7 +948,7 @@ class Account(object):
         self.branch_id = ''
         self.account_type = ''
         self.institution = None
-        self.type = AccountType.Unknown
+        self.type = AccountType.unknown
 
         self.desc = None
         self.account_id = None
@@ -939,6 +1033,27 @@ class InvestmentStatement(OFXStatement):
 ### Transactions
 ### #------------------------------------------------------------------------
 
+class TransactionType(Enum):
+    unknown = 0
+    Credit = 1
+    Debit = 2
+    Interest = 3
+    Dividend = 4
+    Fee = 5
+    ServiceCharge = 6
+    Deposit = 7
+    ATM = 8
+    PointOfSale = 9
+    Transfer = 10
+    Check = 11
+    Payment = 12
+    Cash = 13
+    DirectDeposit = 14
+    DirectDebit = 15
+    RepeatPayment = 16
+    Other = 17
+
+
 class OFXTransaction(object):
     """
     An OFX Tranaction object
@@ -952,7 +1067,7 @@ class BankTransaction(OFXTransaction):
     """
     def __init__(self):
         super().__init__()
-        self.trntype = None         # TODO: enum
+        self.trntype = TransactionType.unknown
         self.dtposted = None
         self.dtuser = None
         self.trnamt = None
@@ -1157,11 +1272,10 @@ EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
 def main():
     """ Code to run when module called directly, just some quick checks. """
     docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
-    file = "tests\\data\\rs_2credit_1checkdebit.ofx"
+    file = "tests\\data\\rs_investments.ofx"
+
     with open(file, 'r') as openf:
         a = ParseOFX(openf)
-
-    print(a)
     print(a.fi.fid)
     print(a.statement)
     print(a.statement.transactions)

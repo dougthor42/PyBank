@@ -82,9 +82,11 @@ brainstorm ideas on how it will look and act.
   + Bottom of ledger should show online balance, online available balance,
     and current ledger balance. Anything else?
 
-+ Use w.PopupMenu for right-click items.
++ Use wx.PopupMenu for right-click items.
 + Probably use wx.ListCtrl_virtual for the transaction ledger.
+  + OR DataViewListCtrl
 + wx.TreeControl or wx.TreeListControl for account list?
++ wx.ComboBox for Category, Label
 
   + Possibly wx.FoldPanelBar? Not right now, since there's no drag-and-drop
     or reordering of items.

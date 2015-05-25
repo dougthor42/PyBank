@@ -328,6 +328,28 @@ def create_db(filename="PyBank.db"):
         name` TEXT NOT NULL
         );"""
 
+    temp_view = """
+        CREATE VIEW temp_view AS
+            SELECT
+        		a.date,
+        		a.enter_date,
+        		a.check_num,
+        		a.amount,
+        		b.name AS 'payee',
+        		c.name AS 'category', -- # TODO: Python Maps this instead?
+                                       -- # As in, makes Parent.Child string
+        		d.name AS 'label',
+        		a.memo,
+        		a.fitid
+            FROM transaction_0 AS a
+        	    INNER JOIN payee AS b
+        		ON a.payee_id = b.id
+        		INNER JOIN category AS c
+        		ON a.category_id = c.id
+        		INNER JOIN label AS d
+        		ON a.label_id = d.id
+          """
+
     tables = [acct, category, institution, label, payee, display_name]
 
     try:

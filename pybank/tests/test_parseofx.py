@@ -19,6 +19,7 @@ import unittest
 import unittest.mock as mock
 import os.path as osp
 import io
+import datetime
 
 # Third-Party
 from docopt import docopt
@@ -321,7 +322,45 @@ class TestParseDatetime(unittest.TestCase):
         </SONRS>""", 'xml')
 
         result = parseofx.parse_datetime(soup)
-        self.assertIsInstance(result, parseofx.OFXDateTime)
+        self.assertIsInstance(result, datetime.datetime)
+
+
+class TestConvertDatetime(unittest.TestCase):
+    """
+    Tests the convert_datetime function.
+    """
+    # TODO: Add more known values
+    known_values = [("20150302164711.123",
+                     datetime.datetime(2015, 3, 2, 16, 47, 11, 123000)),
+                    ("19980101010101.123[-8:PDT]",
+                     datetime.datetime(1998, 1, 1, 9, 1, 1, 123000)),
+
+                    ]
+
+    malformed_fmts = [
+                      "20001703",               # invalid month
+                      "20150147",               # invalid day
+#                      "20151203262626",         # invalid hour
+#                      "20151203206226",         # invalid minute
+#                      "20151203201361",         # invalid second
+#                      "199807211237",           # missing seconds
+                      "2015",                   # missing month, day
+                      ]
+
+    def test_known_values(self):
+        """
+        """
+        for dt_str, expected in self.known_values:
+            with self.subTest(_dt_str=dt_str, _expected=expected):
+                result = parseofx.convert_datetime(dt_str)
+                self.assertEqual(expected, result)
+
+    def test_bad_formats(self):
+        """ Verifies that malformed datetime strings raise errors """
+        for dt_str in self.malformed_fmts:
+            with self.subTest(malformed_str=dt_str):
+                with self.assertRaises(ValueError):
+                    parseofx.convert_datetime(dt_str)
 
 
 def main():

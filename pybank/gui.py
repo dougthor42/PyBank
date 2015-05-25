@@ -22,7 +22,7 @@ import os.path as osp
 # Third Party
 import wx
 import wx.lib.mixins.listctrl as listmix
-from wx.lib.splitter import MultiSplitterWindow
+#from wx.lib.splitter import MultiSplitterWindow
 try:
     from agw import foldpanelbar as fpb
 except ImportError:
@@ -37,6 +37,7 @@ except ImportError:
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
+#import sqlite
 
 
 class MainApp(object):
@@ -282,10 +283,11 @@ class Ledger(wx.ListCtrl,
                              )
 
         listmix.ListCtrlAutoWidthMixin.__init__(self)
-        self.populate()
+        self._create_columns()
+        self._populate()
         listmix.TextEditMixin.__init__(self)
 
-    def populate(self):
+    def _create_columns(self):
         self.InsertColumn(0, "Column 1")
         self.InsertColumn(1, "Column 2")
         self.InsertColumn(2, "Column 3")
@@ -308,6 +310,12 @@ class Ledger(wx.ListCtrl,
 #            self.SetStringItem(index, 1, data[1])
 #            self.SetStringItem(index, 2, data[2])
 #            self.SetItemData(index, key)
+
+    def _populate(self):
+        """
+        Populates the ledger with items from the transactions database
+        """
+        pass
 
 
 class AccountList(wx.Panel):

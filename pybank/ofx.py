@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Handles the OFX tasks including downloading and parsing.
+Handles the OFX tasks such as downloading.
 
 Created on Tue May 12 13:30:13 2015
 
@@ -384,30 +384,6 @@ def download_accounts():
     """
     pass
 
-def save_account():
-    """
-    Save account info to the database.
-    """
-    pass
-
-def save_institution():
-    """
-    Save institution info to the database.
-    """
-    pass
-
-def read_institution():
-    """
-    Read insitution info from the database.
-    """
-    pass
-
-def read_account():
-    """
-    Read account info from the database.
-    """
-    pass
-
 
 
 ### #------------------------------------------------------------------------
@@ -710,7 +686,7 @@ def main():
     with open("temp.ofx", 'wb') as openf:
         openf.write(d)
     with open("temp.ofx", 'rb') as openf:
-        o = ofxparse.OfxParser.parse(openf)
+        o = ParseOFX(openf)
     print(o.account.number)
     print(o.account.routing_number)
     print(o.account.statement)
