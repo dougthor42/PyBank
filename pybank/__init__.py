@@ -85,6 +85,7 @@ brainstorm ideas on how it will look and act.
 + Use wx.PopupMenu for right-click items.
 + Probably use wx.ListCtrl_virtual for the transaction ledger.
   + OR DataViewListCtrl
+  + UltimateListCtrl
 + wx.TreeControl or wx.TreeListControl for account list?
 + wx.ComboBox for Category, Label
 
@@ -106,6 +107,7 @@ Transaction matching and download start date = previous download date.
 
 """
 import logging
+from constants import *
 
 # TODO: Make console logging = DEBUG and file logging = INFO
 # TODO: Make logging include file name.

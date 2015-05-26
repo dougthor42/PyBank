@@ -14,6 +14,9 @@ Options:
     --version           # Show version.
 
 """
+### #------------------------------------------------------------------------
+### Imports
+### #------------------------------------------------------------------------
 # Standard Library
 import logging
 import sys
@@ -25,8 +28,10 @@ import wx.lib.mixins.listctrl as listmix
 #from wx.lib.splitter import MultiSplitterWindow
 try:
     from agw import foldpanelbar as fpb
+    from agw import ultimatelistctrl as ulc
 except ImportError:
     import wx.lib.agw.foldpanelbar as fpb
+    from wx.lib.agw import ultimatelistctrl as ulc
 # Do I want to use wx? That's what I'm used to but it's not that well
 # supported for python3...
 # PyQt has more followers; Tkinter comes with python...
@@ -39,13 +44,23 @@ if __name__ == "__main__":
 #from __init__ import VERSION
 import pbsql
 
+### #------------------------------------------------------------------------
+### Module Constants
+### #------------------------------------------------------------------------
+
+LEDGER_COLOR_1 = wx.Colour(255, 255, 255, 255)
+LEDGER_COLOR_2 = wx.Colour(255, 255, 204, 255)
+
+### #------------------------------------------------------------------------
+### Classes
+### #------------------------------------------------------------------------
 
 class MainApp(object):
     """ Main App """
     def __init__(self):
         self.app = wx.App()
 
-        self.frame = MainFrame("PyBank", (800, 600))
+        self.frame = MainFrame("PyBank", (1000, 600))
 
         self.frame.Show()
         self.app.MainLoop()
@@ -263,14 +278,15 @@ class LedgerPanel(wx.Panel):
 #        self.ledger.InsertItem(1, "string")
 #        self.ledger.InsertItem(2, "item2")
 
-        self.ledger = Ledger(self)
+#        self.ledger = LedgerListCtrl(self)
+        self.ledger = LedgerULC(self)
 
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         self.hbox.Add(self.ledger, 1, wx.EXPAND)
         self.SetSizer(self.hbox)
 
 
-class Ledger(wx.ListCtrl,
+class LedgerListCtrl(wx.ListCtrl,
              listmix.ListCtrlAutoWidthMixin,
              listmix.TextEditMixin):
     """
@@ -316,6 +332,85 @@ class Ledger(wx.ListCtrl,
         Populates the ledger with items from the transactions database
         """
         pass
+
+
+class LedgerULC(ulc.UltimateListCtrl):
+    """
+    Main Ladger Widget.
+
+    Inherits from ulc.UltimateListCtrl.
+
+    See
+    http://xoomer.virgilio.it/infinity77/AGW_Docs/ultimatelistctrl_module.html
+    for docs.
+    """
+    def __init__(self, parent):
+        agw_style = (wx.LC_REPORT | wx.LC_VRULES
+                     | wx.LC_HRULES | wx.LC_SINGLE_SEL
+                     | ulc.ULC_HAS_VARIABLE_ROW_HEIGHT
+                     )
+        ulc.UltimateListCtrl.__init__(self,
+                                      parent,
+                                      wx.ID_ANY,
+                                      agwStyle=agw_style,
+                                      )
+        self._create_columns()
+        self._populate()
+
+    def _create_columns(self):
+        """
+        Creates the columns for the ledger.
+        """
+        # (title, format, width)
+        cols = [
+                ("#", ulc.ULC_FORMAT_RIGHT, 30),
+                ("Date", ulc.ULC_FORMAT_LEFT, 80),
+                ("CheckNum", ulc.ULC_FORMAT_LEFT, 80),
+                ("Payee", ulc.ULC_FORMAT_LEFT, -1),     # TODO: LIST_AUTOSIZE_FILL
+                ("Category", ulc.ULC_FORMAT_LEFT, 80),
+                ("Memo", ulc.ULC_FORMAT_LEFT, 60),
+                ("Label", ulc.ULC_FORMAT_LEFT, 85),
+                ("Amount", ulc.ULC_FORMAT_RIGHT, 80),
+                ("New Balance", ulc.ULC_FORMAT_RIGHT, 80),
+                ]
+
+        for _i, (title, fmt, width) in enumerate(cols):
+            self.InsertColumn(_i, title, fmt, width)
+
+    def _populate(self):
+        """
+        Populates the ledger with dummy values for now.
+        """
+        dummy_data = [
+                      ("2015-05-05", '', "Me", '', '', '', -50.0, 200.00),
+                      ("2015-05-06", 100, "You", "Cat1", "Memo", "Label", 200, 400.00),
+                      ("2015-05-07", '', "That Guy", "Cat2", '', '', 600.00, 1000.00),
+                      ("2015-05-07", '', "Bender", "Cat3", '', '', 123.45, 1123.45),
+                      ("2015-05-07", '', "Leela", "Cat4", 'eyeball', '', -120.00, 1003.45),
+                      ]
+
+        for _i, data in enumerate(dummy_data):
+            # First create the row
+            row = self.InsertStringItem(_i, str(_i + 1))
+
+            # Then set the background color
+            if _i % 2 == 0:
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_2)
+            else:
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_1)
+
+            # Lastly add the data
+            for _col, item in enumerate(data):
+                # If it's a dropdown column, add a ComboBox instead of text.
+                if _col == 3 or _col == 5:
+                    cb = wx.ComboBox(self,
+                                     wx.ID_ANY,
+                                     value=item,
+                                     choices=['a','b','c'],
+                                     )
+                    self.SetItemWindow(row, _col + 1, cb, expand=True)
+                else:
+                    self.SetStringItem(row, _col + 1, str(item))
 
 
 class AccountList(wx.Panel):
