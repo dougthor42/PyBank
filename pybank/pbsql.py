@@ -31,6 +31,8 @@ if __name__ == "__main__":
 #from __init__ import VERSION
 
 
+DATABASE = "test_database.db"
+
 def docstring():
     """
 Details:
@@ -225,7 +227,7 @@ def create_trans_tbl(acct_id):
         `fitid` TEXT
         );""".format(tbl_name)
 
-    conn = sqlite3.connect("PyBank.db")
+    conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     cursor.execute(transaction)
     conn.commit()
@@ -234,7 +236,7 @@ def create_trans_tbl(acct_id):
     return tbl_name
 
 
-def copy_blank_db(filename="PyBank.db"):
+def copy_blank_db(filename=DATABASE):
     """
     Copies the blank database to the working directory.
 
@@ -264,7 +266,7 @@ def copy_blank_db(filename="PyBank.db"):
         create_db(filename)
 
 
-def create_db(filename="PyBank.db"):
+def create_db(filename=DATABASE):
     """
     Creates the SQLite database file.
 
@@ -274,7 +276,7 @@ def create_db(filename="PyBank.db"):
     Parameters:
     -----------
     filename : string, optional
-        The filename to save the database as. Defaults to "PyBank.db".
+        The filename to save the database as. Defaults to DATABASE.
 
     Returns:
     --------
@@ -331,26 +333,28 @@ def create_db(filename="PyBank.db"):
     temp_view = """
         CREATE VIEW temp_view AS
             SELECT
-        		a.date,
-        		a.enter_date,
-        		a.check_num,
-        		a.amount,
-        		b.name AS 'payee',
-        		c.name AS 'category', -- # TODO: Python Maps this instead?
+                a.date,
+                a.enter_date,
+                a.check_num,
+                a.amount,
+                b.name AS 'payee',
+                c.name AS 'category', -- # TODO: Python Maps this instead?
                                        -- # As in, makes Parent.Child string
-        		d.name AS 'label',
-        		a.memo,
-        		a.fitid
+                d.name AS 'label',
+                a.memo,
+                a.fitid
             FROM transaction_0 AS a
-        	    INNER JOIN payee AS b
-        		ON a.payee_id = b.id
-        		INNER JOIN category AS c
-        		ON a.category_id = c.id
-        		INNER JOIN label AS d
-        		ON a.label_id = d.id
+                LEFT OUTER JOIN payee AS b
+                ON a.payee_id = b.id
+                LEFT OUTER JOIN category AS c
+                ON a.category_id = c.id
+                LEFT OUTER JOIN label AS d
+                ON a.label_id = d.id
           """
 
-    tables = [acct, category, institution, label, payee, display_name]
+    tables = [acct, category, institution, label, payee, display_name,
+              temp_view,
+              ]
 
     try:
         conn = sqlite3.connect(filename)
@@ -359,8 +363,8 @@ def create_db(filename="PyBank.db"):
 
         for tbl in tables:
             cursor.execute(tbl)
+            conn.commit()
 
-        conn.commit()
     except sqlite3.OperationalError:
         logging.exception("SQL Error during database creation")
     else:
@@ -668,7 +672,7 @@ class TransactionTable(SQLTable):
             SET xxx
             WHERE id=?
             """
-        return db_execute("PyBank.db", cmd, acct_id)
+        return db_execute(DATABASE, cmd, acct_id)
 
 
 class InstitutionTable(SQLTable):
@@ -812,7 +816,7 @@ def main():
 
 if __name__ == "__main__":
     copy_blank_db()
-    payee = PayeeTable("PyBank.db", 'payee')
+    payee = PayeeTable(DATABASE, 'payee')
     a = payee.add({'name':"dfsf", 'category_id':5})
     b = payee.read(a)
     print(b)
