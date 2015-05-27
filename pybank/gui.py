@@ -417,7 +417,6 @@ class LedgerULC(ulc.UltimateListCtrl,
         view = pbsql.LedgerView(DATABASE, "v_ledger_0")
         data = view.read_all()
         data = dict(enumerate(data))
-        print(data)
         starting_bal = decimal.Decimal(200)
         balance = starting_bal
 
@@ -440,15 +439,16 @@ class LedgerULC(ulc.UltimateListCtrl,
 
             # Add the data
             for _col, item in enumerate(data[_i]):
-                if _col == 5 or _col == 6:
+                val = '' if item is None else str(item)
+                if _col == 4 or _col == 5:
                     cb = wx.ComboBox(self,
                                      wx.ID_ANY,
-                                     value=str(item),
+                                     value=val,
                                      choices=['a','b','c'],
                                      )
                     self.SetItemWindow(row, _col + 1, cb, expand=True)
                 else:
-                    self.SetStringItem(row, _col + 1, str(item))
+                    self.SetStringItem(row, _col + 1, val)
 
     def _populate(self):
         """
