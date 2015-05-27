@@ -74,7 +74,7 @@ install:
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
   # install dependencies
-  - "%CMD_IN_ENV% pip install --upgrade pip"
+#  - "%CMD_IN_ENV% pip install --upgrade pip"       # Doesn't like this :-(
   - "%CMD_IN_ENV% pip install --upgrade --pre http://wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-3.0.3.dev1820+49a8884-cp34-none-win_amd64.whl"
   #- "%CMD_IN_ENV% pip install -r dev-requirements.txt"
   - "%CMD_IN_ENV% pip install colour"
