@@ -80,8 +80,40 @@ def save_transaction():
 
 def read_transaction():
     """
+    Reads a single transaction from a transaction table.
+
+    Handles the joining of tables so that only display_names are shown.
+
+    Parameters:
+    -----------
+    account : int
+        Account_ID from the acct table.
+
+    Returns:
+    --------
+    data : tuple
+        A tuple of the data to be used in the GUI.
+
     """
     pass
+
+def get_transactions_for_gui(account):
+    """
+    Reads the entire transaction table for a given account and returns the
+    data in a format that the gui will like.
+
+    Parameters:
+    -----------
+    account : int
+        Account_ID from the acct table
+
+    Returns:
+    --------
+    data : dict
+        Dictionary-formatted dataset for the gui.
+
+    """
+
 
 
 

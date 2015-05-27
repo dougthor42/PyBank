@@ -20,6 +20,7 @@ Options:
 # Standard Library
 import logging
 import sys
+import decimal
 import os.path as osp
 
 # Third Party
@@ -50,6 +51,7 @@ import pbsql
 
 LEDGER_COLOR_1 = wx.Colour(255, 255, 255, 255)
 LEDGER_COLOR_2 = wx.Colour(255, 255, 204, 255)
+DATABASE = "test_database.db"
 
 ### #------------------------------------------------------------------------
 ### Classes
@@ -334,7 +336,10 @@ class LedgerListCtrl(wx.ListCtrl,
         pass
 
 
-class LedgerULC(ulc.UltimateListCtrl):
+class LedgerULC(ulc.UltimateListCtrl,
+#                listmix.ColumnSorterMixin,
+                listmix.ListCtrlAutoWidthMixin,
+                ):
     """
     Main Ladger Widget.
 
@@ -343,19 +348,48 @@ class LedgerULC(ulc.UltimateListCtrl):
     See
     http://xoomer.virgilio.it/infinity77/AGW_Docs/ultimatelistctrl_module.html
     for docs.
+
+    # TODO:
+    -------
+    [ ]     ColumnSorterMixin
+    [ ]     AutoWidth for "Payee" column
     """
     def __init__(self, parent):
-        agw_style = (wx.LC_REPORT | wx.LC_VRULES
-                     | wx.LC_HRULES | wx.LC_SINGLE_SEL
+        self.parent = parent
+
+        agw_style = (
+                     wx.LC_REPORT
+                     | wx.LC_VRULES
+                     | wx.LC_HRULES
+                     | wx.LC_SINGLE_SEL
                      | ulc.ULC_HAS_VARIABLE_ROW_HEIGHT
+#                     | ulc.ULC_EDIT_LABELS
                      )
+
+        # Initialize the parent
         ulc.UltimateListCtrl.__init__(self,
                                       parent,
                                       wx.ID_ANY,
                                       agwStyle=agw_style,
                                       )
+
+        # Auto-width mixin
+        listmix.ListCtrlAutoWidthMixin.__init__(self)
+
+        # Create our columns and populate initial data.
         self._create_columns()
-        self._populate()
+#        self._populate()
+        self._populate_table()
+#        self._init_sorting_mixin()
+
+    # Used by ColumnSorterMixin, see wx/lib/mixins/listctrl.py
+    def GetListCtrl(self):
+        """
+        Override Method for ColumnSorterMixin.
+
+        See wx/lib/mixins/listctrl.py
+        """
+        return self
 
     def _create_columns(self):
         """
@@ -367,15 +401,54 @@ class LedgerULC(ulc.UltimateListCtrl):
                 ("Date", ulc.ULC_FORMAT_LEFT, 80),
                 ("CheckNum", ulc.ULC_FORMAT_LEFT, 80),
                 ("Payee", ulc.ULC_FORMAT_LEFT, -1),     # TODO: LIST_AUTOSIZE_FILL
+                ("Downloaded Payee", ulc.ULC_FORMAT_LEFT, -1),
                 ("Category", ulc.ULC_FORMAT_LEFT, 80),
-                ("Memo", ulc.ULC_FORMAT_LEFT, 60),
                 ("Label", ulc.ULC_FORMAT_LEFT, 85),
+                ("Memo", ulc.ULC_FORMAT_LEFT, 60),
                 ("Amount", ulc.ULC_FORMAT_RIGHT, 80),
                 ("New Balance", ulc.ULC_FORMAT_RIGHT, 80),
                 ]
 
         for _i, (title, fmt, width) in enumerate(cols):
             self.InsertColumn(_i, title, fmt, width)
+
+    def _populate_table(self):
+        """ populates the list control directly from the v_ledger_0 view. """
+        view = pbsql.LedgerView(DATABASE, "v_ledger_0")
+        data = view.read_all()
+        data = dict(enumerate(data))
+        print(data)
+        starting_bal = decimal.Decimal(200)
+        balance = starting_bal
+
+        for _i in range(len(data)):
+            # Create the row
+            row = self.InsertStringItem(_i, str(_i + 1))
+
+            # Then set the background color
+            if _i % 2 == 0:
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_2)
+            else:
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_1)
+
+            # Accumulate the account value
+            # TODO: get rid of this hack
+            balance += decimal.Decimal(data[_i][-1])
+            temp_data = list(data[_i])
+            temp_data.append(balance)
+            data[_i] = tuple(temp_data)
+
+            # Add the data
+            for _col, item in enumerate(data[_i]):
+                if _col == 5 or _col == 6:
+                    cb = wx.ComboBox(self,
+                                     wx.ID_ANY,
+                                     value=str(item),
+                                     choices=['a','b','c'],
+                                     )
+                    self.SetItemWindow(row, _col + 1, cb, expand=True)
+                else:
+                    self.SetStringItem(row, _col + 1, str(item))
 
     def _populate(self):
         """
@@ -388,6 +461,8 @@ class LedgerULC(ulc.UltimateListCtrl):
                       ("2015-05-07", '', "Bender", "Cat3", '', '', 123.45, 1123.45),
                       ("2015-05-07", '', "Leela", "Cat4", 'eyeball', '', -120.00, 1003.45),
                       ]
+
+        self.dummy_data = dummy_data
 
         for _i, data in enumerate(dummy_data):
             # First create the row
@@ -411,6 +486,17 @@ class LedgerULC(ulc.UltimateListCtrl):
                     self.SetItemWindow(row, _col + 1, cb, expand=True)
                 else:
                     self.SetStringItem(row, _col + 1, str(item))
+
+    def _init_sorting_mixin(self):
+        """ must be called after list exists """
+        listmix.ColumnSorterMixin.__init__(self, 9)
+
+    def _on_column_click(self, event):
+        """
+        Fire on column click
+        """
+        self.Refresh()
+        event.Skip()
 
 
 class AccountList(wx.Panel):

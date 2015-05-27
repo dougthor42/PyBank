@@ -105,6 +105,10 @@ I may have to re-write an OFX parser...
 
 Transaction matching and download start date = previous download date.
 
+# TODO: Category contactenation:
+        Parent.Child.Grandchild
+# TODO: Do I want to name transaction tables as transaction_0 or
+        transaction_00? Or even transaction_000?
 """
 import logging
 from constants import *

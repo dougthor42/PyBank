@@ -41,6 +41,8 @@ Details:
 See: https://crackstation.net/hashing-security.htm
 
 
+TABLES
+======
 The database consists of the following tables:
 
 
@@ -169,6 +171,7 @@ old_name : string
 new_name : string
     What the new name should be
 
+
 display_name:
 -------------
 Contains the display names for various items.
@@ -177,6 +180,14 @@ id : int, primary key
     Unique identifier for the display name
 name : string
     The name to display
+
+
+VIEWS:
+======
+
+v_ledger_0:
+----------
+Joins everything together, yay!
 
 """
     pass
@@ -190,7 +201,7 @@ def validate_db():
     pass
 
 
-def create_trans_tbl(acct_id):
+def create_trans_tbl(database, acct_id):
     """
     Creates a transaction table for the given acct_id.
 
@@ -200,8 +211,15 @@ def create_trans_tbl(acct_id):
     >>> create_trans_tbl(12):
     transaction_12
 
+    # TODO: zero padding yes or no?
+    #       transaction_01
+    #       transaction_1
+
     Parameters:
     -----------
+    database : string
+        File path of the SQLite database to modify.
+
     acct_id : int
         The account ID that these transactions should be linked to
 
@@ -211,6 +229,7 @@ def create_trans_tbl(acct_id):
         The created table's name.
 
     """
+    # TODO: execute from file instead?
     # TODO: make this function return just a creation string?
     tbl_name = "transaction_{}".format(acct_id)
     transaction = """
@@ -227,7 +246,7 @@ def create_trans_tbl(acct_id):
         `fitid` TEXT
         );""".format(tbl_name)
 
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(database)
     cursor = conn.cursor()
     cursor.execute(transaction)
     conn.commit()
@@ -235,6 +254,66 @@ def create_trans_tbl(acct_id):
     conn.close()
     return tbl_name
 
+
+def create_ledger_view(database, acct_id):
+    """
+    Creates a ledger view for the given acct_id.
+
+    View name follows this format: v_ledger_<acct_id> and so would look
+    like:
+
+    >>> create_ledger_view(15)
+    v_ledger_15
+
+    Parameters:
+    -----------
+    database : string
+        File path of the SQLite database to modify.
+
+    acct_id : int
+        The account ID that the view should be linked to
+
+    Returns:
+    --------
+    view_name : string
+        The created view's name.
+
+    """
+    # TODO: execute from file instead?
+    # TODO: make this function return just a creation string?
+    view_name = "v_ledger_{}".format(acct_id)
+    view = """
+        DROP VIEW IF EXISTS {};
+        CREATE VIEW {} AS
+            SELECT
+                trans.date,
+                trans.check_num,
+                COALESCE(display_name.display_name, payee.name) as "payee",
+                payee.name as "downloaded_payee",
+                category.name AS "category", -- # TODO: Python Maps this instead?
+                label.name AS "label",
+                trans.memo,
+                trans.fitid,
+                trans.amount
+            FROM
+                transaction_0 AS trans
+                LEFT OUTER JOIN payee
+                    ON trans.payee_id = payee.id
+                LEFT OUTER JOIN category
+                    ON trans.category_id = category.id
+                LEFT OUTER JOIN label
+                    ON trans.label_id = label.id
+                LEFT OUTER JOIN display_name
+                    ON payee.display_name_id = display_name.id
+          """.format(view_name, view_name)
+
+    conn = sqlite3.connect(database)
+    cursor = conn.cursor()
+    cursor.execute(view)
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return view_name
 
 def copy_blank_db(filename=DATABASE):
     """
@@ -330,30 +409,7 @@ def create_db(filename=DATABASE):
         name` TEXT NOT NULL
         );"""
 
-    temp_view = """
-        CREATE VIEW temp_view AS
-            SELECT
-                a.date,
-                a.enter_date,
-                a.check_num,
-                a.amount,
-                b.name AS 'payee',
-                c.name AS 'category', -- # TODO: Python Maps this instead?
-                                       -- # As in, makes Parent.Child string
-                d.name AS 'label',
-                a.memo,
-                a.fitid
-            FROM transaction_0 AS a
-                LEFT OUTER JOIN payee AS b
-                ON a.payee_id = b.id
-                LEFT OUTER JOIN category AS c
-                ON a.category_id = c.id
-                LEFT OUTER JOIN label AS d
-                ON a.label_id = d.id
-          """
-
     tables = [acct, category, institution, label, payee, display_name,
-              temp_view,
               ]
 
     try:
@@ -363,8 +419,8 @@ def create_db(filename=DATABASE):
 
         for tbl in tables:
             cursor.execute(tbl)
-            conn.commit()
 
+        conn.commit()
     except sqlite3.OperationalError:
         logging.exception("SQL Error during database creation")
     else:
@@ -374,6 +430,9 @@ def create_db(filename=DATABASE):
     finally:
         # runs if there's an error, then error re-raised after this
         pass
+
+    create_trans_tbl(DATABASE, 0)
+    create_ledger_view(DATABASE, 0)
 
 ### #------------------------------------------------------------------------
 ### Core Database Functions
@@ -611,6 +670,26 @@ class SQLTable(abc.ABC):
         pass
 
 
+class SQLView(abc.ABC):
+    """
+    Parent class for all views
+    """
+    def __init__(self, database, view):
+        self.database = database
+        self.view = view
+
+    def read(self):
+        """
+        """
+        pass
+
+    def read_all(self):
+        """
+        """
+        query = "SELECT * FROM `{}`".format(self.view)
+        return db_query(self.database, query)
+
+
 # XXX: Do I want to have subclasses for each table type?
 class AcctTable(SQLTable):
     """
@@ -754,6 +833,17 @@ class DisplayNameTable(SQLTable):
     """
     def update(self):
         pass
+
+
+class LedgerView(SQLView):
+    """
+    Child class of ``SQLView``.
+
+    Contains all of the items displayed in the ledger.
+    """
+    pass
+
+
 
 ### #------------------------------------------------------------------------
 ### Other
