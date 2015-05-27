@@ -109,9 +109,10 @@ Transaction matching and download start date = previous download date.
         Parent.Child.Grandchild
 # TODO: Do I want to name transaction tables as transaction_0 or
         transaction_00? Or even transaction_000?
+# TODO: Does Google Wallet have OFX?
 """
 import logging
-from constants import *
+#from constants import *
 
 # TODO: Make console logging = DEBUG and file logging = INFO
 # TODO: Make logging include file name.

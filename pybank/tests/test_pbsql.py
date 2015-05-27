@@ -26,7 +26,7 @@ from docopt import docopt
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
-import pbsql
+from pybank import pbsql
 
 
 class MyProductionClass():

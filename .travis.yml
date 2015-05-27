@@ -15,13 +15,14 @@ install:
 script:
   #- coverage run -m ci_setup_check core.py test_core.py
   - python --version
+  - nosetests
 #  - nosetests --with-cov --cov ci_setup_check --cov-config .coverage.rc --logging-level=INFO
   #- nosetests --with-cov --cov ci_setup_check --logging-level=INFO
 
 # Calculate coverage
-after_success:
+#after_success:
   #- coveralls --config_file .coverage.rc
-  - coveralls
+#  - coveralls
 
 #addons:
 #  artifacts: true

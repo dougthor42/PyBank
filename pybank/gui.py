@@ -353,6 +353,7 @@ class LedgerULC(ulc.UltimateListCtrl,
     -------
     [ ]     ColumnSorterMixin
     [ ]     AutoWidth for "Payee" column
+    [ ]     Show/Hide columns
     """
     def __init__(self, parent):
         self.parent = parent

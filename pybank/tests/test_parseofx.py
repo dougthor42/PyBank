@@ -29,7 +29,7 @@ from bs4 import BeautifulSoup
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
-import parseofx
+from pybank import parseofx
 
 """
 TODO List:
