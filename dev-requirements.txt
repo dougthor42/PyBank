@@ -1,6 +1,7 @@
 nose
 wheel
 nose-cov
+lxml
 beautifulsoup4
 docopt
 keyring
