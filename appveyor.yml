@@ -75,7 +75,7 @@ install:
 
   # install dependencies
 #  - "%CMD_IN_ENV% pip install --upgrade pip"       # Doesn't like this :-(
-  - "%CMD_IN_ENV% pip install --upgrade --pre http://www.lfd.uci.edu/~gohlke/pythonlibs/4jci5y59/lxml-3.4.1.win32-py3.4.exe"
+  - "%CMD_IN_ENV% pip install --upgrade --pre build_reqs/lxml-3.4.4-cp34-none-win32.whl"
   - "%CMD_IN_ENV% pip install --upgrade --pre http://wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-3.0.3.dev1820+49a8884-cp34-none-win32.whl"
   - "%CMD_IN_ENV% pip install -r dev-requirements.txt"
 
