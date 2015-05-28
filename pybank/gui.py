@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=E1101
+# pylint: disable=E1101, C0330
 #   E1101 = Module X has no Y member
 """
 GUI components for PyBank.
@@ -325,7 +325,7 @@ class SamplePanel(wx.Panel):
     def __init__(self, parent, colour, label):
         wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
         self.SetBackgroundColour(colour)
-        wx.StaticText(self, -1, label, (5,5))
+        wx.StaticText(self, -1, label, (5, 5))
 
 
 class MainNotebook(wx.Notebook):
@@ -389,15 +389,19 @@ class LedgerPanel(wx.Panel):
     def _init_ui(self):
         """ Initialize UI components """
         self.ledger = LedgerULC(self)
+        self.summary_bar = LedgerSummaryBar(self)
 
-        self.hbox = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox.Add(self.ledger, 1, wx.EXPAND)
-        self.SetSizer(self.hbox)
+        self.vbox = wx.BoxSizer(wx.VERTICAL)
+        self.vbox.Add(self.ledger, 1, wx.EXPAND)
+        self.vbox.Add(self.summary_bar, 0, wx.EXPAND)
+        self.SetSizer(self.vbox)
 
 
 class LedgerULC(ulc.UltimateListCtrl,
 #                listmix.ColumnSorterMixin,
                 listmix.ListCtrlAutoWidthMixin,
+#                listmix.TextEditMixin,
+#                listmix.ListRowHighlighter,    # not PY3 ready :-(
                 ):
     """
     Main Ladger Widget.
@@ -424,6 +428,7 @@ class LedgerULC(ulc.UltimateListCtrl,
                      | wx.LC_SINGLE_SEL
                      | ulc.ULC_HAS_VARIABLE_ROW_HEIGHT
 #                     | ulc.ULC_EDIT_LABELS
+#                     | ulc.ULC_SINGLE_SEL
                      )
 
         # Initialize the parent
@@ -433,17 +438,24 @@ class LedgerULC(ulc.UltimateListCtrl,
                                       agwStyle=agw_style,
                                       )
 
+        # Initialize mixins
+#        listmix.TextEditMixin.__init__(self)
+#        listmix.ListRowHighlighter.__init__(self, LEDGER_COLOR_1)
 
         # Create our columns and populate initial data.
         self._create_columns()
         self._populate_table()
         self._set_initial_hidden_states()
+        self._add_edit_row()
 #        self._init_sorting_mixin()
 
         # Auto-width mixin
         listmix.ListCtrlAutoWidthMixin.__init__(self)
         self.setResizeColumn(5)         # Payee column
         self.resizeColumn(120)          # min width = 120px
+
+
+        self._bind_events()
 
     # Used by ColumnSorterMixin, see wx/lib/mixins/listctrl.py
     def GetListCtrl(self):
@@ -508,7 +520,7 @@ class LedgerULC(ulc.UltimateListCtrl,
                     cb = wx.ComboBox(self,
                                      wx.ID_ANY,
                                      value=val,
-                                     choices=['a','b','c'],
+                                     choices=['a', 'b', 'c'],
                                      )
                     self.SetItemWindow(row, _col + 1, cb, expand=True)
                 else:
@@ -528,10 +540,41 @@ class LedgerULC(ulc.UltimateListCtrl,
         self.SetColumnShown(2, False)
         self.SetColumnShown(6, False)
 
+    def _add_edit_row(self):
+        """
+        Adds an edit row to the end of the Ledger so that users can add
+        items.
+        """
+        num_items = self.GetItemCount()
+        print(num_items)
+
+        row = self.InsertStringItem(num_items, "")
+        for _col in range(1, self.GetColumnCount()):
+            if _col == 7 or _col == 8:
+                cb = wx.ComboBox(self,
+                                 wx.ID_ANY,
+                                 value='',
+                                 choices=['a', 'b', 'c'],
+                                 )
+                self.SetItemWindow(row, _col, cb, expand=True)
+            elif _col == 10:
+                # don't allow the user to add a new balance
+                continue
+            else:
+                tc = wx.TextCtrl(self,
+                                 wx.ID_ANY,
+                                 value='',
+                                 )
+                self.SetItemWindow(row, _col, tc, expand=True)
 
     def _init_sorting_mixin(self):
         """ must be called after list exists """
         listmix.ColumnSorterMixin.__init__(self, 9)
+
+    def _bind_events(self):
+        """ Bind all the events """
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_item_doubleclick)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_item_select)
 
     def _on_column_click(self, event):
         """
@@ -539,6 +582,22 @@ class LedgerULC(ulc.UltimateListCtrl,
         """
         self.Refresh()
         event.Skip()
+
+    def _on_item_select(self, event):
+        """ Highlight the entire row when a single item is selected """
+        pass
+
+    def _on_item_doubleclick(self, event):
+        """
+        Change the cell to editable.
+        """
+        row = event.GetIndex()
+        print("Doubleclick on row: {}".format(row))
+        self.change_row_to_edit(row)
+
+    def change_row_to_edit(self, row):
+        """ Modifies a row to edit-style. """
+        print("modifying row {}".format(row))
 
 
 class AccountList(wx.Panel):
@@ -666,11 +725,11 @@ class LedgerSummaryBar(wx.Panel):
         # Create layout managers and add items
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         self.hbox.Add(self._num_trans_display, 0, wx.EXPAND)
-        self.hbox.Add((-1, -1), 1, wx.EXPAND)
+        self.hbox.Add((30, -1), 1, wx.EXPAND)
         self.hbox.Add(self._online_display, 0, wx.EXPAND)
-        self.hbox.Add((-1, -1), 1, wx.EXPAND)
+        self.hbox.Add((30, -1), 0, wx.EXPAND)
         self.hbox.Add(self._avail_display, 0, wx.EXPAND)
-        self.hbox.Add((-1, -1), 1, wx.EXPAND)
+        self.hbox.Add((30, -1), 0, wx.EXPAND)
         self.hbox.Add(self._curr_display, 0, wx.EXPAND)
 
         self.SetSizer(self.hbox)
