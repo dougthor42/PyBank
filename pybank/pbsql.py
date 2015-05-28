@@ -193,6 +193,9 @@ Joins everything together, yay!
     pass
 
 
+# TODO: SQLite Adaptos and Converters
+# https://docs.python.org/3.4/library/sqlite3.html#sqlite-and-python-types
+
 def validate_db():
     """
     Validate the database file, making sure it has all the correct tables
@@ -283,17 +286,17 @@ def create_ledger_view(database, acct_id):
     # TODO: make this function return just a creation string?
     view_name = "v_ledger_{}".format(acct_id)
     view = """
-        DROP VIEW IF EXISTS {};
-        CREATE VIEW {} AS
+        DROP VIEW IF EXISTS {v_name};
+        CREATE VIEW {v_name} AS
             SELECT
                 trans.date,
+                trans.enter_date,
                 trans.check_num,
                 COALESCE(display_name.display_name, payee.name) as "payee",
                 payee.name as "downloaded_payee",
-                category.name AS "category", -- # TODO: Python Maps this instead?
                 label.name AS "label",
+                category.name AS "category", -- # TODO: Python Maps this instead?
                 trans.memo,
-                trans.fitid,
                 trans.amount
             FROM
                 transaction_0 AS trans
@@ -305,7 +308,7 @@ def create_ledger_view(database, acct_id):
                     ON trans.label_id = label.id
                 LEFT OUTER JOIN display_name
                     ON payee.display_name_id = display_name.id
-          """.format(view_name, view_name)
+          """.format(v_name=view_name)
 
     conn = sqlite3.connect(database)
     cursor = conn.cursor()

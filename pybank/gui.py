@@ -62,7 +62,7 @@ class MainApp(object):
     def __init__(self):
         self.app = wx.App()
 
-        self.frame = MainFrame("PyBank", (1000, 600))
+        self.frame = MainFrame("PyBank", (1200, 800))
 
         self.frame.Show()
         self.app.MainLoop()
@@ -76,87 +76,218 @@ class MainFrame(wx.Frame):
 
     def _init_ui(self):
         """ Initi UI Components """
-        # Create the menu bar
+        # Create the menu bar and bind events
         self.menu_bar = wx.MenuBar()
-
         self._create_menus()
-        self._create_menu_items()
-        self._add_menu_items()
-        self._add_menus()
         self._bind_events()
 
         # Initialize default states
-
+        self._set_defaults()
 
         # Set the MenuBar and create a status bar
         self.SetMenuBar(self.menu_bar)
         self.CreateStatusBar()
 
-        self.panel = MainPanel(self)       # for now.
+        self.panel = MainPanel(self)
 
     def _create_menus(self):
         """ Create each menu for the menu bar """
         # TODO: Switch to wx.RibbonBar? It looks pretty nice.
+        self._create_file_menu()
+        self._create_edit_menu()
+        self._create_view_menu()
+        self._create_tools_menu()
+        self._create_options_menu()
+        self._create_help_menu()
+
+    def _create_file_menu(self):
+        """
+        Creates the File menu.
+
+        wxIDs:
+        ------
+        + 101: New
+        + 102: Open
+        + 103: Exit
+
+        """
+        # Create the menu and items
         self.mfile = wx.Menu()
-        self.medit = wx.Menu()
-        self.mview = wx.Menu()
-        self.mtools = wx.Menu()
-        self.mopts = wx.Menu()
-        self.mhelp = wx.Menu()
+        self.mf_new = wx.MenuItem(self.mfile, 101, "&New\tCtrl+N",
+                                  "Create a new PyBank file")
+        self.mf_open = wx.MenuItem(self.mfile, 102, "&Open\tCtrl+O",
+                                   "Open a PyBank file")
+        self.mf_exit = wx.MenuItem(self.mfile, 103, "&Exit\tCtrl+Q",
+                                   "Exit the application")
 
-    def _create_menu_items(self):
-        """ Create each menu item """
-        self.mf_exit = wx.MenuItem(self.mfile,
-                                   wx.ID_ANY,
-                                   "&Exit\tCtrl+Q",
-                                   "Exit the application",
-                                   )
-
-        self.mf_open = wx.MenuItem(self.mfile,
-                                   wx.ID_ANY,
-                                   "&Open\tCtrl+O",
-                                   "Open a PyBank file",
-                                   )
-
-
-        self.mf_new = wx.MenuItem(self.mfile,
-                                  wx.ID_ANY,
-                                  "&New\tCtrl+N",
-                                  "Create a new PyBank file",
-                                  )
-
-    def _add_menu_items(self):
-        """ Add each menu item to the respective menu """
+        # Add menu items to the menu
         self.mfile.Append(self.mf_new)
         self.mfile.Append(self.mf_open)
         self.mfile.AppendSeparator()
         self.mfile.Append(self.mf_exit)
-
-    def _add_menus(self):
-        """ Add the fully-formed menus to the menu bar """
         self.menu_bar.Append(self.mfile, "&File")
+
+    def _create_edit_menu(self):
+        """
+        Creates the Edit menu
+
+        wxIDs:
+        ------
+        + 201: ???
+        + 202: ???
+
+        """
+        # Create the menu and items
+        self.medit = wx.Menu()
+        self.me_temp = wx.MenuItem(self.medit, 201, "&Temp", "TempItem")
+
+        # Add menu items to the menu
+        self.medit.Append(self.me_temp)
         self.menu_bar.Append(self.medit, "&Edit")
+
+    def _create_view_menu(self):
+        """
+        Creates the View menu.
+
+        wxIDs:
+        ------
+        + 301: ???
+        + 302: ???
+        """
+        # Create the menu and items
+        self.mview = wx.Menu()
+        self.mv_l = wx.Menu()
+        self.mv_temp = wx.MenuItem(self.mview, 301, "&Temp", "TempItem")
+        # TODO: There's gotta be a way to auto-populate this menu from the tbl
+        self.mv_l_date = wx.MenuItem(self.mv_l, 30201, "Date", "",
+                                     wx.ITEM_CHECK)
+        self.mv_l_enter_date = wx.MenuItem(self.mv_l, 30202, "Enter Date", "",
+                                           wx.ITEM_CHECK)
+        self.mv_l_checknum = wx.MenuItem(self.mv_l, 30203, "Check Number", "",
+                                         wx.ITEM_CHECK)
+        self.mv_l_payee = wx.MenuItem(self.mv_l, 30204, "Payee", "",
+                                      wx.ITEM_CHECK)
+        self.mv_l_dlpayee = wx.MenuItem(self.mv_l, 30205, "Downloaded Payee",
+                                        "", wx.ITEM_CHECK)
+        self.mv_l_memo = wx.MenuItem(self.mv_l, 30206, "Memo", "",
+                                     wx.ITEM_CHECK)
+        self.mv_l_cat = wx.MenuItem(self.mv_l, 30207, "Category", "",
+                                    wx.ITEM_CHECK)
+        self.mv_l_label = wx.MenuItem(self.mv_l, 30208, "Label",
+                                      "", wx.ITEM_CHECK)
+        self.mv_l_amount = wx.MenuItem(self.mv_l, 30209, "Amount", "",
+                                       wx.ITEM_CHECK)
+        self.mv_l_balance = wx.MenuItem(self.mv_l, 30210, "Balance", "",
+                                        wx.ITEM_CHECK)
+
+        # Add menu items to the menu
+        self.mv_l.Append(self.mv_l_date)
+        self.mv_l.Append(self.mv_l_enter_date)
+        self.mv_l.Append(self.mv_l_checknum)
+        self.mv_l.Append(self.mv_l_payee)
+        self.mv_l.Append(self.mv_l_dlpayee)
+        self.mv_l.Append(self.mv_l_memo)
+        self.mv_l.Append(self.mv_l_cat)
+        self.mv_l.Append(self.mv_l_label)
+        self.mv_l.Append(self.mv_l_amount)
+        self.mv_l.Append(self.mv_l_balance)
+
+        self.mview.Append(self.mv_temp)
+        self.mview.Append(302, "Ledger Columns", self.mv_l)
         self.menu_bar.Append(self.mview, "&View")
+
+    def _create_tools_menu(self):
+        """
+        """
+        # Create the menu and items
+        self.mtools = wx.Menu()
+        self.mt_accounts = wx.MenuItem(self.mtools, 401, "&Accounts",
+                                       "Add and modify accounts")
+
+        # Add menu items to the menu
+        self.mtools.Append(self.mt_accounts)
         self.menu_bar.Append(self.mtools, "&Tools")
+
+    def _create_options_menu(self):
+        """
+        """
+        # Create the menu and items
+        self.mopts = wx.Menu()
+        self.mo_accounts = wx.MenuItem(self.mopts, 501, "&Temp",
+                                       "No idea yet")
+
+        # Add menu items to the menu
+        self.mopts.Append(self.mo_accounts)
+        self.menu_bar.Append(self.mopts, "&Options")
+
+    def _create_help_menu(self):
+        """
+        """
+        # Create the menu and items
+        self.mhelp = wx.Menu()
+        self.mh_about = wx.MenuItem(self.mhelp, 601, "&About",
+                                    "Infomation about PyBank")
+
+        # Add menu items to the menu
+        self.mhelp.Append(self.mh_about)
         self.menu_bar.Append(self.mhelp, "&Help")
+
+    def _set_defaults(self):
+        """
+        """
+        self.mv_l_date.Check(True)
+        self.mv_l_enter_date.Check(False)
+        self.mv_l_checknum.Check(True)
+        self.mv_l_payee.Check(True)
+        self.mv_l_dlpayee.Check(True)
+        self.mv_l_memo.Check(False)
+        self.mv_l_cat.Check(True)
+        self.mv_l_label.Check(True)
+        self.mv_l_amount.Check(True)
+        self.mv_l_balance.Check(True)
 
     def _bind_events(self):
         """ Bind all initial events """
-        self.Bind(wx.EVT_MENU, self._on_quit, self.mf_exit)
-        self.Bind(wx.EVT_MENU, self._on_open, self.mf_open)
-        self.Bind(wx.EVT_MENU, self._on_new, self.mf_new)
+        # File Menu
+        self.Bind(wx.EVT_MENU, self._on_new, id=101)
+        self.Bind(wx.EVT_MENU, self._on_open, id=102)
+        self.Bind(wx.EVT_MENU, self._on_quit, id=103)
+
+        # Edit Menu
+#        self.Bind(wx.EVT_MENU, self._on_edit_menu1)
+
+        # View Menu
+#        self.Bind(wx.EVT_MENU, self._nothing)
+        self.Bind(wx.EVT_MENU, self._on_toggle_ledger_col, id=30201, id2=30210)
+
+        # Tools Menu
+
+        # Options Menu
+
+        # Help Menu
 
     def _on_quit(self, event):
         """ Execute quit actions """
+        print("on quit")
         self.Close(True)
 
     def _on_open(self, event):
         """ Open a file """
+        print("on open")
         logging.info("Opening file")
 
     def _on_new(self, event):
         """ Create a new file """
+        print("on new")
         logging.info("Creating new file")
+
+    def _on_toggle_ledger_col(self, event):
+        """ Toggles a ledger column on or off """
+        col_num = event.Id - 30200      # Ledger columns are 0-indexed
+                                        # but we always show the # col
+        new_val = event.IsChecked()
+        self.panel.panel2.ledger_page.ledger.SetColumnShown(col_num, new_val)
+
 
 
 class MainPanel(wx.Panel):
@@ -174,12 +305,12 @@ class MainPanel(wx.Panel):
                                           style=wx.SP_LIVE_UPDATE,
                                           )
 
-        self.p1 = AccountList(self.splitter)
-        self.p2 = MainNotebook(self.splitter)
+        self.panel1 = AccountList(self.splitter)
+        self.panel2 = MainNotebook(self.splitter)
 
         # Set up the splitter attributes
         self.splitter.SetMinimumPaneSize(100)
-        self.splitter.SplitVertically(self.p1, self.p2, 200)
+        self.splitter.SplitVertically(self.panel1, self.panel2, 200)
 
         # Create layout manager, add items, and set sizer.
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -222,8 +353,8 @@ class MainNotebook(wx.Notebook):
         self.AddPage(p0, "Summary")
 
 #        p1 = SamplePanel(self, 'pink', "hafsdf")
-        p1 = LedgerPanel(self)
-        self.AddPage(p1, "Ledger")
+        self.ledger_page = LedgerPanel(self)
+        self.AddPage(self.ledger_page, "Ledger")
 
         p2 = SamplePanel(self, "green", "sdfdfsdfsdfsdfsd")
         self.AddPage(p2, "Other Stuff")
@@ -257,83 +388,11 @@ class LedgerPanel(wx.Panel):
 
     def _init_ui(self):
         """ Initialize UI components """
-#        self.ledger = wx.ListCtrl(self, wx.ID_ANY,
-##                                  size=(300, 300),
-##                                  style=wx.LC_VIRTUAL,
-#                                  style=wx.LC_REPORT #| wx.LC_VIRTUAL,
-#                                  )
-#
-#        self.ledger.AppendColumn("Date")
-##        self.ledger.AppendColumn("Entered Date")
-#        self.ledger.AppendColumn("CheckNum")
-#        self.ledger.AppendColumn("Payee")
-#        self.ledger.AppendColumn("Downloaded Payee")
-#        self.ledger.AppendColumn("Memo")
-#        self.ledger.AppendColumn("Category")
-#        self.ledger.AppendColumn("Label")
-#        self.ledger.AppendColumn("Amount")
-#        self.ledger.AppendColumn("Balance")
-#
-#        item1 = wx.ListItem().SetData(1)
-#        item2 = wx.ListItem().SetData(2)
-#
-#        self.ledger.InsertItem(1, "string")
-#        self.ledger.InsertItem(2, "item2")
-
-#        self.ledger = LedgerListCtrl(self)
         self.ledger = LedgerULC(self)
 
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         self.hbox.Add(self.ledger, 1, wx.EXPAND)
         self.SetSizer(self.hbox)
-
-
-class LedgerListCtrl(wx.ListCtrl,
-             listmix.ListCtrlAutoWidthMixin,
-             listmix.TextEditMixin):
-    """
-
-    """
-    def __init__(self, parent):
-        wx.ListCtrl.__init__(self, parent,
-                             wx.ID_ANY,
-                             style=wx.LC_REPORT,
-                             )
-
-        listmix.ListCtrlAutoWidthMixin.__init__(self)
-        self._create_columns()
-        self._populate()
-        listmix.TextEditMixin.__init__(self)
-
-    def _create_columns(self):
-        self.InsertColumn(0, "Column 1")
-        self.InsertColumn(1, "Column 2")
-        self.InsertColumn(2, "Column 3")
-        self.InsertColumn(3, "Len 1", wx.LIST_FORMAT_RIGHT)
-        self.InsertColumn(4, "Len 2", wx.LIST_FORMAT_RIGHT)
-        self.InsertColumn(5, "Len 3", wx.LIST_FORMAT_RIGHT)
-
-        listctrldata = {
-        1 : ("Hey!", "You can edit", "me!"),
-        2 : ("Try changing the contents", "by", "clicking"),
-        3 : ("in", "a", "cell"),
-        4 : ("See how the length columns", "change", "?"),
-        5 : ("You can use", "TAB,", "cursor down,"),
-        6 : ("and cursor up", "to", "navigate"),
-        }
-
-#        items = listctrldata.items()
-#        for key, data in items:
-#            index = self.InsertStringItem(sys.maxsize, data[0])
-#            self.SetStringItem(index, 1, data[1])
-#            self.SetStringItem(index, 2, data[2])
-#            self.SetItemData(index, key)
-
-    def _populate(self):
-        """
-        Populates the ledger with items from the transactions database
-        """
-        pass
 
 
 class LedgerULC(ulc.UltimateListCtrl,
@@ -353,7 +412,7 @@ class LedgerULC(ulc.UltimateListCtrl,
     -------
     [ ]     ColumnSorterMixin
     [ ]     AutoWidth for "Payee" column
-    [ ]     Show/Hide columns
+    [x]     Show/Hide columns
     """
     def __init__(self, parent):
         self.parent = parent
@@ -374,14 +433,17 @@ class LedgerULC(ulc.UltimateListCtrl,
                                       agwStyle=agw_style,
                                       )
 
-        # Auto-width mixin
-        listmix.ListCtrlAutoWidthMixin.__init__(self)
 
         # Create our columns and populate initial data.
         self._create_columns()
-#        self._populate()
         self._populate_table()
+        self._set_initial_hidden_states()
 #        self._init_sorting_mixin()
+
+        # Auto-width mixin
+        listmix.ListCtrlAutoWidthMixin.__init__(self)
+        self.setResizeColumn(5)         # Payee column
+        self.resizeColumn(120)          # min width = 120px
 
     # Used by ColumnSorterMixin, see wx/lib/mixins/listctrl.py
     def GetListCtrl(self):
@@ -399,15 +461,16 @@ class LedgerULC(ulc.UltimateListCtrl,
         # (title, format, width)
         cols = [
                 ("#", ulc.ULC_FORMAT_RIGHT, 30),
-                ("Date", ulc.ULC_FORMAT_LEFT, 80),
+                ("Transaction Date", ulc.ULC_FORMAT_LEFT, 100),
+                ("Date Entered", ulc.ULC_FORMAT_LEFT, 100),
                 ("CheckNum", ulc.ULC_FORMAT_LEFT, 80),
-                ("Payee", ulc.ULC_FORMAT_LEFT, -1),     # TODO: LIST_AUTOSIZE_FILL
-                ("Downloaded Payee", ulc.ULC_FORMAT_LEFT, -1),
-                ("Category", ulc.ULC_FORMAT_LEFT, 80),
-                ("Label", ulc.ULC_FORMAT_LEFT, 85),
-                ("Memo", ulc.ULC_FORMAT_LEFT, 60),
+                ("Payee", ulc.ULC_FORMAT_LEFT, 120),     # TODO: LIST_AUTOSIZE_FILL
+                ("Downloaded Payee", ulc.ULC_FORMAT_LEFT, 120),
+                ("Memo", ulc.ULC_FORMAT_LEFT, 150),
+                ("Category", ulc.ULC_FORMAT_LEFT, 180),
+                ("Label", ulc.ULC_FORMAT_LEFT, 160),
                 ("Amount", ulc.ULC_FORMAT_RIGHT, 80),
-                ("New Balance", ulc.ULC_FORMAT_RIGHT, 80),
+                ("Balance", ulc.ULC_FORMAT_RIGHT, 80),
                 ]
 
         for _i, (title, fmt, width) in enumerate(cols):
@@ -441,7 +504,7 @@ class LedgerULC(ulc.UltimateListCtrl,
             # Add the data
             for _col, item in enumerate(data[_i]):
                 val = '' if item is None else str(item)
-                if _col == 4 or _col == 5:
+                if _col == 6 or _col == 7:
                     cb = wx.ComboBox(self,
                                      wx.ID_ANY,
                                      value=val,
@@ -451,42 +514,20 @@ class LedgerULC(ulc.UltimateListCtrl,
                 else:
                     self.SetStringItem(row, _col + 1, val)
 
-    def _populate(self):
+    def _set_initial_hidden_states(self):
         """
-        Populates the ledger with dummy values for now.
+        Sets the initial hidden states for the columns based on the View Menu.
+
         """
-        dummy_data = [
-                      ("2015-05-05", '', "Me", '', '', '', -50.0, 200.00),
-                      ("2015-05-06", 100, "You", "Cat1", "Memo", "Label", 200, 400.00),
-                      ("2015-05-07", '', "That Guy", "Cat2", '', '', 600.00, 1000.00),
-                      ("2015-05-07", '', "Bender", "Cat3", '', '', 123.45, 1123.45),
-                      ("2015-05-07", '', "Leela", "Cat4", 'eyeball', '', -120.00, 1003.45),
-                      ]
+        # TODO: Move column states to a config file so that it can persist
+        #       Also means I don't have to access the menu value for
+        #       hidden/shown - I can just access the variable that was set
+        #       by reading the config file.
 
-        self.dummy_data = dummy_data
+        # XXX: For now, just hard-code the defaults 2 and 6
+        self.SetColumnShown(2, False)
+        self.SetColumnShown(6, False)
 
-        for _i, data in enumerate(dummy_data):
-            # First create the row
-            row = self.InsertStringItem(_i, str(_i + 1))
-
-            # Then set the background color
-            if _i % 2 == 0:
-                self.SetItemBackgroundColour(row, LEDGER_COLOR_2)
-            else:
-                self.SetItemBackgroundColour(row, LEDGER_COLOR_1)
-
-            # Lastly add the data
-            for _col, item in enumerate(data):
-                # If it's a dropdown column, add a ComboBox instead of text.
-                if _col == 3 or _col == 5:
-                    cb = wx.ComboBox(self,
-                                     wx.ID_ANY,
-                                     value=item,
-                                     choices=['a','b','c'],
-                                     )
-                    self.SetItemWindow(row, _col + 1, cb, expand=True)
-                else:
-                    self.SetStringItem(row, _col + 1, str(item))
 
     def _init_sorting_mixin(self):
         """ must be called after list exists """
@@ -579,9 +620,9 @@ class LedgerSummaryBar(wx.Panel):
         self.parent = parent
 
         # TODO: Use decimal.Decimal types for balances
-        self._online_bal = 0.0            # online balance
-        self._avail_bal = 0.0      # online available balance
-        self._curr_bal = 0.0              # current balance
+        self._online_bal = 0.0          # online balance
+        self._avail_bal = 0.0           # online available balance
+        self._curr_bal = 0.0            # current balance
         self._num_trans = 0             # number of transactions
 
         self._trans_fmt = "{:0>6} Transactions"
