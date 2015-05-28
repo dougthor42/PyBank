@@ -288,8 +288,7 @@ class TestParseDatetime(unittest.TestCase):
     """
     def test_parse_datetime_fail_missing_tag(self):
         """
-        Tests that parse_datetime fails if there is no datetime tag in the
-        soup.
+        Tests parse_datetime fails if there is no datetime tag in the soup.
         """
         soup = BeautifulSoup("""
             <SONRS>
