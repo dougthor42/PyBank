@@ -7,6 +7,7 @@ notifications:
   email: false
 
 install:
+  - python -c "import struct; print(struct.calcsize('P') * 8)"
   - pip install --upgrade pip
   - pip install -r dev-requirements.txt
   - pip install coveralls
@@ -14,14 +15,13 @@ install:
 
 script:
   #- coverage run -m ci_setup_check core.py test_core.py
-  - python --version
-  - nosetests
+#  - nosetests
 #  - nosetests --with-cov --cov ci_setup_check --cov-config .coverage.rc --logging-level=INFO
-  #- nosetests --with-cov --cov ci_setup_check --logging-level=INFO
+  - nosetests --with-cov --cov pybank --logging-level=INFO
 
 # Calculate coverage
-#after_success:
-  #- coveralls --config_file .coverage.rc
+after_success:
+  - coveralls --config_file .coverage.rc
 #  - coveralls
 
 #addons:
