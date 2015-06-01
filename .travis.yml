@@ -9,20 +9,20 @@ notifications:
 install:
   - python -c "import struct; print(struct.calcsize('P') * 8)"
   - pip install --upgrade pip
-  - pip install -r dev-requirements.txt
   - pip install coveralls
+  - pip install -r dev-requirements.txt
 #  - pip install --upgrade --pre -f "http://wxpython.org/Phoenix/snapshot-builds/" wxPython_Phoenix
 
 script:
-  #- coverage run -m ci_setup_check core.py test_core.py
+#  - coverage run -m pybank core.py test_core.py
 #  - nosetests
 #  - nosetests --with-cov --cov ci_setup_check --cov-config .coverage.rc --logging-level=INFO
-  - nosetests --with-cov --cov pybank --logging-level=INFO
+  - nosetests --with-cov --cov PyBank --logging-level=INFO
 
 # Calculate coverage
 after_success:
-  - coveralls --config_file .coverage.rc
-#  - coveralls
+#  - coveralls --config_file .coverage.rc
+  - coveralls
 
 #addons:
 #  artifacts: true
