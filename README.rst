@@ -14,19 +14,20 @@ Build Status
 ||travis-ci|||appveyor|||coveralls|||PyPI||
 +-----------+----------+-----------+------+
 
-TODO: Downloads currently targeting wafer_map
 +------------------------------------+
 |            Downloads               |
 +=========+=========+========+=======+
 ||DLTotal|||DLMonth|||DLWeek|||DLDay||
 +---------+---------+--------+-------+
 
+TODO: Downloads currently targeting wafer_map
+
 Contents:
 ---------
 
 + `Build Status`_
-+ `Contents`_
-+ `Notes`_
++ Contents_
++ Notes_
 
 Notes:
 ------

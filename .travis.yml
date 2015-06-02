@@ -17,7 +17,7 @@ script:
 #  - coverage run -m pybank core.py test_core.py
 #  - nosetests
 #  - nosetests --with-cov --cov ci_setup_check --cov-config .coverage.rc --logging-level=INFO
-  - nosetests --with-cov --cov PyBank --logging-level=INFO
+  - nosetests --with-cov --cov pybank --logging-level=INFO
 
 # Calculate coverage
 after_success:
