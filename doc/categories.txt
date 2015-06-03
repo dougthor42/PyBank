@@ -1,0 +1,105 @@
+Expense:Auto
+Expense:Auto:Fees
+Expense:Auto:Gas
+Expense:Auto:Insurance
+Expense:Auto:Parking
+Expense:Auto:Registration
+Expense:Auto:Service
+Expense:Bank Fees
+Expense:Books
+Expense:Business
+Expense:Business:Conventions
+Expense:Business:Entertainment
+Expense:Business:Hotel
+Expense:Business:Meals
+Expense:Business:Travel
+Expense:Business:Travel:Airfare
+Expense:Business:Travel:Rental Car
+Expense:Business:Travel:Taxi
+Expense:Business:Travel:Train
+Expense:Cash
+Expense:Charity
+Expense:Childcare
+Expense:Clothing
+Expense:Computer
+Expense:Credit Card Payment
+Expense:Education
+Expense:Education:Books
+Expense:Education:Meal Plans
+Expense:Education:Supplies
+Expense:Education:Tuition
+Expense:Entertainment
+Expense:Entertainment:Music and Movies
+Expense:Entertainment:Recreation
+Expense:Entertainment:Travel
+Expense:Food and Drink
+Expense:Food and Drink:Bars and Nightlife
+Expense:Food and Drink:Dining
+Expense:Food and Drink:Fast Food
+Expense:Gifts
+Expense:Groceries
+Expense:Health and Fitness
+Expense:Hobbies
+Expense:Home Repair
+Expense:Household
+Expense:Insurance
+Expense:Insurance:Auto
+Expense:Insurance:Health
+Expense:Insurance:Home
+Expense:Insurance:Life
+Expense:Insurance:Other
+Expense:Insurance:Rental
+Expense:Interest Expense
+Expense:Investment
+Expense:IRA Contribution
+Expense:Laundry and Dry Cleaning
+Expense:Loan Payment
+Expense:Medical
+Expense:Miscellaneous
+Expense:Mortgage
+Expense:Online Services
+Expense:Public Transportation
+Expense:Rent
+Expense:Subscriptions
+Expense:Supplies
+Expense:Tax
+Expense:Tax:Federal
+Expense:Tax:Medicare
+Expense:Tax:Other
+Expense:Tax:Property
+Expense:Tax:SDI
+Expense:Tax:Social Security
+Expense:Tax:State
+Expense:Travel
+Expense:Travel:Airfair
+Expense:Travel:Hotels
+Expense:Travel:Rental Car
+Expense:Travel:Taxi
+Expense:Travel:Train
+Expense:Utilities
+Expense:Utilities:Cable
+Expense:Utilities:Electricity
+Expense:Utilities:Garbage and Recycling
+Expense:Utilities:Gas
+Expense:Utilities:Internet
+Expense:Utilities:Telephone
+Expense:Utilities:Water
+Income:Commissions
+Income:Dividend Income
+Income:Employer Benefit
+Income:Employer Benefit:Dental
+Income:Employer Benefit:Medical
+Income:Employer Benefit:Vision
+Income:Gifts Received
+Income:Interest Income
+Income:Other Income
+Income:Profit Sharing
+Income:Reimbursement
+Income:Rent Income
+Income:Salary
+Income:Salary:Bonus
+Income:Salary:Holiday
+Income:Salary:PTO
+Income:Salary:Sick Pay
+Income:Salary:Vacation
+Income:Tax Refund
