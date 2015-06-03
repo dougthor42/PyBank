@@ -1,7 +1,7 @@
 nose
 wheel
 nose-cov
-termstyle
+python-termstyle
 colorama
 green
 lxml >= 3.4
