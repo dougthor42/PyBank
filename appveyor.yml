@@ -86,6 +86,7 @@ test_script:
   # Build the compiled extension and run the project tests
   - python --version
   - "%CMD_IN_ENV% nosetests --verbose"
+  - "%CMD_IN_ENV% green -vvv"
 #  - "%CMD_IN_ENV% python -m pytest hypothesis-extra/hypothesis-datetime/tests"
 #  - "%CMD_IN_ENV% python -m pytest hypothesis-extra/hypothesis-pytest/tests"
 

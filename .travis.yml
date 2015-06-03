@@ -19,6 +19,7 @@ script:
 #  - nosetests
 #  - nosetests --with-cov --cov ci_setup_check --cov-config .coverage.rc --logging-level=INFO
   - nosetests --verbose --with-cov --cov pybank --logging-level=INFO
+  - green -vvv
 
 # Calculate coverage
 after_success:
