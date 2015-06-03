@@ -207,6 +207,7 @@ def validate_db():
     pass
 
 
+# TODO: Refactor for better unittests
 def create_trans_tbl(database, acct_id):
     """
     Creates a transaction table for the given acct_id.
@@ -261,6 +262,7 @@ def create_trans_tbl(database, acct_id):
     return tbl_name
 
 
+# TODO: Refactor for better unittests
 def create_ledger_view(database, acct_id):
     """
     Creates a ledger view for the given acct_id.
@@ -289,7 +291,6 @@ def create_ledger_view(database, acct_id):
     # TODO: make this function return just a creation string?
     view_name = "v_ledger_{}".format(acct_id)
     view = """
-        DROP VIEW IF EXISTS {v_name};
         CREATE VIEW {v_name} AS
             SELECT
                 trans.date,
@@ -302,7 +303,7 @@ def create_ledger_view(database, acct_id):
                 trans.memo,
                 trans.amount
             FROM
-                transaction_0 AS trans
+                transaction_{acct} AS trans
                 LEFT OUTER JOIN payee
                     ON trans.payee_id = payee.id
                 LEFT OUTER JOIN category
@@ -311,10 +312,13 @@ def create_ledger_view(database, acct_id):
                     ON trans.label_id = label.id
                 LEFT OUTER JOIN display_name
                     ON payee.display_name_id = display_name.id
-          """.format(v_name=view_name)
+          """.format(v_name=view_name, acct=acct_id)
 
     conn = sqlite3.connect(database)
     cursor = conn.cursor()
+    # can't execute multiple statements, so I bought this out.
+    cursor.execute("DROP VIEW IF EXISTS {v_name}".format(v_name=view_name))
+    conn.commit()
     cursor.execute(view)
     conn.commit()
     cursor.close()
@@ -351,6 +355,7 @@ def copy_blank_db(filename=DATABASE):
         create_db(filename)
 
 
+# TODO: Refactor for better unittests
 def create_db(filename=DATABASE):
     """
     Creates the SQLite database file.
@@ -405,14 +410,14 @@ def create_db(filename=DATABASE):
         CREATE TABLE `payee` (
         `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
         `name` TEXT NOT NULL,
-        `display_name_id` INTEGER
-        `category_id` INTEGER,
+        `display_name_id` INTEGER,
+        `category_id` INTEGER
         );"""
 
     display_name = """
         CREATE TABLE `display_name` (
         `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-        name` TEXT NOT NULL
+        `display_name` TEXT NOT NULL
         );"""
 
     tables = [acct, category, institution, label, payee, display_name,
@@ -437,14 +442,15 @@ def create_db(filename=DATABASE):
         # runs if there's an error, then error re-raised after this
         pass
 
-    create_trans_tbl(DATABASE, 0)
-    create_ledger_view(DATABASE, 0)
+    create_trans_tbl(filename, 0)
+    create_ledger_view(filename, 0)
 
 ### #------------------------------------------------------------------------
 ### Core Database Functions
 ### #------------------------------------------------------------------------
 
 # TODO: Can I separate the sqlite3.connect command into a different function?
+# TODO: Refactor for better unittests
 def db_execute(database, cmd, *args):
     """
     Executes a database command.
@@ -477,6 +483,7 @@ def db_execute(database, cmd, *args):
     return None
 
 
+# TODO: Refactor for better unittests
 def db_insert(database, cmd, *args):
     """
     Executes a database insert and returns the inserted row id.
@@ -518,6 +525,7 @@ def db_insert(database, cmd, *args):
     return last_row_id
 
 
+# TODO: Refactor for better unittests
 def db_query(database, query, *args):
     """
     Execute a database query.
@@ -551,7 +559,6 @@ def db_query(database, query, *args):
             #conn.commit()       # not needed because it's a query
             retval = cursor.fetchall()
     return retval
-
 
 
 class SQLTable(abc.ABC):
@@ -647,7 +654,6 @@ class SQLTable(abc.ABC):
 
         TODO:
         ~~~~~
-
         Decide if I want to return a list of tuples (current method)
         or if I want to return a list of dicts (proposed).
         """
@@ -980,14 +986,13 @@ if __name__ == "__main__":
 #    a = payee.add({'name':"dfsf", 'category_id':5})
 #    b = payee.read(a)
 #    print(b)
-    query_str = """
-        SELECT * FROM category
-        """
-
-    result = db_query(DATABASE, query_str)
-
-    a = generate_category_strings(result)
-    for item in sorted(a):
-        print(item)
-
-
+#    query_str = """
+#        SELECT * FROM category
+#        """
+#
+#    result = db_query(DATABASE, query_str)
+#
+#    a = generate_category_strings(result)
+#    for item in sorted(a):
+#        print(item)
+    pass

@@ -36,8 +36,7 @@ class TestSaltAndHash(unittest.TestCase):
 
     def test_no_collisions(self):
         """
-        Make sure that there are no collisions by calling the function
-        with the same arguements many times
+        Check for collisions by calling the salt_and_hash many times
         """
         secret = "SuperSecretPassword"
         sah = ofx.salt_and_hash
@@ -58,10 +57,12 @@ class TestValidatePassword(unittest.TestCase):
         self.salt, self.hashed = ofx.salt_and_hash(self.secret)
 
     def test_good_validation(self):
+        """ Check that a correct password validates True """
         result = ofx.validate_password(self.secret, self.salt, self.hashed)
         self.assertTrue(result)
 
     def test_bad_validation(self):
+        """ Check that an incorrect password validates False """
         result = ofx.validate_password(self.wrong_secret,
                                        self.salt,
                                        self.hashed)

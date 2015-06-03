@@ -139,8 +139,7 @@ class TestCloseTags(unittest.TestCase):
         pass
 
     def test_close_tags_ok(self):
-        """
-        """
+        """ Check tags get closed """
         open_tags = io.StringIO("""
             <STATUS>
                 <CODE>0
@@ -151,10 +150,10 @@ class TestCloseTags(unittest.TestCase):
         result = parseofx.close_tags(open_tags).read()
         self.assertEqual(result, actual)
 
+    # TODO: Look into what's going on here
     @unittest.skip("Need to fix.")
     def test_close_tags_ok2(self):
-        """
-        """
+        """ Check that tags get closed also """
         open_tags = io.StringIO("""
                 <CODE>0
                 <SEVERITY>INFO
@@ -164,24 +163,20 @@ class TestCloseTags(unittest.TestCase):
         self.assertEqual(result, actual)
 
 
+@unittest.skip("Not implemented")
 class TestStripHeader(unittest.TestCase):
-    """
-    Tests the strip_header function.
-    """
+    """ Tests the strip_header function """
     pass
 
 
+@unittest.skip("Not implemented")
 class TestParseOFX(unittest.TestCase):
-    """
-    Tests the ParseOFX class.
-    """
+    """ Tests the ParseOFX class """
     pass
 
 
 class TestParseStatus_OKAllTags(unittest.TestCase):
-    """
-    Tests the parse_status function.
-    """
+    """ Check the parse_status function """
     def setUp(self):
         self.soup = BeautifulSoup("""
             <STATUS>
@@ -196,10 +191,9 @@ class TestParseStatus_OKAllTags(unittest.TestCase):
     def tearDown(self):
         pass
 
-
     def test_attributes_exist(self):
         """
-        Tests that all of the Status attributes exist.
+        Checks that all of the Status attributes exist
 
         Does not verify values.
         """
@@ -211,21 +205,21 @@ class TestParseStatus_OKAllTags(unittest.TestCase):
 
     def test_code_value_correct(self):
         """
-        Tests that the value of `code` is correct
+        Check that the value of `code` is correct
         """
         fail_msg = "Status.code parsed incorrectly!"
         self.assertEqual(self.result.code, 0, fail_msg)
 
     def test_severity_value_correct(self):
         """
-        Tests that the value of `severity` is correct
+        Check that the value of `severity` is correct
         """
         fail_msg = "Status.severity parsed incorrectly!"
         self.assertEqual(self.result.severity, "INFO", fail_msg)
 
     def test_message_value_correct(self):
         """
-        Tests that the value of `message` is correct.
+        Check that the value of `message` is correct.
         """
         fail_msg = "Status.message parsed incorrectly!"
         self.assertEqual(self.result.message, "Hello", fail_msg)
@@ -248,6 +242,7 @@ class TestParseStatus_OKNoMessage(unittest.TestCase):
         pass
 
     def test_message_is_none(self):
+        """ Check that no message is found """
         self.assertIsNone(self.result.message)
 
 
@@ -263,6 +258,7 @@ class TestParseStatus_FailOnInvalidXML(unittest.TestCase):
         pass
 
     def test_raise_on_missing_code(self):
+        """ Check that AttributeError raised if `code` is missing """
         soup = BeautifulSoup("""
             <STATUS>
                 <SEVERITY>INFO</SEVERITY>
@@ -272,6 +268,7 @@ class TestParseStatus_FailOnInvalidXML(unittest.TestCase):
             parseofx.parse_status(soup)
 
     def test_raise_on_missing_severity(self):
+        """ Check that AttributeError raised if `severity` is missing """
         soup = BeautifulSoup("""
             <STATUS>
                 <CODE>0</CODE>
@@ -288,7 +285,7 @@ class TestParseDatetime(unittest.TestCase):
     """
     def test_parse_datetime_fail_missing_tag(self):
         """
-        Tests parse_datetime fails if there is no datetime tag in the soup.
+        Check parse_datetime fails if there is no datetime tag in the soup.
         """
         soup = BeautifulSoup("""
             <SONRS>
@@ -307,6 +304,7 @@ class TestParseDatetime(unittest.TestCase):
             parseofx.parse_datetime(soup)
 
     def test_parse_datetime_OK(self):
+        """ Check parse_datetime is OK """
         soup = BeautifulSoup("""<SONRS>
             <STATUS>
                 <CODE>0
@@ -347,15 +345,14 @@ class TestConvertDatetime(unittest.TestCase):
                       ]
 
     def test_known_values(self):
-        """
-        """
+        """ Check known values for convert_datetime """
         for dt_str, expected in self.known_values:
             with self.subTest(_dt_str=dt_str, _expected=expected):
                 result = parseofx.convert_datetime(dt_str)
                 self.assertEqual(expected, result)
 
     def test_bad_formats(self):
-        """ Verifies that malformed datetime strings raise errors """
+        """ Check that malformed datetime strings raise errors """
         for dt_str in self.malformed_fmts:
             with self.subTest(malformed_str=dt_str):
                 with self.assertRaises(ValueError):

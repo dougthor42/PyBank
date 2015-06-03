@@ -15,9 +15,11 @@ Options:
 
 # Standard Library
 import sys
+import os
 import unittest
 import unittest.mock as mock
 import os.path as osp
+import sqlite3
 
 # Third-Party
 from docopt import docopt
@@ -29,26 +31,10 @@ if __name__ == "__main__":
 from pybank import pbsql
 
 
-class MyProductionClass():
-    pass
-
-
 class TestGenerateCategoryStrings(unittest.TestCase):
-    """
-    """
-    def setUp(self):
-        """ Runs begfore every test """
-        pass
-
-    def tearDown(self):
-        """
-        Runs after the tests if and only if the setUp succeeded. It does not
-        depend on if the test succeeded or not.
-        """
-        pass
-
+    """ Tests relating to generate_category_strings """
     def test_testfunc(self):
-
+        """ generate_category_strings"""
         data = [(1, "A", 0),
                 (2, "B", 1),
                 (3, "C", 1),
@@ -75,10 +61,76 @@ class TestGenerateCategoryStrings(unittest.TestCase):
         self.assertEqual(result, actual)
 
 
+class TestDatabase(unittest.TestCase):
+    """ Test database actions """
+    @classmethod
+    def setUpClass(cls):
+        """ Create a database file to work on for these tests. """
+        cls._db = "unittest_db.db"
+        pbsql.create_db(cls._db)
+
+    @classmethod
+    def tearDownClass(cls):
+        """ Destroy temporary file """
+        os.remove(cls._db)
+
+#    @unittest.skip("Need to refactor create_db")
+#    def test_create_db(self):
+#        """ Verify database created OK """
+#        try:
+#            pbsql.create_db(self._db)
+#        except Exception:
+#            self.fail("Unexpected exception in db_execute")
+
+    def test_create_trans_tbl(self):
+        """ Check transaction table is created """
+        try:
+            pbsql.create_trans_tbl(self._db, 1)
+            # TODO: should pass only if acct is int >= 0
+        except Exception:
+            self.fail("Unexpected exception in create_trans_tbl")
+
+    # TODO: fails if test_create_trans_tbl is not executed before this.
+    #       however, it's implicitely checked in test_create_db
+    @unittest.skip("Race condition")
+    def test_create_ledger_view(self):
+        """ Check ledger view is created """
+        try:
+            pbsql.create_ledger_view(self._db, 1)
+        except Exception:
+            self.fail("Unexpected exceptoin in create_ledger_view")
+
+    def test_db_execute(self):
+        """ Check execute command """
+        cmd = """
+            CREATE TABLE stocks
+            (date text, trans text, symbol text, qty real, price real)
+            """
+        try:
+            pbsql.db_execute(self._db, cmd)
+        except Exception:
+            self.fail("Unexpected exception in db_execute")
+
+    def test_db_query(self):
+        """ Check query command """
+        cmd = "SELECT * FROM payee"
+        result = pbsql.db_query(self._db, cmd)
+        self.assertEqual(result, [])
+
+    def test_db_insert(self):
+        """ Check insert Command """
+        cmd = "INSERT INTO display_name (display_name) VALUES (?)"
+        value = 'hello'
+        result = pbsql.db_insert(self._db, cmd, value)
+        self.assertEqual(result, 1)
+
+
+@unittest.skip("Placeholder Test")
 class TestMock(unittest.TestCase):
     """
     """
     def test_mock(self):
+        """ example of mocking """
         thing = MyProductionClass()
         thing.method = mock.MagicMock(return_value=3)
         a = thing.method(3, 4, 5, key='value')
