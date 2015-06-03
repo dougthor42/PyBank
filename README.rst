@@ -22,15 +22,46 @@ Build Status
 
 TODO: Downloads currently targeting wafer_map
 
-Contents:
----------
+Contents
+--------
 
 + `Build Status`_
-+ Contents_
-+ Notes_
++ `Contents`_
++ `Summary`_
++ `Features`_
++ `Notes`_
 
-Notes:
-------
+Summary
+-------
+PyBank is personal account software similar to Quicken, iBank, and GnuCash.
+It features the ability to download transactions via OFX, parse them, and
+insert them into the local database.
+
+Features
+--------
++ Cross-Platform GUI via wxPython
++ Transaction download via OFX
++ Password Vault using the Host Environment's credential manager
+
+  + Windows: Windows Credential Vault
+  + Linux: Secret Service
+  + Max: OSX Keychain
+
++ Lightweight storage of data via SQLite
++ TODO: Encrypt SQLite file
++ Categorize and label transactions
++ Payee renaming
++ Simple plotting features:
+
+  + Pareto Plot of spending categories
+  + Line Chart of Account value over time
+  + Predicted balances based on previous spending, accounting for planned
+    expenses
+
++ Handle multiple accounts in a single file
+
+Notes
+-----
 None Yet
 
 .. |travis-ci| image:: https://api.travis-ci.org/dougthor42/PyBank.svg?branch=master

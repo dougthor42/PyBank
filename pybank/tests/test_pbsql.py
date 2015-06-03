@@ -33,7 +33,7 @@ class MyProductionClass():
     pass
 
 
-class TestTestFunc(unittest.TestCase):
+class TestGenerateCategoryStrings(unittest.TestCase):
     """
     """
     def setUp(self):
@@ -47,8 +47,32 @@ class TestTestFunc(unittest.TestCase):
         """
         pass
 
-#    def test_testfunc(self):
-#        self.assertEqual(sqlite.my_func(), 5)
+    def test_testfunc(self):
+
+        data = [(1, "A", 0),
+                (2, "B", 1),
+                (3, "C", 1),
+                (4, "D", 2),
+                (5, "E", 2),
+                (6, "F", 3),
+                (7, "G", 2),
+                (8, "H", 6),
+                (9, "I", 4),
+                ]
+
+        actual = ["A",
+                  "A.B",
+                  "A.B.D",
+                  "A.B.D.I",
+                  "A.B.E",
+                  "A.B.G",
+                  "A.C",
+                  "A.C.F",
+                  "A.C.F.H",
+                  ]
+
+        result = pbsql.generate_category_strings(data)
+        self.assertEqual(result, actual)
 
 
 class TestMock(unittest.TestCase):
