@@ -127,7 +127,7 @@ logging.basicConfig(filename='PyBank.log',
 
 # And mimmic it in the console
 console = logging.StreamHandler()
-console.setLevel(logging.WARN)
+console.setLevel(logging.DEBUG)
 formatter = logging.Formatter(logformat, dateformat)
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)

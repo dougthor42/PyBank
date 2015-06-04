@@ -196,7 +196,7 @@ Joins everything together, yay!
     pass
 
 
-# TODO: SQLite Adaptos and Converters
+# TODO: SQLite Adaptors and Converters
 # https://docs.python.org/3.4/library/sqlite3.html#sqlite-and-python-types
 
 def validate_db():
@@ -561,6 +561,21 @@ def db_query(database, query, *args):
     return retval
 
 
+def db_query_single(database, query, *args):
+    """
+    Queries a single item from the database
+    """
+    logquery = query.replace("?", "{}").format(*args)
+    logstr = "db_query_single: {db} || {sqlstr}"
+    logging.debug(logstr.format(db=database, sqlstr=logquery))
+    with closing(sqlite3.connect(database)) as conn:
+        with closing(conn.cursor()) as cursor:
+            cursor.execute(query, args)
+            #conn.commit()       # not needed because it's a query
+            retval = cursor.fetchone()
+    return retval
+
+
 class SQLTable(abc.ABC):
     """
     Class containing all table accessors.
@@ -681,14 +696,21 @@ class SQLTable(abc.ABC):
         """
         pass
 
+    def row_count(self):
+        """ Returns the number of rows in the table or view """
+        query = "SELECT COUNT(*) FROM `{}`".format(self.table)
+        return db_query(self.database, query)[0]
+
 
 class SQLView(abc.ABC):
     """
-    Parent class for all views
+    Parent class for all views.
+
+    Child class must define ``self.view``.
     """
-    def __init__(self, database, view):
+    def __init__(self, database, acct_id):
         self.database = database
-        self.view = view
+        self.acct_id = acct_id
 
     def read(self):
         """
@@ -853,7 +875,135 @@ class LedgerView(SQLView):
 
     Contains all of the items displayed in the ledger.
     """
-    pass
+    def __init__(self, database, acct_id):
+        super().__init__(database, acct_id)
+        self.view = "v_ledger_{}".format(self.acct_id)
+        self.trans_tbl = "transaction_{}".format(self.acct_id)
+
+    def insert_row(self):
+        """
+        Adds a new blank row to the ledger.
+        """
+        sql = "INSERT INTO `{}` DEFAULT VALUES".format(self.trans_tbl)
+        new_row = db_insert(self.database, sql)
+        return new_row
+
+    def update_transaction(self, row, col, value):
+        if col == 1:
+            self._update_date(row, value)
+        elif col == 2:
+            self._update_date_entered(row, value)
+        elif col == 3:
+            self._update_checknum(row, value)
+        elif col == 4:
+            self._update_payee(row, value)
+        elif col == 5:
+            self._update_downloaded_payee(row, value)
+        elif col == 6:
+            self._update_memo(row, value)
+        elif col == 7:
+            self._update_category(row, value)
+        elif col == 8:
+            self._update_label(row, value)
+        elif col == 9:
+            self._update_amount(row, value)
+        else:
+            # Can't raise IndexError because that results in infinite loop
+            # from gui.LedgerGridBaseTable._set_value()
+            raise Exception("Invalid column: {}".format(col))
+
+    def _update_date(self, row, value):
+        print("Updating date")
+        pass
+
+    def _update_date_entered(self, row, value):
+        print("Updating date_entered")
+        pass
+
+    def _update_checknum(self, row, value):
+        """
+        Updates the Checknum for a given row.
+
+        Parameters:
+        -----------
+        row : int
+            the row to update
+
+        value : int
+            The new check number
+
+        Returns:
+        --------
+        None
+
+        """
+#        print("Updating check_num")
+        sql = "UPDATE `{tbl}` SET `{col}`=? WHERE id={row}"
+        col_name = "check_num"
+        sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
+        try:
+            int(value)
+        except TypeError:
+            err = "Checknum must be castable to int. Got '{}'".format(value)
+            raise TypeError(err)
+        else:
+            # runs if no error
+            db_execute(self.database, sql, value)
+
+    def _update_payee(self, row, value):
+        print("Updating payee")
+        # first, check for the new value in the database
+        sql = "SELECT * FROM `payee` WHERE name=?"
+        result = db_query(self.database, sql, value)
+        if result == []:
+            print("payee not found, adding")
+            sql = "INSERT INTO `payee`(name) VALUES (?)"
+            new_id = db_insert(self.database, sql, value)
+            # TODO: I can get rid of a db query by using new_id directly.
+            self._update_payee(row, value)
+        elif len(result) > 1:
+            err = "Duplicate payee name `{}` found! How'd we get here?".format(value)
+            raise Exception(err)
+        else:
+            print("Payee found, using payee.id")
+            sql = "UPDATE `{tbl}` SET `{col}`=? WHERE id={row}"
+            col_name = "payee_id"
+            sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
+            db_execute(self.database, sql, result[0][0])
+
+    def _update_downloaded_payee(self, row, value):
+        print("downloaded_payee is read-only")
+        pass
+
+    def _update_label(self, row, value):
+        print("Updating label")
+        pass
+
+    def _update_category(self, row, value):
+        print("Updating category")
+        pass
+
+    def _update_memo(self, row, value):
+        """ Updates the memo field """
+        if value == '':
+            value = None
+#        print("Updating memo with new value: `{}`".format(value))
+        sql = "UPDATE `{tbl}` SET `{col}`=? WHERE id={row}"
+        col_name = "memo"
+        sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
+        db_execute(self.database, sql, value)
+
+    def _update_amount(self, row, value):
+        sql = "UPDATE `{tbl}` SET `{col}`=? WHERE id={row}"
+        col_name = "amount"
+        sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
+        try:
+            float(value)
+#            print("Updating amount with new value: `{}`".format(value))
+        except ValueError:
+            raise ValueError("`Amount` must be a number")
+        else:
+            db_execute(self.database, sql, value)
 
 
 def generate_category_strings(cat_list,
@@ -925,6 +1075,80 @@ def generate_category_strings(cat_list,
 ### Other
 ### #------------------------------------------------------------------------
 
+# TODO: rename
+def find_if_payee_already_in_payee_table(payee):
+    """
+    searches for the payee in the payee table.
+
+    Adds payee to table if it doesn't exist
+    """
+    pass
+
+#def update_ledger_transaction():
+#    """
+#    Updates a transaction in the transaction table.
+#
+#    Parameters:
+#    -----------
+#    database : string
+#        The SQLite database file that we're working on
+#
+#    trans_table : string
+#        The table name that we're going to update a transaction in.
+#
+#    Returns:
+#    --------
+#    ???
+#
+#    Notes:
+#    ------
+#    This is a pretty complicated function.
+#
+#    When updating a tranaction value, we need to do different things based
+#    on the column that we're in:
+#
+#    date:
+#        validate the new value as a date, convert to string,
+#        and then write to database
+#    enter_date:
+#        same as date
+#    check_num:
+#        validate the new value as int, validate that it's not a
+#        duplicate check number (warn?), and write to database
+#    payee:
+#        This is a merge of the payee and display_name table, so some fancy
+#        stuff needs to be done.
+#    downloaded_payee:
+#        This is from the payee_id column. When user enters value here, I need
+#        to first check if it's in the payee table. If so, then get the
+#        payee.id and write that to transaction_0.payee_id. If not, then
+#        enter a new item into the payee table and write that to the
+#        transaction table
+#        # TODO: how do I handle this? User modifies Payee or Downloaded_Payee?
+#    label:
+#        User selects from dropdown, write int value to DB. If user writes in
+#        new value, then add to label table and enter new id to transaction_0.
+#    category:
+#        User selects from dropdown, write int value to DB. For now, no option
+#        to add new category.
+#        # TODO: Add ability to make new category.
+#    memo:
+#        Write string to DB.
+#    amount:
+#        validate the new value is float, convert to decimal.Decimal,
+#        convert to string, write to database.
+#        Also update the balance column?
+#    """
+#    pass
+
+
+def update_date_field():
+    """
+    Takes the string that the user enters and validates it as a datetime.
+    """
+    pass
+
+
 def update_db():
     """
     Updates the database with the new entries.
@@ -939,12 +1163,46 @@ def insert_item():
     pass
 
 
+def insert_row():
+    """
+    Inserts a blank row (no data) to the database.
+    """
+    pass
+
+# XXX: quick proof-of-concept hack
+def insert_ledger_row(database=DATABASE, ledger="transaction_0"):
+    sql = "INSERT INTO `{}` DEFAULT VALUES".format(ledger)
+    db_insert(database, sql)
+
 def update_item():
     """
     Updates an item in the database with new values.
     """
     pass
 
+# XXX: quick proof-of-concept hack
+def update_ledger_item(row, column,
+                       database=DATABASE, ledger="transaction_0",
+                       ):
+    """
+    Updates a ledger item.
+    """
+    col_names = [
+                 "date",
+                 "enter_date",
+                 "check_num",
+                 "payee",
+                 "downloaded_payee",
+                 "label",
+                 "category",
+                 "memo",
+                 "amount",
+                 ]
+
+    cursor = conn.cursor()
+
+
+#    cursor.execute("INSERT INTO `{}`
 
 def append_item():
     """
@@ -980,6 +1238,368 @@ def main():
     raise RuntimeError("This module is not meant to be run by itself")
 
 
+### #------------------------------------------------------------------------
+### DELETE
+### #------------------------------------------------------------------------
+import colorama
+import inspect
+import datetime
+
+
+
+
+class Decorator(object):
+    """
+    Abstract Base Class: Decorator
+    This stores the decorator information, such as the name (__decor__) and
+    the docstring (__decordoc__)
+    """
+
+    # This is needed so that Decorator is an Abstract Base Class
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, func, *args):
+        self.func = func
+
+        if inspect.isfunction(self.func):
+            self.__name__ = self.func.__name__
+
+        elif inspect.isclass(self.func):
+            self.__name__ = self.func.__class__.__name__
+
+        elif inspect.ismethod(self.func):
+            self.__name__ = self.func.__name__
+
+        # Create the new attributes for __decor__ and __decordoc__
+        self._set_decor()
+        self._set_decordoc()
+        self._set_doc()
+
+    def _set_decor(self):
+        """ Sets the __decor__ attribute to the decorator name """
+        # functions = methods & classes = string repr. of method/class
+        self.__decor__ = self.func.__decor__ = self.__str__()
+
+    def _set_decordoc(self):
+        """ Sets the __decordoc__ attribute to the decorator docscring """
+        # functions = methods & classes = string repr. of method/class
+        self.__decordoc__ = self.func.__decordoc__ = self.__doc__
+
+    def _set_doc(self):
+        """ Sets the __doc__ attribute to the funcion's docstring """
+        self.__doc__ = self.func.__doc__
+
+    def __get__(self, obj, objtype):
+        """ Support instance methods. """
+        @functools.wraps(self.func)
+        def wrapper(*args, **kwargs):
+            return self.func(obj, *args, **kwargs)
+        setattr(obj, self.func.__name__, wrapper)
+        return wrapper
+
+    # force child classes to have a __call__ method
+    @abc.abstractmethod
+    def __call__(self):
+        pass
+
+    # force child classes to have a __str__ method
+    @abc.abstractmethod
+    def __str__(self):
+        pass
+
+
+class CodeTimer(object):
+    """
+    A Simple code execution timer.
+
+    My attempt at making a simple code timer. The idea is that a user can
+    just call this simple thing, once to start and once again to stop. Upon
+    stopping, it prints out the time delta.
+
+    Stop times are printed in Red, while lap times are printed in Cyan. Time
+    differences, as provided by the ``delta()`` method, are printed in Yellow.
+
+    Parameters:
+    -------
+    label : string
+        An optional label for the timer. Will be displayed upon stopping or
+        lapping the timer.
+
+    Public Attributes:
+    ------------------
+    label : string
+        The label for the timer instance.
+
+    running : bool
+        Returns ``True`` if the timer is currently running.
+
+    start_t : datetime.datetime object
+        The time, in seconds, that the timer was last started, as reported
+        by the built-in time.clock() function. Returns ``None`` if the
+        timer has never been started.
+
+    stop_t : datetime.datetime object
+        The time, in seconds, that the timer was last stopped, as reported
+        by the built-in time.clock() function. Returns ``None`` if the
+        timer has never been stopped.
+
+    diff : float
+        The time between the the last lap or stop event and the start event.
+        Returns ``None`` if the timer has never been lapped or stopped.
+
+    prev_t : datetime.datetime object
+        The timestamp of the previous lap, start, or delta event. Returns
+        ``None`` if the timer has never been started.
+
+    Public Methods:
+    ---------------
+    start(self) :
+        Start the timer.
+
+    stop(self, override_label=None) :
+        Stops the timer and prints out the elapsed time, optionally
+        overriding the label temporarily. Returns the elapsed time as a
+        datetime.timedelta object.
+
+    reset(self) :
+        Resets the timer and clears the last start_t, stop_t, and diff values.
+
+    lap(self, override_label=None) :
+        Prints out the current elapsed time, optionally overrideing the
+        label temporarily. Returns the elapsed time as a
+        datetime.timedelta object.
+
+    delta(self, override_label=None) :
+        Prints out the time delta between this call and the previous call
+        of ``delta``, ``lap``, or ``start``. Returns the value as a
+        datetime.timedelta object.
+
+    Examples:
+    --------
+    Basic Usage:
+
+    >>> ct = CodeTimer("my_label")
+    >>> ct.start()
+    >>> # code to time
+    >>> ct.stop()           # doctest: +SKIP
+    my_label: 13.2725267063 seconds.
+
+    Printing out lap times:
+
+    >>> ct = CodeTimer()
+    >>> ct.start()
+    >>> for _i in range(3):
+    ...     ct.lap()        # doctest: +SKIP
+    Current Exec: 6.99158129829 seconds.
+    Current Exec: 6.9916975028 seconds.
+    Current Exec: 6.99176305405 seconds.
+    >>> ct.stop()           # doctest: +SKIP
+    Exec time: 18.8153060201 seconds.
+    """
+    def __init__(self, label=None):
+        """ __init__(self, label: string = None) -> CodeTimer """
+        # Initialize class attributes
+        self.label = label
+        self.temp_label = None
+        self.running = False
+        self.start_t = None
+        self.stop_t = None
+        self.diff = None
+        self.prev_t = None
+
+    def __str__(self):
+        return "Timer: {}".format(self.label)
+
+    def start(self):
+        """ Start the timer """
+#        self.start_t = time.clock()
+        self.start_t = datetime.datetime.utcnow()
+        self.prev_t = self.start_t
+        self.running = True
+
+    def stop(self, override_label=None):
+        """ Stop the timer and return and print the delta with label. """
+        if override_label is None:
+            # Use the class label for the timer
+            self.temp_label = self.label
+        else:
+            # Use the temporary override label for the timer
+            self.temp_label = override_label
+        if not self.running:
+            raise RuntimeError("Timer not started.")
+
+        self.running = False
+#        self.stop_t = time.clock()
+        self.stop_t = datetime.datetime.utcnow()
+        self.diff = self.stop_t - self.start_t
+        if self.temp_label is None:
+            print_red("Exec time: {diff}".format(diff=self.diff))
+            print()
+        else:
+            print_red("{lbl}: {diff}".format(lbl=self.temp_label,
+                                             diff=self.diff))
+            print()
+        return self.diff
+
+    def reset(self):
+        """ Reset the timer. """
+        self.start_t = None
+        self.stop_t = None
+        self.diff = None
+        self.prev_t = None
+        self.start()
+
+    def lap(self, override_label=None):
+        """ Returns and prints out the current timer value. """
+        if override_label is None:
+            # Use the class label for the timer
+            self.temp_label = self.label
+        else:
+            # Use the temporary override label for the timer
+            self.temp_label = override_label
+        if not self.running:
+            raise RuntimeError("Timer not started.")
+
+        self.running = True
+#        self.stop_t = time.clock()
+        self.stop_t = datetime.datetime.utcnow()
+        self.prev_t = self.stop_t
+        self.diff = self.stop_t - self.start_t
+        if self.temp_label is None:
+            cprint("Current Exec: {diff}".format(diff=self.diff),
+                   'c')
+            print()
+        else:
+            cprint("{lbl}: {diff}".format(lbl=self.temp_label,
+                                          diff=self.diff),
+                   'c')
+            print()
+        return self.diff
+
+    def delta(self, override_label=None):
+        """
+        Prints out the time delta between this call and the previous
+        call of ``delta``, ``lap`` or ``start``. Returns the value
+        as a datetime.timedelta object.
+        """
+        if override_label is None:
+            # Use the class label for the timer
+            self.temp_label = self.label
+        else:
+            # Use the temporary override label for the timer
+            self.temp_label = override_label
+        if not self.running:
+            raise RuntimeError("Timer not started.")
+
+        self.running - True
+#        self.stop_t = time.clock()
+        self.stop_t = datetime.datetime.utcnow()
+        self.diff = self.stop_t - self.prev_t
+        self.prev_t = self.stop_t
+        if self.temp_label is None:
+            cprint("Delta: {diff}".format(diff=self.diff),
+                   'y')
+            print()
+        else:
+            cprint("{lbl}: {diff}".format(lbl=self.temp_label,
+                                          diff=self.diff),
+                   'y')
+            print()
+        return self.diff
+
+def print_red(text):
+    """ Prints text as bright red """
+    cprint(text, 'red')
+
+def cprint(text, color, end='\n'):
+    """ Prints text as the specified color. Accepts RGB, CMYK, and White. """
+    colors = {'r': colorama.Fore.RED,
+              'red': colorama.Fore.RED,
+              'g': colorama.Fore.GREEN,
+              'green': colorama.Fore.GREEN,
+              'b': colorama.Fore.BLUE,
+              'blue': colorama.Fore.BLUE,
+              'c': colorama.Fore.CYAN,
+              'cyan': colorama.Fore.CYAN,
+              'y': colorama.Fore.YELLOW,
+              'yellow': colorama.Fore.YELLOW,
+              'm': colorama.Fore.MAGENTA,
+              'magenta': colorama.Fore.MAGENTA,
+              'k': colorama.Fore.BLACK,
+              'black': colorama.Fore.BLACK,
+              'w': colorama.Fore.WHITE,
+              'white': colorama.Fore.WHITE}
+    colorama.init(strip=False)      # for Spyder: don't strip format chars
+    print(colors[color.lower()] + colorama.Style.BRIGHT + text, end=end)
+    print(colorama.Style.RESET_ALL, end='')
+    colorama.deinit()
+
+class Timed(Decorator):
+    """
+    Decorator.
+    Times a given function execution.
+    """
+    def __init__(self, func):
+        """ Init instance attributes """
+        Decorator.__init__(self, func)
+        self.codetimer = CodeTimer(self.func.__name__)
+
+    def __call__(self, *args, **kwargs):
+        """ Actually call the function """
+        self.codetimer.start()
+        result = self.func(*args, **kwargs)
+        self.codetimer.stop()
+        return result
+
+    def __str__(self):
+        return "Timed"
+
+
+
+
+
+def db_query2(conn, query, *args):
+    with closing(conn.cursor()) as cursor:
+        cursor.execute(query, args)
+        retval = cursor.fetchall()
+    return retval
+
+def db_query3(cursor, query, *args):
+    cursor.execute(query, args)
+    return cursor.fetchall()
+
+@Timed
+def test():
+    fn = "C:\\WinPython34_x64\\projects\\github\\PyBank\\pybank\\test_database.db"
+    query = "SELECT * FROM acct WHERE id=1"
+    for _ in range(5000):
+        db_query(fn, query)
+
+@Timed
+def test2():
+    fn = "C:\\WinPython34_x64\\projects\\github\\PyBank\\pybank\\test_database.db"
+    query = "SELECT * FROM acct WHERE id=1"
+    conn = sqlite3.connect(fn)
+    for _ in range(5000):
+        db_query2(conn, query)
+    conn.close()
+
+@Timed
+def test3():
+    fn = "C:\\WinPython34_x64\\projects\\github\\PyBank\\pybank\\test_database.db"
+    query = "SELECT * FROM acct WHERE id=1"
+    conn = sqlite3.connect(fn)
+    cursor = conn.cursor()
+    for _ in range(5000):
+        db_query3(cursor, query)
+    cursor.close()
+    conn.close()
+
+
+### #------------------------------------------------------------------------
+### END DELETE
+### #------------------------------------------------------------------------
+
 if __name__ == "__main__":
 #    copy_blank_db()
 #    payee = PayeeTable(DATABASE, 'payee')
@@ -995,4 +1615,12 @@ if __name__ == "__main__":
 #    a = generate_category_strings(result)
 #    for item in sorted(a):
 #        print(item)
-    pass
+
+    test3()
+    test2()
+#    test()
+
+    a = db_query_single(DATABASE,
+                                     "SELECT COUNT(*) FROM v_ledger_0")[0]
+    print(a)
+

@@ -1,14 +1,15 @@
 DROP VIEW IF EXISTS v_ledger_0;
 CREATE VIEW v_ledger_0 AS
     SELECT
+		trans.id as tid,
         trans.date,
 		trans.enter_date,
         trans.check_num,
         COALESCE(display_name.display_name, payee.name) as "payee",
         payee.name as "downloaded_payee",
-		label.name AS "label",
-        category.name AS "category", -- # TODO: Python Maps this instead?
 		trans.memo,
+        category.name AS "category", -- # TODO: Python Maps this instead?
+		label.name AS "label",
         trans.amount
     FROM
         transaction_0 AS trans

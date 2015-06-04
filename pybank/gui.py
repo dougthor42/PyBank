@@ -26,6 +26,7 @@ import os.path as osp
 # Third Party
 import wx
 import wx.grid
+#import wx.gizmos
 import wx.lib.mixins.listctrl as listmix
 #from wx.lib.splitter import MultiSplitterWindow
 try:
@@ -54,6 +55,7 @@ LEDGER_COLOR_ROW_NEW = wx.Colour(240, 240, 240, 255)
 LEDGER_COLOR_ROW_ODD = wx.Colour(255, 255, 255, 255)
 LEDGER_COLOR_ROW_EVEN = wx.Colour(255, 255, 204, 255)
 LEDGER_COLOR_VALUE_NEGATIVE = wx.Colour(255, 0, 0, 255)
+LEDGER_COLOR_VALUE_POSITIVE = wx.Colour(0, 0, 0, 255)
 DATABASE = "test_database.db"
 
 ### #------------------------------------------------------------------------
@@ -308,6 +310,7 @@ class MainPanel(wx.Panel):
                                           style=wx.SP_LIVE_UPDATE,
                                           )
 
+#        self.panel1 = AccountListTree(self.splitter)
         self.panel1 = AccountList(self.splitter)
         self.panel2 = MainNotebook(self.splitter)
 
@@ -364,6 +367,9 @@ class MainNotebook(wx.Notebook):
 
         p3 = SamplePanel(self, "sky blue", "sdfdfsdfsdfsdfsd")
         self.AddPage(p3, "Even more stuff")
+
+        # Show the ledger at start
+        self.SetSelection(1)
 
 
 class LedgerPanel(wx.Panel):
@@ -837,39 +843,39 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         self.parent = parent
         self.column_labels, self.col_types = self._set_columns()
 
+        self._update_data()
 
-        # grab the table data from the database
-        view = pbsql.LedgerView(DATABASE, "v_ledger_0")
-        data = view.read_all()
-
-        # calculate the running balance and add it to the data
-        starting_bal = decimal.Decimal(200)
-        balance = starting_bal
-        data = list([list(row) for row in data])
-        self.data = []
-        for row in data:
-            balance += decimal.Decimal(row[-1])
-            row[-2] = str(row[-2])
-            row.append(str(balance))
-            self.data.append(row)
 
     ### #--------------------------------------------------------------------
-    ### Method Overrides
+    ### Override Methods
     ### #--------------------------------------------------------------------
 
     def GetNumberRows(self):
-        return len(self.data) + 1
+        rows = pbsql.db_query_single(pbsql.DATABASE,
+                                     "SELECT COUNT(*) FROM v_ledger_0")[0]
+        return rows + 1
+#        return len(self.data) + 1
 
     def GetNumberCols(self):
         return len(self.data[0])
 
     def IsEmptyCell(self, row, column):
+#        print("IsEmptyCell(row={}, col={})".format(row, column))
         try:
             return not self.data[row][column]
         except IndexError:
             return True
 
     def GetValue(self, row, column):
+        """
+        Get the cell value from the data or database.
+
+        Override Method
+
+        Is called on every cell at init and then again when cells are
+        clicked.
+        """
+#        print("GetValue(row={}, col={})".format(row, column))
         try:
             value = self.data[row][column]
             if value is None or value == 'None':
@@ -880,19 +886,46 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             return ''
 
     def SetValue(self, row, col, value):
+        """
+        Sets the value of a cell.
+
+        Override Method.
+        """
         self._set_value(row, col, value)
 
     def _set_value(self, row, col, value):
+        """
+        Updates the database with the value of the cell.
+
+        # TODO: If updating an existing payee name, then we
+        #       add to the display_name table.
+        #       If adding a new payee name, check it against the payee table
+        #       Add if needed, otherwise...?
+        """
         try:
-            self.data[row][col] = value
+            # update database entry
+            # gotta get the tid and send *that* to the update method
+            # to account for deleted entries.
+            tid = self.data[row][0]
+            self.ledger.update_transaction(tid, col, value)
         except IndexError:
             # add a new row
-            self.data.append([''] * self.GetNumberCols())
+            self.ledger.insert_row()
+            self._update_data()         # Must come before _set_value()
             self._set_value(row, col, value)
 
             # tell grid we've added a row
             action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
             msg = wx.grid.GridTableMessage(self, action, 1)
+            self.GetView().ProcessTableMessage(msg)
+            self.parent._format_table()
+        else:
+            # run if no errors
+            self._update_data()
+            # _update_data() does not update the balance for all rows. hmm...
+            # Update values
+            action = wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES
+            msg = wx.grid.GridTableMessage(self, action)
             self.GetView().ProcessTableMessage(msg)
             self.parent._format_table()
 
@@ -918,18 +951,19 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         Sets the columns for the ledger.
         """
         # (title, type, width)
+        # TODO: make column order depend only on the DB view
         cols = [
-#                ("#",                   wx.grid.GRID_VALUE_STRING, 30),
-                ("Transaction Date",    wx.grid.GRID_VALUE_STRING, 100),
-                ("Date Entered",        wx.grid.GRID_VALUE_STRING, 100),
-                ("CheckNum",            wx.grid.GRID_VALUE_STRING, 80),
-                ("Payee",               wx.grid.GRID_VALUE_STRING, 120),
-                ("Downloaded Payee",    wx.grid.GRID_VALUE_STRING, 120),
-                ("Memo",                wx.grid.GRID_VALUE_STRING, 150),
-                ("Category",            wx.grid.GRID_VALUE_STRING, 180),
-                ("Label",               wx.grid.GRID_VALUE_STRING, 160),
-                ("Amount",              wx.grid.GRID_VALUE_STRING, 80),
-                ("Balance",             wx.grid.GRID_VALUE_STRING, 80),
+                ("tid",                 wx.grid.GRID_VALUE_STRING, 30),
+                ("Date",                wx.grid.GRID_VALUE_TEXT, 100),
+                ("Date Entered",        wx.grid.GRID_VALUE_TEXT, 100),
+                ("CheckNum",            wx.grid.GRID_VALUE_TEXT, 80),
+                ("Payee",               wx.grid.GRID_VALUE_TEXT, 120),
+                ("Downloaded Payee",    wx.grid.GRID_VALUE_TEXT, 120),
+                ("Memo",                wx.grid.GRID_VALUE_TEXT, 150),
+                ("Category",            wx.grid.GRID_VALUE_TEXT, 180),
+                ("Label",               wx.grid.GRID_VALUE_TEXT, 160),
+                ("Amount",              wx.grid.GRID_VALUE_TEXT, 80),
+                ("Balance",             wx.grid.GRID_VALUE_TEXT, 80),
                 ]
 
         labels = [_i[0] for _i in cols]
@@ -940,7 +974,21 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         return (labels, types)
 
+    def _update_data(self):
+        # grab the table data from the database
+        self.ledger = pbsql.LedgerView(DATABASE, 0)
+        data = self.ledger.read_all()
 
+        # calculate the running balance and add it to the data
+        starting_bal = decimal.Decimal(200)
+        balance = starting_bal
+        data = list([list(str(_x) for _x in row) for row in data])
+        self.data = []
+        for row in data:
+            balance += decimal.Decimal(row[-1])
+            row[-2] = str(row[-2])
+            row.append(str(balance))
+            self.data.append(row)
 
 class LedgerGrid(wx.grid.Grid):
     """
@@ -1004,12 +1052,17 @@ class LedgerGrid(wx.grid.Grid):
                 if val < 0:
                     self.SetCellTextColour(row, col,
                                            LEDGER_COLOR_VALUE_NEGATIVE)
+                else:
+                    self.SetCellTextColour(row, col,
+                                           LEDGER_COLOR_VALUE_POSITIVE)
+
 
     def _on_left_dclick(self, event):
         if self.CanEnableCellControl():
             self.EnableCellEditControl()
 
 
+# TODO: Add some way to highlight which account is active. A button, mayhaps?
 class AccountList(wx.Panel):
     """ List of the accounts """
     def __init__(self, parent):
@@ -1025,7 +1078,7 @@ class AccountList(wx.Panel):
 
     def _init_ui(self):
         """ Initialize UI components """
-        # Set style info for the FoldPanelBards (CaptionBars)
+        # Set style info for the FoldPanelBar (CaptionBars)
         self.style = fpb.CaptionBarStyle()
         self.style.SetCaptionStyle(fpb.CAPTIONBAR_GRADIENT_H)
         color1 = wx.Colour((0, 255, 255))
@@ -1079,6 +1132,64 @@ class AccountList(wx.Panel):
         self.vbox.Add((-1, 3), 0, wx.EXPAND)
         self.vbox.Add(self.hbox, 1, wx.EXPAND)
 
+        self.SetSizer(self.vbox)
+
+
+class AccountListTree(wx.Panel):
+    """
+    """
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, wx.ID_ANY)
+#        wx.gizmos.TreeListCtrl.__init__(self, parent, wx.ID_ANY)
+
+        self._init_ui()
+
+    def _init_ui(self):
+
+        tc_style = (wx.TR_DEFAULT_STYLE
+                    | wx.TR_HAS_BUTTONS
+#                    | wx.TR_HAS_VARIABLE_ROW_HEIGHT
+#                    | wx.TR_TWIST_BUTTONS
+#                    | wx.TR_ROW_LINES
+#                    | wx.TR_COLUMN_LINES
+                    | wx.TR_FULL_ROW_HIGHLIGHT
+                    )
+
+        # Create items
+        titlefont = wx.Font(16,
+                            wx.FONTFAMILY_DEFAULT,
+                            wx.FONTSTYLE_NORMAL,
+                            wx.FONTWEIGHT_BOLD,
+                            )
+        self.title = wx.StaticText(self, wx.ID_ANY,
+                                   label="Accounts",
+                                   size=(-1, -1),
+                                   style=wx.ALIGN_CENTER,
+                                   )
+        self.title.SetFont(titlefont)
+
+        self.tree = wx.TreeCtrl(self,
+                                wx.ID_ANY,
+                                style=tc_style,
+                                )
+
+        self.root = self.tree.AddRoot("Accounts")
+#        self.tree.SetItemText(self.root, "col1 root")
+        group1 = self.tree.AppendItem(self.root, "Group1")
+        group2 = self.tree.AppendItem(self.root, "Group2")
+        acct1 = self.tree.AppendItem(group1, "acct1")
+        acct2 = self.tree.AppendItem(group1, "acct2")
+        acct3 = self.tree.AppendItem(group2, "acct3")
+        acct4 = self.tree.AppendItem(group2, "acct4")
+#        self.tree.SetItemText(child, "col1")
+
+#        self.tree.Expand(self.root)
+        self.tree.ExpandAll()
+
+        self.vbox = wx.BoxSizer(wx.VERTICAL)
+        self.vbox.Add(self.title, 0, wx.EXPAND)
+        self.vbox.Add((-1, 3), 0, wx.EXPAND)
+        self.vbox.Add(self.tree, 1, wx.EXPAND)
         self.SetSizer(self.vbox)
 
 
