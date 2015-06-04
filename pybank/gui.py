@@ -25,6 +25,7 @@ import os.path as osp
 
 # Third Party
 import wx
+import wx.grid
 import wx.lib.mixins.listctrl as listmix
 #from wx.lib.splitter import MultiSplitterWindow
 try:
@@ -49,8 +50,10 @@ import pbsql
 ### Module Constants
 ### #------------------------------------------------------------------------
 
-LEDGER_COLOR_1 = wx.Colour(255, 255, 255, 255)
-LEDGER_COLOR_2 = wx.Colour(255, 255, 204, 255)
+LEDGER_COLOR_ROW_NEW = wx.Colour(240, 240, 240, 255)
+LEDGER_COLOR_ROW_ODD = wx.Colour(255, 255, 255, 255)
+LEDGER_COLOR_ROW_EVEN = wx.Colour(255, 255, 204, 255)
+LEDGER_COLOR_VALUE_NEGATIVE = wx.Colour(255, 0, 0, 255)
 DATABASE = "test_database.db"
 
 ### #------------------------------------------------------------------------
@@ -62,7 +65,7 @@ class MainApp(object):
     def __init__(self):
         self.app = wx.App()
 
-        self.frame = MainFrame("PyBank", (1200, 800))
+        self.frame = MainFrame("PyBank", (1250, 800))
 
         self.frame.Show()
         self.app.MainLoop()
@@ -388,7 +391,8 @@ class LedgerPanel(wx.Panel):
 
     def _init_ui(self):
         """ Initialize UI components """
-        self.ledger = LedgerULC(self)
+        self.ledger = LedgerGrid(self)
+#        self.ledger = LedgerULC(self)
         self.summary_bar = LedgerSummaryBar(self)
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
@@ -440,7 +444,7 @@ class LedgerULC(ulc.UltimateListCtrl,
 
         # Initialize mixins
 #        listmix.TextEditMixin.__init__(self)
-#        listmix.ListRowHighlighter.__init__(self, LEDGER_COLOR_1)
+#        listmix.ListRowHighlighter.__init__(self, LEDGER_COLOR_ROW_ODD)
 
         # Create our columns and populate initial data.
         self._create_columns()
@@ -502,9 +506,9 @@ class LedgerULC(ulc.UltimateListCtrl,
 
             # Then set the background color
             if _i % 2 == 0:
-                self.SetItemBackgroundColour(row, LEDGER_COLOR_2)
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_ROW_EVEN)
             else:
-                self.SetItemBackgroundColour(row, LEDGER_COLOR_1)
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_ROW_ODD)
 
             # Accumulate the account value
             # TODO: get rid of this hack
@@ -598,6 +602,412 @@ class LedgerULC(ulc.UltimateListCtrl,
     def change_row_to_edit(self, row):
         """ Modifies a row to edit-style. """
         print("modifying row {}".format(row))
+
+
+class LedgerVirtual(wx.ListCtrl,
+#                    listmix.ColumnSorterMixin,
+                    listmix.ListCtrlAutoWidthMixin,
+#                    listmix.TextEditMixin,
+#                    listmix.ListRowHighlighter,    # not PY3 ready :-(
+                ):
+    """
+    Main Ladger Widget.
+
+    Inherits from ulc.UltimateListCtrl.
+
+    See
+    http://xoomer.virgilio.it/infinity77/AGW_Docs/ultimatelistctrl_module.html
+    for docs.
+
+    # TODO:
+    -------
+    [ ]     ColumnSorterMixin
+    [ ]     AutoWidth for "Payee" column
+    [x]     Show/Hide columns
+    """
+    def __init__(self, parent):
+        self.parent = parent
+
+        agw_style = (
+                     wx.LC_REPORT
+                     | wx.LC_VRULES
+                     | wx.LC_HRULES
+                     | wx.LC_SINGLE_SEL
+                     | wx.LC_VIRTUAL
+                     )
+
+        # Initialize the parent
+        wx.ListCtrl.__init__(self,
+                                      parent,
+                                      wx.ID_ANY,
+                                      style=agw_style,
+                                      )
+
+        view = pbsql.LedgerView(DATABASE, "v_ledger_0")
+        data = view.read_all()
+        num_items = len(data)
+        self.SetItemCount(num_items)
+        self.data_source = dict(enumerate(data))
+
+        # Initialize mixins
+#        listmix.TextEditMixin.__init__(self)
+#        listmix.ListRowHighlighter.__init__(self, LEDGER_COLOR_ROW_ODD)
+
+        # Create our columns and populate initial data.
+        self._create_columns()
+#        self._populate_table()
+#        self._set_initial_hidden_states()
+#        self._add_edit_row()
+#        self._init_sorting_mixin()
+
+        # Auto-width mixin
+        listmix.ListCtrlAutoWidthMixin.__init__(self)
+        self.setResizeColumn(5)         # Payee column
+        self.resizeColumn(120)          # min width = 120px
+
+
+        self._bind_events()
+
+    ### #--------------------------------------------------------------------
+    ### Method Overrides
+    ### #--------------------------------------------------------------------
+
+    # Used by ColumnSorterMixin, see wx/lib/mixins/listctrl.py
+    def GetListCtrl(self):
+        """
+        Override Method for ColumnSorterMixin.
+
+        See wx/lib/mixins/listctrl.py
+        """
+        return self
+
+    def OnGetItemText(self, item, column):
+        data = self.data_source[item]
+        return data[column]
+
+    def OnGetItemAttr(self, item):
+        return None
+
+    def OnGetItemImage(self, item):
+        return -1
+
+    ### #--------------------------------------------------------------------
+    ### Private Methods
+    ### #--------------------------------------------------------------------
+
+    def _create_columns(self):
+        """
+        Creates the columns for the ledger.
+        """
+        # (title, format, width)
+        cols = [
+                ("#", ulc.ULC_FORMAT_RIGHT, 30),
+                ("Transaction Date", ulc.ULC_FORMAT_LEFT, 100),
+                ("Date Entered", ulc.ULC_FORMAT_LEFT, 100),
+                ("CheckNum", ulc.ULC_FORMAT_LEFT, 80),
+                ("Payee", ulc.ULC_FORMAT_LEFT, 120),     # TODO: LIST_AUTOSIZE_FILL
+                ("Downloaded Payee", ulc.ULC_FORMAT_LEFT, 120),
+                ("Memo", ulc.ULC_FORMAT_LEFT, 150),
+                ("Category", ulc.ULC_FORMAT_LEFT, 180),
+                ("Label", ulc.ULC_FORMAT_LEFT, 160),
+                ("Amount", ulc.ULC_FORMAT_RIGHT, 80),
+                ("Balance", ulc.ULC_FORMAT_RIGHT, 80),
+                ]
+
+        for _i, (title, fmt, width) in enumerate(cols):
+            self.InsertColumn(_i, title, fmt, width)
+
+    def _populate_table(self):
+        """ populates the list control directly from the v_ledger_0 view. """
+        view = pbsql.LedgerView(DATABASE, "v_ledger_0")
+        data = view.read_all()
+        data = dict(enumerate(data))
+        starting_bal = decimal.Decimal(200)
+        balance = starting_bal
+
+        for _i in range(len(data)):
+            # Create the row
+            row = self.InsertStringItem(_i, str(_i + 1))
+
+            # Then set the background color
+            if _i % 2 == 0:
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_ROW_EVEN)
+            else:
+                self.SetItemBackgroundColour(row, LEDGER_COLOR_ROW_ODD)
+
+            # Accumulate the account value
+            # TODO: get rid of this hack
+            balance += decimal.Decimal(data[_i][-1])
+            temp_data = list(data[_i])
+            temp_data.append(balance)
+            data[_i] = tuple(temp_data)
+
+            # Add the data
+            for _col, item in enumerate(data[_i]):
+                val = '' if item is None else str(item)
+                if _col == 6 or _col == 7:
+                    cb = wx.ComboBox(self,
+                                     wx.ID_ANY,
+                                     value=val,
+                                     choices=['a', 'b', 'c'],
+                                     )
+                    self.SetItemWindow(row, _col + 1, cb, expand=True)
+                else:
+                    self.SetStringItem(row, _col + 1, val)
+
+    def _set_initial_hidden_states(self):
+        """
+        Sets the initial hidden states for the columns based on the View Menu.
+
+        """
+        # TODO: Move column states to a config file so that it can persist
+        #       Also means I don't have to access the menu value for
+        #       hidden/shown - I can just access the variable that was set
+        #       by reading the config file.
+
+        # XXX: For now, just hard-code the defaults 2 and 6
+        self.SetColumnShown(2, False)
+        self.SetColumnShown(6, False)
+
+    def _add_edit_row(self):
+        """
+        Adds an edit row to the end of the Ledger so that users can add
+        items.
+        """
+        num_items = self.GetItemCount()
+        print(num_items)
+
+        row = self.InsertStringItem(num_items, "")
+        for _col in range(1, self.GetColumnCount()):
+            if _col == 7 or _col == 8:
+                cb = wx.ComboBox(self,
+                                 wx.ID_ANY,
+                                 value='',
+                                 choices=['a', 'b', 'c'],
+                                 )
+                self.SetItemWindow(row, _col, cb, expand=True)
+            elif _col == 10:
+                # don't allow the user to add a new balance
+                continue
+            else:
+                tc = wx.TextCtrl(self,
+                                 wx.ID_ANY,
+                                 value='',
+                                 )
+                self.SetItemWindow(row, _col, tc, expand=True)
+
+    def _init_sorting_mixin(self):
+        """ must be called after list exists """
+        listmix.ColumnSorterMixin.__init__(self, 9)
+
+    def _bind_events(self):
+        """ Bind all the events """
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_item_doubleclick)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_item_select)
+
+    def _on_column_click(self, event):
+        """
+        Fire on column click
+        """
+        self.Refresh()
+        event.Skip()
+
+    def _on_item_select(self, event):
+        """ Highlight the entire row when a single item is selected """
+        pass
+
+    def _on_item_doubleclick(self, event):
+        """
+        Change the cell to editable.
+        """
+        row = event.GetIndex()
+        print("Doubleclick on row: {}".format(row))
+        self.change_row_to_edit(row)
+
+    def change_row_to_edit(self, row):
+        """ Modifies a row to edit-style. """
+        print("modifying row {}".format(row))
+
+
+class LedgerGridBaseTable(wx.grid.GridTableBase):
+    """
+    """
+    def __init__(self, parent):
+        wx.grid.GridTableBase.__init__(self)
+        self.parent = parent
+        self.column_labels, self.col_types = self._set_columns()
+
+
+        # grab the table data from the database
+        view = pbsql.LedgerView(DATABASE, "v_ledger_0")
+        data = view.read_all()
+
+        # calculate the running balance and add it to the data
+        starting_bal = decimal.Decimal(200)
+        balance = starting_bal
+        data = list([list(row) for row in data])
+        self.data = []
+        for row in data:
+            balance += decimal.Decimal(row[-1])
+            row[-2] = str(row[-2])
+            row.append(str(balance))
+            self.data.append(row)
+
+    ### #--------------------------------------------------------------------
+    ### Method Overrides
+    ### #--------------------------------------------------------------------
+
+    def GetNumberRows(self):
+        return len(self.data) + 1
+
+    def GetNumberCols(self):
+        return len(self.data[0])
+
+    def IsEmptyCell(self, row, column):
+        try:
+            return not self.data[row][column]
+        except IndexError:
+            return True
+
+    def GetValue(self, row, column):
+        try:
+            value = self.data[row][column]
+            if value is None or value == 'None':
+                return ''
+            else:
+                return value
+        except IndexError:
+            return ''
+
+    def SetValue(self, row, col, value):
+        self._set_value(row, col, value)
+
+    def _set_value(self, row, col, value):
+        try:
+            self.data[row][col] = value
+        except IndexError:
+            # add a new row
+            self.data.append([''] * self.GetNumberCols())
+            self._set_value(row, col, value)
+
+            # tell grid we've added a row
+            action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
+            msg = wx.grid.GridTableMessage(self, action, 1)
+            self.GetView().ProcessTableMessage(msg)
+            self.parent._format_table()
+
+    def GetColLabelValue(self, column):
+        return self.column_labels[column]
+
+    def GetTypeName(self, row, column):
+        return self.col_types[column]
+
+    def CanGetValueAs(self, row, column, type_name):
+        column_type = self.col_types[column].split(":")[0]
+        return type_name == column_type
+
+    def CanSetValueAs(self, row, column, type_name):
+        return self.CanGetValueAs(row, column, type_name)
+
+    ### #--------------------------------------------------------------------
+    ### Private Methods
+    ### #--------------------------------------------------------------------
+
+    def _set_columns(self):
+        """
+        Sets the columns for the ledger.
+        """
+        # (title, type, width)
+        cols = [
+#                ("#",                   wx.grid.GRID_VALUE_STRING, 30),
+                ("Transaction Date",    wx.grid.GRID_VALUE_STRING, 100),
+                ("Date Entered",        wx.grid.GRID_VALUE_STRING, 100),
+                ("CheckNum",            wx.grid.GRID_VALUE_STRING, 80),
+                ("Payee",               wx.grid.GRID_VALUE_STRING, 120),
+                ("Downloaded Payee",    wx.grid.GRID_VALUE_STRING, 120),
+                ("Memo",                wx.grid.GRID_VALUE_STRING, 150),
+                ("Category",            wx.grid.GRID_VALUE_STRING, 180),
+                ("Label",               wx.grid.GRID_VALUE_STRING, 160),
+                ("Amount",              wx.grid.GRID_VALUE_STRING, 80),
+                ("Balance",             wx.grid.GRID_VALUE_STRING, 80),
+                ]
+
+        labels = [_i[0] for _i in cols]
+        types = [_i[1] for _i in cols]
+
+        for _i, title in enumerate(labels):
+            self.SetColLabelValue(_i, title)
+
+        return (labels, types)
+
+
+
+class LedgerGrid(wx.grid.Grid):
+    """
+    """
+    def __init__(self, parent):
+        wx.grid.Grid.__init__(self, parent, wx.ID_ANY)
+
+        table = LedgerGridBaseTable(self)
+
+        self.SetTable(table, True)
+
+        self.SetRowLabelSize(30)
+        self.SetMargins(0, 0)
+        self.AutoSizeColumns(True)
+
+        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK,
+                  self._on_left_dclick,
+                  self)
+
+        self._format_table()
+
+    def _format_table(self):
+        """ Formats all table properties """
+        self._color_rows()
+        self._align_columns()
+        self._color_dollars()
+
+    def _color_rows(self):
+        """ Color alternating rows and color the last row light grey """
+        num_rows = self.GetNumberRows()
+        for row in range(num_rows):
+            attr = wx.grid.GridCellAttr()
+            if row == num_rows - 1:
+                attr.SetBackgroundColour(LEDGER_COLOR_ROW_NEW)
+            elif row % 2 == 0:
+                attr.SetBackgroundColour(LEDGER_COLOR_ROW_EVEN)
+            else:
+                attr.SetBackgroundColour(LEDGER_COLOR_ROW_ODD)
+            self.SetRowAttr(row, attr)
+
+    def _align_columns(self):
+        """ Sets the alignment for each column """
+        num_cols = self.GetNumberCols()
+        for column in range(num_cols):
+            attr = wx.grid.GridCellAttr()
+            if column in (2, 8, 9):
+                attr.SetAlignment(wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
+            else:
+                attr.SetAlignment(wx.ALIGN_LEFT, wx.ALIGN_CENTER)
+            self.SetColAttr(column, attr)
+
+    def _color_dollars(self):
+        """ Colors negative amounts and balances as red """
+        num_rows = self.GetNumberRows() - 1
+        for row in range(num_rows):
+            for col in (8, 9):
+                try:
+                    val = float(self.GetCellValue(row, col))
+                except ValueError:
+                    val = 0
+                if val < 0:
+                    self.SetCellTextColour(row, col,
+                                           LEDGER_COLOR_VALUE_NEGATIVE)
+
+    def _on_left_dclick(self, event):
+        if self.CanEnableCellControl():
+            self.EnableCellEditControl()
 
 
 class AccountList(wx.Panel):
