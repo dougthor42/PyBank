@@ -1,4 +1,7 @@
 nose
+python-levenshtein
+fuzzywuzzy
+pyxDamerauLevenshtein
 wheel
 nose-cov
 python-termstyle

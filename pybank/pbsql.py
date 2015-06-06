@@ -157,15 +157,18 @@ name : string
     downloaded name of the payee
 display_name_id : int, optional
     If present, display this name instead of the normal one (renaming rules)
-category : uint16
+category_id : uint16, optional
     default category that this payee should be sorted into.
 
 
+# TODO: implement
 renaming_rule:
 -------------
 Contains naming rules for renaming payees
 # TODO: Figure out how I want to implement this.
 I think I need to look up foreign keys and many-to-one relationships.
+
+See Issue #2.
 
 id : uint32, primary key        # XXX: Is this needed?
     Unique identifier for the renaming rule
@@ -196,7 +199,7 @@ Joins everything together, yay!
     pass
 
 
-# TODO: SQLite Adaptors and Converters
+# TODO: SQLite adapters and converters
 # https://docs.python.org/3.4/library/sqlite3.html#sqlite-and-python-types
 
 def validate_db():
