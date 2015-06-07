@@ -88,6 +88,8 @@ if __name__ == "__main__":
         setup = "from pyxdameraulevenshtein import damerau_levenshtein_distance as lev2"
         if l > 100:
             num = 30
+        elif l > 1000:
+            num = 3
         else:
             num = 1000
         a = timeit.timeit(cmd, setup, number=num)

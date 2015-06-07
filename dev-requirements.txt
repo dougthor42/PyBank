@@ -2,6 +2,7 @@ nose
 python-levenshtein
 fuzzywuzzy
 pyxDamerauLevenshtein
+#--upgrade --pre build_reqs/pyxDamerauLevenshtein-1.3.2-cp34-none-win32.whl
 wheel
 nose-cov
 python-termstyle
