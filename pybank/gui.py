@@ -42,10 +42,12 @@ except ImportError:
 # like the most and it's what I know the best.
 
 # Package / Application
-if __name__ == "__main__":
-    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+# todo: remove this hack
+#if __name__ == "__main__":
+#    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
 import pbsql
+#from . import pbsql    # this is how it should be, but spyder doesn't like it?
 
 ### #------------------------------------------------------------------------
 ### Module Constants
@@ -67,7 +69,7 @@ class MainApp(object):
     def __init__(self):
         self.app = wx.App()
 
-        self.frame = MainFrame("PyBank", (1250, 800))
+        self.frame = MainFrame("PyBank", (1200, 700))
 
         self.frame.Show()
         self.app.MainLoop()

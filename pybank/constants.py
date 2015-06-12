@@ -6,7 +6,6 @@ Created on Tue May 26 12:34:58 2015
 
 @author: dthor
 
-
 """
 from wx import Colour
 
