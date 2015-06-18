@@ -33,7 +33,7 @@ from pybank import pbsql
 
 class TestGenerateCategoryStrings(unittest.TestCase):
     """ Tests relating to generate_category_strings """
-    @unittest.skip("come back to this later")
+#    @unittest.skip("come back to this later")
     def test_testfunc(self):
         """ generate_category_strings"""
         data = [(1, "A", 0),

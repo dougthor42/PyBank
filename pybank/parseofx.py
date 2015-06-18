@@ -1272,7 +1272,7 @@ EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
 def main():
     """ Code to run when module called directly, just some quick checks. """
     docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
-    file = "tests\\data\\rs_investments.ofx"
+    file = "..\\tests\\data\\rs_checking.ofx"
 
     with open(file, 'r') as openf:
         a = ParseOFX(openf)
