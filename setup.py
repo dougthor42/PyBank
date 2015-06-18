@@ -5,13 +5,13 @@ Created on Tue May 12 12:58:55 2015
 @author: dthor
 """
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name = 'PyBank',
     version = '0.0.1',
     description = "Finance tracking software",
-    packages=['pybank', 'pybank.tests'],
+    packages=find_packages(),
     author="Douglas Thor",
     url="https://github.com/dougthor42/PyBank",
     classifiers=[
