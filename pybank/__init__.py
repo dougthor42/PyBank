@@ -122,12 +122,12 @@ dateformat = "%Y-%m-%d %H:%M:%S"
 logging.basicConfig(filename='PyBank.log',
                     format=logformat,
                     datefmt=dateformat,
-                    level=logging.DEBUG,
+                    level=logging.WARN,
                     )
 
 # And mimmic it in the console
 console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
+console.setLevel(logging.WARN)
 formatter = logging.Formatter(logformat, dateformat)
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
