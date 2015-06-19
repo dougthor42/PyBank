@@ -1,0 +1,22 @@
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::DEBUG::db_execute: unittest_db.db || 
+            CREATE TABLE stocks
+            (date text, trans text, symbol text, qty real, price real)
+            
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::DEBUG::db_insert: unittest_db.db || INSERT INTO display_name (display_name) VALUES (hello)
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::DEBUG::db_query: unittest_db.db || SELECT * FROM payee
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:46::DEBUG::db_execute: unittest_db.db || 
+            CREATE TABLE stocks
+            (date text, trans text, symbol text, qty real, price real)
+            
+2015-06-19 12:03:46::INFO::Creating empty database
+2015-06-19 12:03:47::DEBUG::db_insert: unittest_db.db || INSERT INTO display_name (display_name) VALUES (hello)
+2015-06-19 12:03:47::INFO::Creating empty database
+2015-06-19 12:03:47::DEBUG::db_query: unittest_db.db || SELECT * FROM payee
