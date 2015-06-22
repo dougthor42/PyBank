@@ -26,8 +26,8 @@ from contextlib import closing
 from docopt import docopt
 
 # Package / Application
-if __name__ == "__main__":
-    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+#if __name__ == "__main__":
+#    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
 
 

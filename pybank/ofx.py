@@ -35,7 +35,11 @@ import keyring
 if __name__ == "__main__":
     sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
-from pybank.parseofx import ParseOFX
+try:
+    from .parseofx import ParseOFX
+except (SystemError, ImportError):
+    print("import failed, falling back")
+    from parseofx import ParseOFX
 
 
 ### #------------------------------------------------------------------------

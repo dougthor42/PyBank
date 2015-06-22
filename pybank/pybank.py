@@ -26,8 +26,8 @@ import os.path as osp
 from docopt import docopt
 
 # Package / Application
-if __name__ == "__main__":
-    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+#if __name__ == "__main__":
+#    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
 #from pybank.parseofx import ParseOFX
 #from pybank import pbsql

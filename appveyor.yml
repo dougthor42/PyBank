@@ -90,18 +90,27 @@ build: off  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  - python --version
-  - "%CMD_IN_ENV% nosetests --verbose"
+#  - python --version
+#  - "%CMD_IN_ENV% nosetests --verbose"
   - "%CMD_IN_ENV% green pybank -vv"
 #  - "%CMD_IN_ENV% python -m pytest hypothesis-extra/hypothesis-datetime/tests"
 #  - "%CMD_IN_ENV% python -m pytest hypothesis-extra/hypothesis-pytest/tests"
 
-#after_test:
-  # if tests OK, create whl package
-#  - "%CMD_IN_ENV% python setup.py bdist_wheel bdist_wininst"
+after_test:
+  # Create wheel package and executable
+  - "%CMD_IN_ENV% python setup.py bdist_wheel"
+  - "%CMD_IN_ENV% python build_executables.py build"
 #  - ps: "ls dist"
 
-#artifacts:
-  # Archive the generated wheel package in the ci.appveyor.com build report.
-#  - path: dist\*
+  # Create a .zip of the build
+  - "7z a PyBank.zip PyBank\build\exe.win-amd64-3.4"
 
+artifacts:
+  # Archive the generated wheel package in the ci.appveyor.com build report.
+  - path: PyBank.zip
+    name: PyBank
+    type: zip
+
+  - path: "PyBank\PyBank-0.0.1-py3-none-any.whl"
+    name: "PyBank-0.0.1-py3-none-any.whl"
+    type: whl

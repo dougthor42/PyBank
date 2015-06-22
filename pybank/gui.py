@@ -42,12 +42,17 @@ except ImportError:
 # like the most and it's what I know the best.
 
 # Package / Application
-# todo: remove this hack
-#if __name__ == "__main__":
-#    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 #from __init__ import VERSION
-import pbsql
-#from . import pbsql    # this is how it should be, but spyder doesn't like it?
+try:
+    from . import pbsql
+except SystemError:
+    print("import failed, falling back")
+    try:
+        import pbsql             # used by spyder
+        print("Imports for Spyder IDE")
+    except ImportError:
+        from pybank import pbsql # used by cx_freeze
+        print("imports for Executable")
 
 ### #------------------------------------------------------------------------
 ### Module Constants
@@ -853,7 +858,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
     ### #--------------------------------------------------------------------
 
     def GetNumberRows(self):
-        rows = pbsql.db_query_single(pbsql.DATABASE,
+        rows = pbsql.db_query_single(DATABASE,
                                      "SELECT COUNT(*) FROM v_ledger_0")[0]
         return rows + 1
 #        return len(self.data) + 1

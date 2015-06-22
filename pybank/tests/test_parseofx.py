@@ -26,10 +26,17 @@ from docopt import docopt
 from bs4 import BeautifulSoup
 
 # Package / Application
-#if __name__ == "__main__":
-#    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-#from __init__ import VERSION
-from .. import parseofx
+try:
+    from .. import parseofx
+except (SystemError, ImportError):
+    if __name__ == "__main__":
+        # Allow module to be run as script
+        print("Running module as script")
+        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+        import parseofx
+    else:
+        raise
+
 
 """
 TODO List:

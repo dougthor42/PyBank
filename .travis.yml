@@ -15,15 +15,11 @@ install:
 #  - pip install --upgrade --pre -f "http://wxpython.org/Phoenix/snapshot-builds/" wxPython_Phoenix
 
 script:
-#  - coverage run -m pybank core.py test_core.py
-#  - nosetests
-#  - nosetests --with-cov --cov ci_setup_check --cov-config .coverage.rc --logging-level=INFO
-  #- nosetests --verbose --with-cov --cov pybank --logging-level=INFO
+#  - nosetests --verbose --with-cov --cov pybank --logging-level=INFO
   - green -r -vvv pybank
 
-# Calculate coverage
 after_success:
-#  - coveralls --config_file .coverage.rc
+  # Send coverage information to coveralls.io
   - coveralls
 
 #addons:
