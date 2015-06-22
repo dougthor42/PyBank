@@ -105,16 +105,17 @@ after_test:
   - "%CMD_IN_ENV% python --version"
 
   # Create a .zip of the build
-#  - "7z a PyBank.zip build\\exe.win-amd64-3.4\\*"
   - ps: ls
   - ps: ls "build"
+  - ps: ls "dist"
+  - "7z a PyBank.zip .\\build\\exe.win-amd64-3.4\\"
 
 artifacts:
   # Upload the wheel and EXE to AppVeyor
-  - path: PyBank.zip
-    name: PyBank
-    type: zip
-
-  - path: "PyBank\PyBank-0.0.1-py3-none-any.whl"
+  - path: "dist\PyBank-0.0.1-py3-none-any.whl"
     name: "PyBank-0.0.1-py3-none-any.whl"
     type: whl
+
+#  - path: PyBank.zip
+#    name: PyBank
+#    type: zip
