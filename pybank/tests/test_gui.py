@@ -26,13 +26,14 @@ from docopt import docopt
 
 # Package / Application
 try:
-    from .. import gui
+#    from .. import gui
+    pass
 except (SystemError, ImportError):
     if __name__ == "__main__":
         # Allow module to be run as script
         print("Running module as script")
         sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import gui
+#        import gui
     else:
         raise
 

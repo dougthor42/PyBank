@@ -16,7 +16,7 @@ install:
 
 script:
 #  - nosetests --verbose --with-cov --cov pybank --logging-level=INFO
-  - green -r -vvv pybank
+  - green pybank -vv --run-coverage
 
 after_success:
   # Send coverage information to coveralls.io
