@@ -103,7 +103,7 @@ after_test:
   - "%CMD_IN_ENV% python build_executables.py build"
 
   # Create a .zip of the build
-  - "7z a PyBank.zip build\\exe.win-amd64-3.4"
+  - "7z a PyBank.zip build\\exe.win-amd64-3.4\*"
 
 artifacts:
   # Upload the wheel and EXE to AppVeyor
