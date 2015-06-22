@@ -108,7 +108,7 @@ after_test:
   - ps: ls
   - ps: ls "build"
   - ps: ls "dist"
-  - "7z a PyBank.zip .\\build\\exe.win-amd64-3.4\\"
+  - "7z a PyBank.zip .\\build\\exe.win32-3.4\\"
 
 artifacts:
   # Upload the wheel and EXE to AppVeyor
@@ -116,6 +116,6 @@ artifacts:
     name: "PyBank-0.0.1-py3-none-any.whl"
     type: whl
 
-#  - path: PyBank.zip
-#    name: PyBank
-#    type: zip
+  - path: PyBank.zip
+    name: PyBank
+    type: zip
