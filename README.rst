@@ -68,7 +68,7 @@ None Yet
   :target: https://travis-ci.org/dougthor42/PyBank
   :alt: Travis-CI (Linux, Max)
 
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/dougthor42/pybank?svg=true
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/dougthor42/pybank?branch=master&svg=true
   :target: https://ci.appveyor.com/project/dougthor42/pybank
   :alt: AppVeyor (Windows)
 

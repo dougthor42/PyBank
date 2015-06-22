@@ -10,6 +10,7 @@ from cx_Freeze import setup, Executable
 
 build_exe_opts = {"includes": ["pybank/pbsql", ],
                   "include_files": ["pybank/test_database.db"],
+                  "silent": True,
                   }
 
 base = None
