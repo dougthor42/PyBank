@@ -42,17 +42,23 @@ except ImportError:
 # like the most and it's what I know the best.
 
 # Package / Application
-#from __init__ import VERSION
 try:
+    # Imports used for unittests
+    from . import __init__ as __pybank_init
     from . import pbsql
+    logging.debug("Imports for UnitTests")
 except SystemError:
-    print("import failed, falling back")
     try:
-        import pbsql             # used by spyder
-        print("Imports for Spyder IDE")
+        # Imports used by Spyder
+        import __init__ as __pybank_init
+        import pbsql
+        logging.debug("Imports for Spyder IDE")
     except ImportError:
-        from pybank import pbsql # used by cx_freeze
-        print("imports for Executable")
+         # Imports used by cx_freeze
+        from pybank import __init__ as __pybank_init
+        from pybank import pbsql
+        logging.debug("imports for Executable")
+
 
 ### #------------------------------------------------------------------------
 ### Module Constants
@@ -280,17 +286,17 @@ class MainFrame(wx.Frame):
 
     def _on_quit(self, event):
         """ Execute quit actions """
-        print("on quit")
+        logging.debug("on quit")
         self.Close(True)
 
     def _on_open(self, event):
         """ Open a file """
-        print("on open")
+        logging.debug("on open")
         logging.info("Opening file")
 
     def _on_new(self, event):
         """ Create a new file """
-        print("on new")
+        logging.debug("on new")
         logging.info("Creating new file")
 
     def _on_toggle_ledger_col(self, event):
@@ -563,7 +569,7 @@ class LedgerULC(ulc.UltimateListCtrl,
         items.
         """
         num_items = self.GetItemCount()
-        print(num_items)
+        logging.debug(num_items)
 
         row = self.InsertStringItem(num_items, "")
         for _col in range(1, self.GetColumnCount()):
@@ -609,12 +615,12 @@ class LedgerULC(ulc.UltimateListCtrl,
         Change the cell to editable.
         """
         row = event.GetIndex()
-        print("Doubleclick on row: {}".format(row))
+        logging.debug("Doubleclick on row: {}".format(row))
         self.change_row_to_edit(row)
 
     def change_row_to_edit(self, row):
         """ Modifies a row to edit-style. """
-        print("modifying row {}".format(row))
+        logging.debug("modifying row {}".format(row))
 
 
 class LedgerVirtual(wx.ListCtrl,
@@ -788,7 +794,7 @@ class LedgerVirtual(wx.ListCtrl,
         items.
         """
         num_items = self.GetItemCount()
-        print(num_items)
+        logging.debug(num_items)
 
         row = self.InsertStringItem(num_items, "")
         for _col in range(1, self.GetColumnCount()):
@@ -834,12 +840,12 @@ class LedgerVirtual(wx.ListCtrl,
         Change the cell to editable.
         """
         row = event.GetIndex()
-        print("Doubleclick on row: {}".format(row))
+        logging.debug("Doubleclick on row: {}".format(row))
         self.change_row_to_edit(row)
 
     def change_row_to_edit(self, row):
         """ Modifies a row to edit-style. """
-        print("modifying row {}".format(row))
+        logging.debug("modifying row {}".format(row))
 
 
 class LedgerGridBaseTable(wx.grid.GridTableBase):
@@ -867,7 +873,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         return len(self.data[0])
 
     def IsEmptyCell(self, row, column):
-#        print("IsEmptyCell(row={}, col={})".format(row, column))
+#        logging.debug("IsEmptyCell(row={}, col={})".format(row, column))
         try:
             return not self.data[row][column]
         except IndexError:
@@ -882,7 +888,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         Is called on every cell at init and then again when cells are
         clicked.
         """
-#        print("GetValue(row={}, col={})".format(row, column))
+#        logging.debug("Getting value of r{}c{}".format(row, column))
         try:
             value = self.data[row][column]
             if value is None or value == 'None':
@@ -909,6 +915,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         #       If adding a new payee name, check it against the payee table
         #       Add if needed, otherwise...?
         """
+        logging.debug("Setting r{}c{} to `{}`".format(row, col, value))
         try:
             # update database entry
             # gotta get the tid and send *that* to the update method
@@ -917,6 +924,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             self.ledger.update_transaction(tid, col, value)
         except IndexError:
             # add a new row
+            logging.debug("Adding a new row")
             self.ledger.insert_row()
             self._update_data()         # Must come before _set_value()
             self._set_value(row, col, value)
@@ -1001,6 +1009,7 @@ class LedgerGrid(wx.grid.Grid):
     """
     """
     def __init__(self, parent):
+        logging.debug("Initializing LedgerGrid")
         wx.grid.Grid.__init__(self, parent, wx.ID_ANY)
 
         table = LedgerGridBaseTable(self)
@@ -1019,12 +1028,14 @@ class LedgerGrid(wx.grid.Grid):
 
     def _format_table(self):
         """ Formats all table properties """
+        logging.debug("Formatting table")
         self._color_rows()
         self._align_columns()
         self._color_dollars()
 
     def _color_rows(self):
         """ Color alternating rows and color the last row light grey """
+        logging.debug("Coloring rows")
         num_rows = self.GetNumberRows()
         for row in range(num_rows):
             attr = wx.grid.GridCellAttr()
@@ -1038,6 +1049,7 @@ class LedgerGrid(wx.grid.Grid):
 
     def _align_columns(self):
         """ Sets the alignment for each column """
+        logging.debug("Setting column alignment")
         num_cols = self.GetNumberCols()
         for column in range(num_cols):
             attr = wx.grid.GridCellAttr()
@@ -1049,6 +1061,7 @@ class LedgerGrid(wx.grid.Grid):
 
     def _color_dollars(self):
         """ Colors negative amounts and balances as red """
+        logging.debug("Coloring negative balances")
         num_rows = self.GetNumberRows() - 1
         for row in range(num_rows):
             for col in (8, 9):
@@ -1065,6 +1078,8 @@ class LedgerGrid(wx.grid.Grid):
 
 
     def _on_left_dclick(self, event):
+        # TODO: get cell coord from event
+        logging.debug("double left click on cell {}".format(event))
         if self.CanEnableCellControl():
             self.EnableCellEditControl()
 

@@ -158,7 +158,8 @@ class TestCloseTags(unittest.TestCase):
         self.assertEqual(result, actual)
 
     # TODO: Look into what's going on here
-    @unittest.skip("Need to fix.")
+#    @unittest.skip("Need to fix.")
+    @unittest.expectedFailure
     def test_close_tags_ok2(self):
         """ Check that tags get closed also """
         open_tags = io.StringIO("""

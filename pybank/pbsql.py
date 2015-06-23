@@ -26,9 +26,23 @@ from contextlib import closing
 from docopt import docopt
 
 # Package / Application
-#if __name__ == "__main__":
-#    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-#from __init__ import VERSION
+# Package / Application
+try:
+    # Imports used for unittests
+    from . import __init__ as __pybank_init
+#    from . import pbsql
+    logging.debug("Imports for UnitTests")
+except SystemError:
+    try:
+        # Imports used by Spyder
+        import __init__ as __pybank_init
+#        import pbsql
+        logging.debug("Imports for Spyder IDE")
+    except ImportError:
+         # Imports used by cx_freeze
+        from pybank import __init__ as __pybank_init
+#        from pybank import pbsql
+        logging.debug("imports for Executable")
 
 
 DATABASE = "test_database.db"
@@ -477,8 +491,7 @@ def db_execute(database, cmd, *args):
     # TODO: different context manager for connection? - auto-commit / rollback
     #https://docs.python.org/3.4/library/sqlite3.html#using-sqlite3-efficiently
     logcmd = cmd.replace("?", "{}").format(*args)
-    logstr = "db_execute: {db} || {sqlstr}"
-    logging.debug(logstr.format(db=database, sqlstr=logcmd))
+    logging.debug(logcmd)
     with closing(sqlite3.connect(database)) as conn:
         with closing(conn.cursor()) as cursor:
             cursor.execute(cmd, args)
@@ -510,8 +523,7 @@ def db_insert(database, cmd, *args):
     # TODO: different context manager for connection? - auto-commit / rollback
     #https://docs.python.org/3.4/library/sqlite3.html#using-sqlite3-efficiently
     logcmd = cmd.replace("?", "{}").format(*args)
-    logstr = "db_insert: {db} || {sqlstr}"
-    logging.debug(logstr.format(db=database, sqlstr=logcmd))
+    logging.debug(logcmd)
     # TODO: experiement with context managers
     #       Specifically, see if having the `return` inside the context
     #       manager is any different from having it outside. I'm interested
@@ -554,8 +566,7 @@ def db_query(database, query, *args):
     #https://docs.python.org/3.4/library/sqlite3.html#using-sqlite3-efficiently
     # TODO: Look into sqlite3.row_factory
     logquery = query.replace("?", "{}").format(*args)
-    logstr = "db_query: {db} || {sqlstr}"
-    logging.debug(logstr.format(db=database, sqlstr=logquery))
+    logging.debug(logquery)
     with closing(sqlite3.connect(database)) as conn:
         with closing(conn.cursor()) as cursor:
             cursor.execute(query, args)
@@ -569,8 +580,7 @@ def db_query_single(database, query, *args):
     Queries a single item from the database
     """
     logquery = query.replace("?", "{}").format(*args)
-    logstr = "db_query_single: {db} || {sqlstr}"
-    logging.debug(logstr.format(db=database, sqlstr=logquery))
+    logging.debug(logquery)
     with closing(sqlite3.connect(database)) as conn:
         with closing(conn.cursor()) as cursor:
             cursor.execute(query, args)
@@ -916,11 +926,11 @@ class LedgerView(SQLView):
             raise Exception("Invalid column: {}".format(col))
 
     def _update_date(self, row, value):
-        print("Updating date")
+        logging.debug("Updating date")
         pass
 
     def _update_date_entered(self, row, value):
-        print("Updating date_entered")
+        logging.debug("Updating date_entered")
         pass
 
     def _update_checknum(self, row, value):
@@ -940,7 +950,7 @@ class LedgerView(SQLView):
         None
 
         """
-#        print("Updating check_num")
+#        logging.debug("Updating check_num")
         sql = "UPDATE `{tbl}` SET `{col}`=? WHERE id={row}"
         col_name = "check_num"
         sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
@@ -954,12 +964,12 @@ class LedgerView(SQLView):
             db_execute(self.database, sql, value)
 
     def _update_payee(self, row, value):
-        print("Updating payee")
+        logging.debug("Updating payee")
         # first, check for the new value in the database
         sql = "SELECT * FROM `payee` WHERE name=?"
         result = db_query(self.database, sql, value)
         if result == []:
-            print("payee not found, adding")
+            logging.debug("payee not found, adding")
             sql = "INSERT INTO `payee`(name) VALUES (?)"
             new_id = db_insert(self.database, sql, value)
             # TODO: I can get rid of a db query by using new_id directly.
@@ -968,29 +978,29 @@ class LedgerView(SQLView):
             err = "Duplicate payee name `{}` found! How'd we get here?".format(value)
             raise Exception(err)
         else:
-            print("Payee found, using payee.id")
+            logging.debug("Payee found, using payee.id")
             sql = "UPDATE `{tbl}` SET `{col}`=? WHERE id={row}"
             col_name = "payee_id"
             sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
             db_execute(self.database, sql, result[0][0])
 
     def _update_downloaded_payee(self, row, value):
-        print("downloaded_payee is read-only")
+        logging.warn("downloaded_payee is read-only")
         pass
 
     def _update_label(self, row, value):
-        print("Updating label")
+        logging.debug("Updating label")
         pass
 
     def _update_category(self, row, value):
-        print("Updating category")
+        logging.debug("Updating category")
         pass
 
     def _update_memo(self, row, value):
         """ Updates the memo field """
         if value == '':
             value = None
-#        print("Updating memo with new value: `{}`".format(value))
+#        logging.debug("Updating memo with new value: `{}`".format(value))
         sql = "UPDATE `{tbl}` SET `{col}`=? WHERE id={row}"
         col_name = "memo"
         sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
@@ -1002,7 +1012,7 @@ class LedgerView(SQLView):
         sql = sql.format(tbl=self.trans_tbl, col=col_name, row=row)
         try:
             float(value)
-#            print("Updating amount with new value: `{}`".format(value))
+#            logging.debug("Updating amount with new value: `{}`".format(value))
         except ValueError:
             raise ValueError("`Amount` must be a number")
         else:
@@ -1237,8 +1247,7 @@ def main():
     ------
     RuntimeError
     """
-    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
-    raise RuntimeError("This module is not meant to be run by itself")
+    docopt(__doc__, version=__pybank_init.__version__)
 
 
 ### #------------------------------------------------------------------------
@@ -1603,7 +1612,9 @@ def test3():
 ### END DELETE
 ### #------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def main():
+    """ """
+
 #    copy_blank_db()
 #    payee = PayeeTable(DATABASE, 'payee')
 #    a = payee.add({'name':"dfsf", 'category_id':5})
@@ -1619,11 +1630,14 @@ if __name__ == "__main__":
 #    for item in sorted(a):
 #        print(item)
 
+    test()
     test3()
     test2()
-#    test()
 
     a = db_query_single(DATABASE,
                                      "SELECT COUNT(*) FROM v_ledger_0")[0]
     print(a)
 
+
+if __name__ == "__main__":
+    main()

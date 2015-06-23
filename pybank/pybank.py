@@ -20,17 +20,30 @@ Options:
 ### #------------------------------------------------------------------------
 # Standard Library
 import sys
-import os.path as osp
+import logging
+import os.path
 
 # Third-Party
 from docopt import docopt
 
 # Package / Application
-#if __name__ == "__main__":
-#    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-#from __init__ import VERSION
-#from pybank.parseofx import ParseOFX
-#from pybank import pbsql
+# Package / Application
+try:
+    # Imports used for unittests
+    from . import __init__ as __pybank_init
+    from . import pbsql
+    logging.debug("Imports for UnitTests")
+except SystemError:
+    try:
+        # Imports used by Spyder
+        import __init__ as __pybank_init
+        import pbsql
+        logging.debug("Imports for Spyder IDE")
+    except ImportError:
+         # Imports used by cx_freeze
+        from pybank import __init__ as __pybank_init
+        from pybank import pbsql
+        logging.debug("imports for Executable")
 
 
 ### #------------------------------------------------------------------------
@@ -97,6 +110,7 @@ def read_transaction():
     """
     pass
 
+
 def get_transactions_for_gui(account):
     """
     Reads the entire transaction table for a given account and returns the
@@ -115,13 +129,13 @@ def get_transactions_for_gui(account):
     """
 
 
-
-
 def main():
     """
     Main entry point
     """
-    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
+    docopt(__doc__, version=__pybank_init.__version__)
+    print("Running pybank.py")
+    print("End")
 
 
 if __name__ == "__main__":

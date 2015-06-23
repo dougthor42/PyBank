@@ -112,26 +112,79 @@ Transaction matching and download start date = previous download date.
 # TODO: Does Google Wallet have OFX?
 """
 import logging
-#from constants import *
+from logging.handlers import TimedRotatingFileHandler as TRFHandler
+import datetime
+import os.path
 
-# TODO: Make console logging = DEBUG and file logging = INFO
-# TODO: Make logging include file name.
-# Set up logging to a file
-logformat = "%(asctime)s::%(levelname)s::%(message)s"
-dateformat = "%Y-%m-%d %H:%M:%S"
-logging.basicConfig(filename='PyBank.log',
-                    format=logformat,
-                    datefmt=dateformat,
-                    level=logging.WARN,
-                    )
 
-# And mimmic it in the console
-console = logging.StreamHandler()
-console.setLevel(logging.WARN)
-formatter = logging.Formatter(logformat, dateformat)
-console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
+__version__ = "0.0.2.1"
+__project_url__ = "https://github.com/dougthor42/PyBank"
+__project_name__ = "PyBank"
 
-print("running __init__")
-VERSION = '0.0.1'
-PROGRAM_NAME = "PyBank"
+
+__all__ = [__version__,
+           __project_name__,
+           __project_url__,
+           ]
+
+# Set up logging. DEBUG to console, INFO to file.
+# see https://aykutakin.wordpress.com/2013/08/06/logging-to-console-and-file-in-python/
+# Logging format includes milliseconds.
+# See http://stackoverflow.com/a/7517430/1354930
+logfmt = ("%(asctime)s.%(msecs)03d"     # Note implicit string concatenation.
+          " [%(levelname)-8.8s]"
+          " [%(module)-8.8s]"
+          " [%(funcName)-10.10s]"
+          "  %(message)s"
+          )
+datefmt = "%Y-%m-%d %H:%M:%S"
+
+# Create the logger
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+# Create console handler and set level
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter(logfmt, datefmt)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# Create file handler and set level
+# Use a Rotating file handler so that each week has a different file.
+# see https://docs.python.org/3.4/library/logging.handlers.html#logging.handlers.TimedRotatingFileHandler
+# and http://www.blog.pythonlibrary.org/2014/02/11/python-how-to-create-rotating-logs/
+
+# Build the logfile path.
+dirname = os.path.dirname(os.path.abspath(__file__))
+rootpath = os.path.split(dirname)[0]
+logpath = os.path.join(rootpath, "log")
+logfile = os.path.join(logpath, "PyBank.log")
+
+rollover_time = datetime.time.min       # midnight
+try:
+    handler = TRFHandler(logfile,
+                         when="W6",         # Sunday night
+#                         interval=7,
+#                         backupCount=5,
+                         atTime=rollover_time,
+#                         delay=True,
+                         )
+except FileNotFoundError:
+    # we probably need to go up one more level to find the log folder
+    rootpath = os.path.split(rootpath)[0]
+    logpath = os.path.join(rootpath, "log")
+    logfile = os.path.join(logpath, "PyBank.log")
+    handler = TRFHandler(logfile,
+                         when="W6",         # Sunday night
+#                         interval=7,
+#                         backupCount=5,
+                         atTime=rollover_time,
+#                         delay=True,
+                         )
+
+
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter(logfmt, datefmt)
+handler.setFormatter(formatter)
+logger.addHandler(handler)

@@ -4,16 +4,31 @@ Created on Tue May 12 12:58:55 2015
 
 @author: dthor
 """
-
+### #------------------------------------------------------------------------
+### Imports
+### #------------------------------------------------------------------------
+# Standard Library
 from setuptools import setup, find_packages
+import logging
+
+# Third Party
+
+# Package / Application
+from pybank import (__version__,
+                    __project_url__,
+                    __project_name__,
+                    )
+
+# turn off logging if we're going to build a distribution
+logging.disable(logging.CRITICAL)
 
 setup(
-    name = 'PyBank',
-    version = '0.0.1',
-    description = "Finance tracking software",
+    name=__project_name__,
+    version=__version__,
+    description="Finance tracking software",
     packages=find_packages(),
     author="Douglas Thor",
-    url="https://github.com/dougthor42/PyBank",
+    url=__project_url__,
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Environment :: Win32 (MS Windows)",

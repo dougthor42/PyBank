@@ -64,6 +64,7 @@ import io
 import re
 import datetime
 import decimal
+import logging
 import os.path as osp
 from enum import Enum
 
@@ -72,7 +73,22 @@ from docopt import docopt
 from bs4 import BeautifulSoup
 
 # Package / Application
-#from __init__ import VERSION
+try:
+    # Imports used for unittests
+    from . import __init__ as __pybank_init
+#    from . import pbsql
+    logging.debug("Imports for UnitTests")
+except SystemError:
+    try:
+        # Imports used by Spyder
+        import __init__ as __pybank_init
+#        import pbsql
+        logging.debug("Imports for Spyder IDE")
+    except ImportError:
+         # Imports used by cx_freeze
+        from pybank import __init__ as __pybank_init
+#        from pybank import pbsql
+        logging.debug("imports for Executable")
 
 
 ### #------------------------------------------------------------------------
@@ -142,7 +158,7 @@ class ParseOFX(object):
 
         # convert ofx_data to a stream
         # TODO: Handle closing of opened streams
-        print(type(ofx_data))
+        logging.debug(type(ofx_data))
         if type(ofx_data) == str:
             ofx_data = io.StringIO(ofx_data, newline=self.newline)
         elif type(ofx_data) == bytes:
@@ -1269,8 +1285,8 @@ EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
 
 def main():
     """ Code to run when module called directly, just some quick checks. """
-    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
-    file = "..\\tests\\data\\rs_checking.ofx"
+    docopt(__doc__, version=__pybank_init.__version__)
+    file = "tests\\data\\rs_checking.ofx"
 
     with open(file, 'r') as openf:
         a = ParseOFX(openf)
@@ -1348,5 +1364,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-#    pass
-

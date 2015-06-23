@@ -25,6 +25,7 @@ import http.client
 import urllib.parse
 import time
 import getpass
+import logging
 from os import urandom
 
 # Third-Party
@@ -32,14 +33,22 @@ from docopt import docopt
 import keyring
 
 # Package / Application
-if __name__ == "__main__":
-    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-#from __init__ import VERSION
 try:
+    # Imports used for unittests
+    from . import __init__ as __pybank_init
     from .parseofx import ParseOFX
-except (SystemError, ImportError):
-    print("import failed, falling back")
-    from parseofx import ParseOFX
+    logging.debug("Imports for UnitTests")
+except SystemError:
+    try:
+        # Imports used by Spyder
+        import __init__ as __pybank_init
+        from parseofx import ParseOFX
+        logging.debug("Imports for Spyder IDE")
+    except ImportError:
+         # Imports used by cx_freeze
+        from pybank import __init__ as __pybank_init
+        from parseofx import ParseOFX
+        logging.debug("Imports for Executable")
 
 
 ### #------------------------------------------------------------------------
@@ -323,7 +332,7 @@ def download_transactions():
     a = Client()
     b = a.post(CHECKING.format(uname=prompt_user(), pw=prompt_password()))
     for _l in str(b, encoding='utf-8').split("\r\n"):
-        print(_l)
+        logging.debug(_l)
     return b
 
 
@@ -341,7 +350,7 @@ def list_accounts():
     """
     Lists accouts at the institution
     """
-    print("Listing accounts")
+    logging.debug("Listing accounts")
     a = Client()
 
     b = a.post(ACCOUNTS.format(dtclient=now(),
@@ -354,7 +363,7 @@ def list_accounts():
 
     c = str(b, encoding='utf-8')
     for _line in c.split("\r\n"):
-        print(_line)
+        logging.debug(_line)
     # TODO: trick OFXParse into thinking we have a file
     # for now, just save a file and then read it.
 #    import io
@@ -370,7 +379,7 @@ def list_accounts():
 
     d = ParseOFX(c)
     d.parse_accounts()
-    print(d.descr)
+    logging.debug(d.descr)
 
 
     return b
@@ -675,8 +684,8 @@ def main():
     ------
     RuntimeError
     """
-    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
-#    raise RuntimeError("This module is not meant to be run by itself")
+    docopt(__doc__, version=__pybank_init.__version__)
+
     salt, hashed = salt_and_hash("Secret")
     print(validate_password("Secret", salt, hashed))
     print()
