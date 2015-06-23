@@ -96,13 +96,11 @@ build: off  # Not a C# project, build stuff at the test step instead.
 test_script:
   # Run the project tests
   - "%CMD_IN_ENV% green pybank -vv"
-  - "%CMD_IN_ENV% python --version"
 
 after_test:
   # Create wheel package and executable
   - "%CMD_IN_ENV% python setup.py bdist_wheel"
   - "%CMD_IN_ENV% python build_executables.py build"
-  - "%CMD_IN_ENV% python --version"
 
   # Create a .zip of the build
   - ps: ls
@@ -112,8 +110,8 @@ after_test:
 
 artifacts:
   # Upload the wheel and EXE to AppVeyor
-  - path: "dist\PyBank-0.0.1-py3-none-any.whl"
-    name: "PyBank-0.0.1-py3-none-any.whl"
+  - path: dist\PyBank-0.0.1-py3-none-any.whl
+    name: PyBank-0.0.1-py3-none-any.whl
     type: whl
 
   - path: PyBank.zip
