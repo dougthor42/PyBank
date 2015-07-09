@@ -105,8 +105,6 @@ I may have to re-write an OFX parser...
 
 Transaction matching and download start date = previous download date.
 
-# TODO: Category contactenation:
-        Parent.Child.Grandchild
 # TODO: Do I want to name transaction tables as transaction_0 or
         transaction_00? Or even transaction_000?
 # TODO: Does Google Wallet have OFX?
@@ -139,15 +137,15 @@ def _setup_logging():
 
     Log lines look like so::
 
-        2015-06-23 17:04:10.409 [DEBUG   ] [gui     ] [_color_dol]  message...
-        |--------| |----------| |--------| |--------| |----------|  |--------)
+        2015-06-23 17:04:10.409 [DEBUG   ] [gui     ] [_color_dolla]  msg...
+        |--------| |----------| |--------| |--------| |------------|  |----)
              ^          ^            ^          ^            ^          ^
              |          |            |          |            |          |
         Date +          |            |          |            |          |
         Time -----------+            |          |            |          |
         Level Name (8 char) ---------+          |            |          |
         Module Name (8 char) -------------------+            |          |
-        Function Name (10 char) -----------------------------+          |
+        Function Name (12 char) -----------------------------+          |
         Message --------------------------------------------------------+
 
     All dates and times are ISO 8601 format, local time.
@@ -173,21 +171,24 @@ def _setup_logging():
     References:
     -----------
     Logging different levels to different places:
-        https://aykutakin.wordpress.com/2013/08/06/logging-to-console-and-file-in-python/
+        https://aykutakin.wordpress.com/2013/08/06/
+            logging-to-console-and-file-in-python/
 
     Adding milliseconds to log string:
         http://stackoverflow.com/a/7517430/1354930
 
     TimedRotatingFileHandler:
-        https://docs.python.org/3.4/library/logging.handlers.html#logging.handlers.TimedRotatingFileHandler
+        https://docs.python.org/3.4/library/
+            logging.handlers.html#logging.handlers.TimedRotatingFileHandler
 
     TimedRotatingFileHandler:
-        http://www.blog.pythonlibrary.org/2014/02/11/python-how-to-create-rotating-logs/
+        http://www.blog.pythonlibrary.org/2014/02/11/
+            python-how-to-create-rotating-logs/
     """
     logfmt = ("%(asctime)s.%(msecs)03d"
               " [%(levelname)-8.8s]"
               " [%(module)-8.8s]"       # Note implicit string concatenation.
-              " [%(funcName)-10.10s]"
+              " [%(funcName)-12.12s]"
               "  %(message)s"
               )
     datefmt = "%Y-%m-%d %H:%M:%S"
@@ -232,5 +233,5 @@ def _setup_logging():
     logger.addHandler(handler)
 
 
-### Moudle Executions #######################################################
+### Module Executions #######################################################
 _setup_logging()

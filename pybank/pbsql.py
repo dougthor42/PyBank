@@ -1025,7 +1025,7 @@ def generate_category_strings(cat_list,
                               retval=[],
                               ):
     """
-    Concatenates categories together and returns a list of them.
+    Recursively concatenates categories together and returns a list of them.
 
     Parameters:
     -----------
