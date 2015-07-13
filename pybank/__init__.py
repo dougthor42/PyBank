@@ -219,6 +219,17 @@ def _setup_logging():
 
     logfile = os.path.join(logpath, "PyBank.log")
 
+    # create log directory if it doesn't exist.
+    try:
+        os.makedirs(logpath)
+    except OSError:
+        if not os.path.isdir(logpath):
+            raise
+
+    # create the log file if it doesn't exist.
+    if not os.path.isfile(logfile):
+        open(logfile, 'a').close()
+
     rollover_time = datetime.time.min       # midnight
     handler = TRFHandler(logfile,
                          when="W6",         # Sunday
