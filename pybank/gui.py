@@ -26,6 +26,9 @@ import os.path as osp
 # Third Party
 import wx
 import wx.grid
+import wx.lib.plot as wxplot
+import numpy as np
+#import wxmplot
 #import wx.gizmos
 import wx.lib.mixins.listctrl as listmix
 #from wx.lib.splitter import MultiSplitterWindow
@@ -347,6 +350,50 @@ class SamplePanel(wx.Panel):
         wx.StaticText(self, -1, label, (5, 5))
 
 
+class SamplePlotPanel(wx.Panel):
+    """
+    """
+    def __init__(self, parent, colour, label):
+        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
+        self.SetBackgroundColour(colour)
+        wx.StaticText(self, -1, label, (5, 5))
+
+        self.fake_x_data = [1, 2, 3, 4, 5, 6, 7]
+        self.fake_y_data = [15, 13.6, 18.8, 12, 2, -6, 25]
+
+        self.client = wxplot.PlotCanvas(self, size=(400, 300))
+
+
+        # First, generate some data
+        x = np.arange(1, 21, 1)
+        y = np.array([1,2,3,4,5,6,7,8,9,0])
+
+        # change to a 2D array and add the y values as the 2nd dimension
+        x.shape = (10, 2)
+        x[:, 1] = y
+
+        # Then set up how we're presenting the data. Lines? Point? Color?
+        data = wxplot.PolyMarker(x,
+                                 legend="Green Line",
+                                 colour='red',
+                                 width=4,
+                                 size=1,
+                                 marker='square',
+#                                 style=wx.PENSTYLE_SOLID,
+                                 )
+
+        plot = wxplot.PlotGraphics([data],
+                                   title="Title",
+                                   xLabel="X label",
+                                   yLabel="Monies",
+                                   )
+        self.client.Draw(plot)
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.client, 0)
+        self.SetSizer(self.sizer)
+
+
 class MainNotebook(wx.Notebook):
     """
     Notebook container for most everything.
@@ -375,14 +422,47 @@ class MainNotebook(wx.Notebook):
         self.ledger_page = LedgerPanel(self)
         self.AddPage(self.ledger_page, "Ledger")
 
-        p2 = SamplePanel(self, "green", "sdfdfsdfsdfsdfsd")
-        self.AddPage(p2, "Other Stuff")
+        p2 = SamplePlotPanel(self, "green", "sdfdfsdfsdfsdfsd")
+        self.AddPage(p2, "Various Plots")
 
         p3 = SamplePanel(self, "sky blue", "sdfdfsdfsdfsdfsd")
         self.AddPage(p3, "Even more stuff")
 
-        # Show the ledger at start
+        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._on_page_changed)
+        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self._on_page_changing)
+
+        # Show the ledger at start (SetSelection generates events)
         self.SetSelection(1)
+
+    def _on_page_changed(self, event):
+        """
+        Event fires *after* the page is changed.
+
+        old is the previous page
+        new is the page we changed to
+        sel is which, if any, page was selected.
+            For example, if I use SetSelection(2), sel might be 1 or 0.
+        """
+        old = event.GetOldSelection()
+        new = event.GetSelection()
+        sel = self.GetSelection()
+        log_txt = "Page Changed: old: {}, new: {}, sel: {}"
+        logging.debug(log_txt.format(old, new, sel))
+
+
+    def _on_page_changing(self, event):
+        """
+        Event fires *before* the page is changed.
+
+        Note how old, new, and sel are all the same.
+
+        This event can be vetoed.
+        """
+        old = event.GetOldSelection()
+        new = event.GetSelection()
+        sel = self.GetSelection()
+        log_txt = "Page Changing: old: {}, new: {}, sel: {}"
+        logging.debug(log_txt.format(old, new, sel))
 
 
 class LedgerPanel(wx.Panel):
