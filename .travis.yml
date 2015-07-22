@@ -1,5 +1,7 @@
 language: python
 
+sudo: false
+
 python:
   - "3.4"
 
@@ -11,11 +13,12 @@ before_install:
 
 install:
   - echo "-----install-----"
-  # print out our python bit-ness (32bit vs 64bit)
-  - python -c "import struct; print(struct.calcsize('P') * 8)"
   - pip install --upgrade pip
-  - pip install coveralls
   - pip install -r dev-requirements.txt
+  - pip install coveralls
+  - pip install wheel
+  - pip install numpy
+  #- pip install "wxPython_Phoenix-3.0.3.dev1820+49a8884.tar.gz"
   - pip install --upgrade --pre --trusted-host wxpython.org -f http://wxpython.org/Phoenix/snapshot-builds/ wxPython_Phoenix
 
 script:
