@@ -6,7 +6,26 @@ python:
 notifications:
   email: false
 
+before_install:
+  - echo "-----before_install-----"
+  # get Conda
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
 install:
+  - echo "-----install-----"
+  # Install wxPython
+  - conda install -c https://conda.anaconda.org/travis wxpython
   # print out our python bit-ness (32bit vs 64bit)
   - python -c "import struct; print(struct.calcsize('P') * 8)"
   - pip install --upgrade pip

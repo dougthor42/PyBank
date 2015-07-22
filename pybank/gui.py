@@ -28,7 +28,7 @@ import wx
 import wx.grid
 import wx.lib.plot as wxplot
 import numpy as np
-#import wxmplot
+import wxmplot
 #import wx.gizmos
 import wx.lib.mixins.listctrl as listmix
 #from wx.lib.splitter import MultiSplitterWindow
@@ -394,6 +394,25 @@ class SamplePlotPanel(wx.Panel):
         self.SetSizer(self.sizer)
 
 
+class SamplePlotPanel2(wx.Panel):
+    """
+    """
+    def __init__(self, parent, colour, label):
+        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
+        self.SetBackgroundColour(colour)
+        wx.StaticText(self, -1, label, (5, 5))
+
+        self.fake_x_data = np.array([1, 2, 3, 4, 5, 6, 7])
+        self.fake_y_data = np.array([15, 13.6, 18.8, 12, 2, -6, 25])
+
+        self.pframe = wxmplot.PlotPanel(self)
+        self.pframe.scatterplot(self.fake_x_data, self.fake_y_data)
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.pframe, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+
+
 class MainNotebook(wx.Notebook):
     """
     Notebook container for most everything.
@@ -425,7 +444,7 @@ class MainNotebook(wx.Notebook):
         p2 = SamplePlotPanel(self, "green", "sdfdfsdfsdfsdfsd")
         self.AddPage(p2, "Various Plots")
 
-        p3 = SamplePanel(self, "sky blue", "sdfdfsdfsdfsdfsd")
+        p3 = SamplePlotPanel2(self, "sky blue", "sdfdfsdfsdfsdfsd")
         self.AddPage(p3, "Even more stuff")
 
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._on_page_changed)
