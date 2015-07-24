@@ -119,6 +119,9 @@ from logging.handlers import TimedRotatingFileHandler as TRFHandler
 __version__ = "0.0.2.1"
 __project_url__ = "https://github.com/dougthor42/PyBank"
 __project_name__ = "PyBank"
+__description__ = "Finance tracking software"
+__long_descr__ = """/
+"""
 
 LOG_LEVEL_FILE = logging.DEBUG
 LOG_LEVEL_CONSOLE = logging.DEBUG

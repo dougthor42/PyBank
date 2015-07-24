@@ -5,9 +5,9 @@ Created on Mon Jun 22 13:08:24 2015
 @author: dthor
 """
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Imports
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Standard Library
 import sys
 import logging
@@ -19,32 +19,92 @@ from cx_Freeze import setup, Executable
 from pybank import (__version__,
                     __project_url__,
                     __project_name__,
+                    __description__,
+                    __long_descr__,
                     )
 
+# ---------------------------------------------------------------------------
+### General Setup
+# ---------------------------------------------------------------------------
 # turn off logging if we're going to build a distribution
 logging.disable(logging.CRITICAL)
 
-include_files = ["pybank\\test_database.db",
+
+# ---------------------------------------------------------------------------
+### build_exe Setup
+# ---------------------------------------------------------------------------
+# included packages and their submodules
+packages = [
+            'matplotlib.backends.backend_wxagg',
+            'matplotlib.backends.backend_wx',
+#            'scipy.stats',
+#            'scipy',
+            'numpy',
+            'matplotlib',
+            ]
+
+# included modules
+includes = [
+            "pybank/pbsql",
+            "pybank/plots",
+#            "scipy/special/ufuncs_cxx",
+#            "scipy/special/ufuncs",
+            ]
+
+# Files to include (and their destinations)
+include_files = [
+                 "pybank\\test_database.db",
                  ("log\\README.txt", "log\\README.txt"),  # (source, dest)
+                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs.pyd", "_ufuncs.pyd"),
+                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs_cxx.pyd", "_ufuncs_cxx.pyd"),
                  ]
 
+# list of names of files to include when determining dependencies of
+# binary files that would normally be excluded; note that version
+# numbers that normally follow the shared object extension are
+# stripped prior to performing the comparison
+bin_includes = [
 
-build_exe_opts = {"includes": ["pybank/pbsql", ],
+                ]
+
+# Options for build_exe
+build_exe_opts = {
+                  "packages": packages,
+                  "includes": includes,
                   "include_files": include_files,
+#                  "bin_includes": bin_includes,
                   "silent": True,
                   }
 
-base = None
-if sys.platform == 'win32':
-    base = "Win32GUI"
 
-exes_to_build = [Executable("pybank\\gui.py", base=base),
+# ---------------------------------------------------------------------------
+### Executable Definitions
+# ---------------------------------------------------------------------------
+file_to_build = "pybank\\plots.py"
+
+# Application Base
+base = None
+#if sys.platform == 'win32':        # uncomment this to remove console window.
+#    base = "Win32GUI"
+
+exe1 = Executable(file_to_build,
+                  base=base,
+#                  targetName="PyBank",         # Doesn't work :-(
+                  )
+
+# List of which executables to build.
+exes_to_build = [
+                 exe1,
                  ]
 
+
+# ---------------------------------------------------------------------------
+### setup()
+# ---------------------------------------------------------------------------
 setup(
     name=__project_name__,
     version=__version__,
-    description="Finance tracking software",
+    description=__description__,
     options={"build_exe": build_exe_opts},
     executables=exes_to_build,
 )

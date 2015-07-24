@@ -49,17 +49,20 @@ try:
     # Imports used for unittests
     from . import __init__ as __pybank_init
     from . import pbsql
+    from . import plots
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
         import __init__ as __pybank_init
         import pbsql
+        import plots
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
         from pybank import __init__ as __pybank_init
         from pybank import pbsql
+        from pybank import plots
         logging.debug("imports for Executable")
 
 
@@ -352,28 +355,24 @@ class SamplePanel(wx.Panel):
 
 class SamplePlotPanel(wx.Panel):
     """
+    Example plotting using the built-in wx.lib.plot (wxplot).
+
+    Keeps things smaller because it doesn't require numpy or matplotlib,
+    but means more coding and looks a little rougher.
     """
     def __init__(self, parent, colour, label):
         wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
         self.SetBackgroundColour(colour)
-        wx.StaticText(self, -1, label, (5, 5))
+        title = wx.StaticText(self, -1, label, (5, 5))
 
         self.fake_x_data = [1, 2, 3, 4, 5, 6, 7]
         self.fake_y_data = [15, 13.6, 18.8, 12, 2, -6, 25]
 
         self.client = wxplot.PlotCanvas(self, size=(400, 300))
 
-
-        # First, generate some data
-        x = np.arange(1, 21, 1)
-        y = np.array([1,2,3,4,5,6,7,8,9,0])
-
-        # change to a 2D array and add the y values as the 2nd dimension
-        x.shape = (10, 2)
-        x[:, 1] = y
-
         # Then set up how we're presenting the data. Lines? Point? Color?
-        data = wxplot.PolyMarker(x,
+        tdata = list(zip(self.fake_x_data, self.fake_y_data))
+        data = wxplot.PolyMarker(tdata,
                                  legend="Green Line",
                                  colour='red',
                                  width=4,
@@ -390,17 +389,38 @@ class SamplePlotPanel(wx.Panel):
         self.client.Draw(plot)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(title, 0)
         self.sizer.Add(self.client, 0)
         self.SetSizer(self.sizer)
 
 
 class SamplePlotPanel2(wx.Panel):
     """
+    Example plotting using the wxmplot package.
+
+    Note that wxmplot hasn't been maintained very well recently. In addition,
+    it requires matplotlib and numpy package which will (greatly?)
+    increase the size of the executable.
+
+    The advantages of using this package are:
+
+    1.  Looks nicer
+    2.  Easier to use
+    3.  Includes things like zoom, pan/drag, etc. all built in.
+    4.  Has many more plotting options including but not limited to pie
+        pti charts, pareto plots, 3d, etc.
+    5.  Since mpl needs numpy, I can use numpy elsewhere.
+
+    The disadvantes are:
+
+    1.  Executable will be much larger because of the numpy/matplotlib reqs
+    2.  I have to figure out how to correctly built the exe
+
     """
     def __init__(self, parent, colour, label):
         wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
         self.SetBackgroundColour(colour)
-        wx.StaticText(self, -1, label, (5, 5))
+        title = wx.StaticText(self, -1, label, (5, 5))
 
         self.fake_x_data = np.array([1, 2, 3, 4, 5, 6, 7])
         self.fake_y_data = np.array([15, 13.6, 18.8, 12, 2, -6, 25])
@@ -409,9 +429,28 @@ class SamplePlotPanel2(wx.Panel):
         self.pframe.scatterplot(self.fake_x_data, self.fake_y_data)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.pframe, 1, wx.EXPAND)
+        self.sizer.Add(title, 0)
+        self.sizer.Add(self.pframe, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
+
+class SamplePlotPanel3(wx.Panel):
+    """
+    Example plotting using the matplotlib wx backend directly, via the `plots`
+    module of this project.
+
+    """
+    def __init__(self, parent, colour, label):
+        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
+        self.SetBackgroundColour(colour)
+        title = wx.StaticText(self, -1, label, (5, 5))
+
+        plot = plots.LinePlot(self)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(title, 0)
+        vbox.Add(plot, 0, wx.EXPAND)
+        self.SetSizer(vbox)
 
 class MainNotebook(wx.Notebook):
     """
@@ -441,11 +480,14 @@ class MainNotebook(wx.Notebook):
         self.ledger_page = LedgerPanel(self)
         self.AddPage(self.ledger_page, "Ledger")
 
-        p2 = SamplePlotPanel(self, "green", "sdfdfsdfsdfsdfsd")
+        p2 = SamplePlotPanel(self, "green", "Plotting with wx.lib.plot")
         self.AddPage(p2, "Various Plots")
 
-        p3 = SamplePlotPanel2(self, "sky blue", "sdfdfsdfsdfsdfsd")
+        p3 = SamplePlotPanel2(self, "sky blue", "Plotting with wxmplot")
         self.AddPage(p3, "Even more stuff")
+
+        p4 = SamplePlotPanel3(self, "orange", "Plotting with matplotlib backend")
+        self.AddPage(p4, "Even more stuff")
 
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._on_page_changed)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self._on_page_changing)
@@ -510,7 +552,6 @@ class LedgerPanel(wx.Panel):
     def _init_ui(self):
         """ Initialize UI components """
         self.ledger = LedgerGrid(self)
-#        self.ledger = LedgerULC(self)
         self.summary_bar = LedgerSummaryBar(self)
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
@@ -519,6 +560,7 @@ class LedgerPanel(wx.Panel):
         self.SetSizer(self.vbox)
 
 
+# Not used
 class LedgerULC(ulc.UltimateListCtrl,
 #                listmix.ColumnSorterMixin,
                 listmix.ListCtrlAutoWidthMixin,
@@ -722,6 +764,7 @@ class LedgerULC(ulc.UltimateListCtrl,
         logging.debug("modifying row {}".format(row))
 
 
+# Not used
 class LedgerVirtual(wx.ListCtrl,
 #                    listmix.ColumnSorterMixin,
                     listmix.ListCtrlAutoWidthMixin,
