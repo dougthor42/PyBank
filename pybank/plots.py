@@ -207,6 +207,23 @@ class LinePlot(wx.Panel):
         self.fig = Figure()
         self.axes = self.fig.add_subplot(111)
 
+
+
+
+
+        # Create the canvas and add the figure.
+        self.canvas = FigureCanvas(self, wx.ID_ANY, self.fig)
+
+        # Set up the layout of the panel.
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self.canvas, 1, wx.EXPAND)
+        self.SetSizer(vbox)
+        self.Fit()
+
+    def _format_axes(self):
+        """
+        Formats the axes
+        """
         # Enable gridlines
         self.axes.minorticks_on()
         self.axes.grid(b=True,              # not sure what this is...
@@ -220,16 +237,6 @@ class LinePlot(wx.Panel):
 #                       linestyle='--',     # dashed line (default is dotted)
                        )
 
-
-
-        # Create the canvas and add the figure.
-        self.canvas = FigureCanvas(self, wx.ID_ANY, self.fig)
-
-        # Set up the layout of the panel.
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.canvas, 1, wx.EXPAND)
-        self.SetSizer(vbox)
-        self.Fit()
 
     def _lin_fit(self):
         """
@@ -268,6 +275,7 @@ class LinePlot(wx.Panel):
                             )
         # and the linear regression
         self._draw_lin_fit()
+        self._format_axes()
 
 
     def draw(self, xdata, ydata, color):
@@ -296,6 +304,13 @@ class LinePlot(wx.Panel):
         self._ydata = ydata
         self._color = color
         self._draw()
+
+    def clear(self):
+        """
+        Clears the plot
+        """
+        self.fig.gca()
+        self.axes.cla()
 
 class ParetoPlot(wx.Panel):
     """
@@ -462,6 +477,7 @@ def main():
     # Line Plot
     plot = LinePlot(panel)
     plot.draw(x, y, 'r')
+    plot.clear()
     y = [random.uniform(-1, 1) + _x + 2 for _x in x]
     plot.draw(x, y, 'b')
     y = [random.uniform(-1, 1) + (_x * 0.5) + 2 for _x in reversed(x)]

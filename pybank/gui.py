@@ -14,14 +14,16 @@ Options:
     --version           # Show version.
 
 """
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Imports
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Standard Library
 import logging
 import sys
 import decimal
 import os.path as osp
+from enum import Enum
+import random
 
 # Third Party
 import wx
@@ -66,9 +68,9 @@ except SystemError:
         logging.debug("imports for Executable")
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Module Constants
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 LEDGER_COLOR_ROW_NEW = wx.Colour(240, 240, 240, 255)
 LEDGER_COLOR_ROW_ODD = wx.Colour(255, 255, 255, 255)
@@ -77,9 +79,9 @@ LEDGER_COLOR_VALUE_NEGATIVE = wx.Colour(255, 0, 0, 255)
 LEDGER_COLOR_VALUE_POSITIVE = wx.Colour(0, 0, 0, 255)
 DATABASE = "test_database.db"
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Classes
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 class MainApp(object):
     """ Main App """
@@ -445,12 +447,38 @@ class SamplePlotPanel3(wx.Panel):
         self.SetBackgroundColour(colour)
         title = wx.StaticText(self, -1, label, (5, 5))
 
-        plot = plots.LinePlot(self)
+        self.plot = plots.LinePlot(self)
+
+        self.btn = wx.Button(self, wx.ID_ANY, "Update")
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(title, 0)
-        vbox.Add(plot, 0, wx.EXPAND)
+        vbox.Add(self.plot, 0, wx.EXPAND)
+        vbox.Add(self.btn, 0, wx.EXPAND)
         self.SetSizer(vbox)
+
+        self.Bind(wx.EVT_BUTTON, self._on_btn, self.btn)
+
+    def _on_btn(self, event):
+        print("you pressed the button!")
+        self.plot.clear()
+        dlen = 15
+        x = np.arange(dlen)
+        y = [random.uniform(-1, 1) + _x for _x in x]
+        self.plot.draw(x, y, 'b')
+        self.Refresh()
+        self.Update()
+        self.GetTopLevelParent().Update()
+
+class NotebookPages(Enum):
+    """
+    Contains the notebook pages number-name link
+    """
+    summary = 0
+    ledger = 1
+    plots = 2
+    wxmplot = 3
+    wxlibplot = 4
 
 class MainNotebook(wx.Notebook):
     """
@@ -476,24 +504,23 @@ class MainNotebook(wx.Notebook):
         p0 = SamplePanel(self, "yellow", "Summary Page")
         self.AddPage(p0, "Summary")
 
-#        p1 = SamplePanel(self, 'pink', "hafsdf")
         self.ledger_page = LedgerPanel(self)
         self.AddPage(self.ledger_page, "Ledger")
 
-        p2 = SamplePlotPanel(self, "green", "Plotting with wx.lib.plot")
+        p2 = SamplePlotPanel3(self, "green", "Plotting with matplotlib backend")
         self.AddPage(p2, "Various Plots")
 
         p3 = SamplePlotPanel2(self, "sky blue", "Plotting with wxmplot")
         self.AddPage(p3, "Even more stuff")
 
-        p4 = SamplePlotPanel3(self, "orange", "Plotting with matplotlib backend")
+        p4 = SamplePlotPanel(self, "orange", "Plotting with wx.lib.plot")
         self.AddPage(p4, "Even more stuff")
 
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._on_page_changed)
-        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self._on_page_changing)
+#        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self._on_page_changing)
 
         # Show the ledger at start (SetSelection generates events)
-        self.SetSelection(1)
+        self.SetSelection(NotebookPages.ledger.value)
 
     def _on_page_changed(self, event):
         """
@@ -509,7 +536,8 @@ class MainNotebook(wx.Notebook):
         sel = self.GetSelection()
         log_txt = "Page Changed: old: {}, new: {}, sel: {}"
         logging.debug(log_txt.format(old, new, sel))
-
+        if new == NotebookPages.plots.value:
+            self._change_to_plots()
 
     def _on_page_changing(self, event):
         """
@@ -524,6 +552,21 @@ class MainNotebook(wx.Notebook):
         sel = self.GetSelection()
         log_txt = "Page Changing: old: {}, new: {}, sel: {}"
         logging.debug(log_txt.format(old, new, sel))
+
+    def _change_to_plots(self):
+        """
+        Executes when changing to a plot page.
+
+        Fires the plot.draw() method.
+        """
+        # TODO: Change this data grab to sql.
+        d = self.ledger_page.ledger.GetTable().data
+        x = np.arange(1, len(d) + 1)
+#        y = [random.uniform(-1, 1) + _x for _x in x]
+        y = np.array([x[10] for x in d], dtype=np.float)
+        plot = self.GetPage(NotebookPages.plots.value).plot
+        plot.clear()    # XXX: Not working (panel not updating?)
+        plot.draw(x, y, 'r')
 
 
 class LedgerPanel(wx.Panel):
@@ -551,10 +594,12 @@ class LedgerPanel(wx.Panel):
 
     def _init_ui(self):
         """ Initialize UI components """
+        self.header_bar = LedgerHeaderBar(self)
         self.ledger = LedgerGrid(self)
         self.summary_bar = LedgerSummaryBar(self)
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
+        self.vbox.Add(self.header_bar, 0, wx.EXPAND)
         self.vbox.Add(self.ledger, 1, wx.EXPAND)
         self.vbox.Add(self.summary_bar, 0, wx.EXPAND)
         self.SetSizer(self.vbox)
@@ -1476,7 +1521,14 @@ class LedgerHeaderBar(wx.Panel):
 
     def _init_ui(self):
         """ Initialize UI components """
-        pass
+        self.title_bar = wx.StaticText(self, wx.ID_ANY,
+                                       "<placeholder for account name>",
+                                       style=wx.ALIGN_CENTER,
+                                       )
+
+        vbox = wx.BoxSizer(wx.HORIZONTAL)
+        vbox.Add(self.title_bar, 1, wx.EXPAND)
+        self.SetSizer(vbox)
 
 
 if __name__ == "__main__":
