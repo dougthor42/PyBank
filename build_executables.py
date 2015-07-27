@@ -80,7 +80,7 @@ build_exe_opts = {
 # ---------------------------------------------------------------------------
 ### Executable Definitions
 # ---------------------------------------------------------------------------
-file_to_build = "pybank\\plots.py"
+file_to_build = "pybank\\gui.py"
 
 # Application Base
 base = None
