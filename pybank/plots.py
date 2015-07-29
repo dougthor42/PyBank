@@ -28,7 +28,7 @@ import random
 
 # Third Party
 import wx
-#import wx.lib.plot as wxplot
+import wx.lib.plot as wxplot
 import numpy as np
 #import matplotlib as mpl
 #from matplotlib import lines as mpl_lines
@@ -109,33 +109,58 @@ MB_RIGHT = 3
 # ---------------------------------------------------------------------------
 ### wx.lib.plot Plots
 # ---------------------------------------------------------------------------
-#class LinePlot(wxplot.PlotCanvas):
-#    """
-#    A Simple line graph with points.
-#
-#    `data` must be a list, tuple, or numpy array of (x, y) pairs or a list
-#    of (y1, y2, y3, ..., yn) values. In this case, the x-values are
-#    assumed to be (1, 2, 3, ..., n)
-#    """
-#    def __init__(self, parent, data, *args, **wkargs):
-#        wxplot.PlotCanvas.__init__(self, parent=parent, size=(400, 300))
-#
-#        # Then set up how we're presenting the data. Lines? Point? Color?
-#        data = wxplot.PolyMarker(data,
-#                                 legend="Green Line",
-#                                 colour='red',
-#                                 width=4,
-#                                 size=1,
-#                                 marker='square',
-#                                 )
-#
-#        plot = wxplot.PlotGraphics([data],
-#                                   title="Title",
-#                                   xLabel="X label",
-#                                   yLabel="Monies",
-#                                   )
-#        self.Draw(plot)
+class wxLinePlot(wxplot.PlotCanvas):
+    """
+    A Simple line graph with points.
 
+    `data` must be a list, tuple, or numpy array of (x, y) pairs or a list
+    of (y1, y2, y3, ..., yn) values. In this case, the x-values are
+    assumed to be (1, 2, 3, ..., n)
+    """
+    def __init__(self, parent, data, *args, **wkargs):
+        wxplot.PlotCanvas.__init__(self, parent=parent, size=(400, 300))
+
+        # Then set up how we're presenting the data. Lines? Point? Color?
+        # XXX: Note that wxplot.PolyLine has been changed by me!
+        line = wxplot.PolyLine(data,
+                                 colour='red',
+                                 width=2,
+                                 drawstyle='steps-post',
+                                 )
+
+        markers = wxplot.PolyMarker(data,
+                                 colour='red',
+#                                 width=3,
+                                 size=2,
+                                 marker='square',
+                                 )
+
+        plot = wxplot.PlotGraphics([line, markers],
+                                   title="Title",
+                                   xLabel="X label",
+                                   yLabel="Monies",
+                                   )
+        self.Draw(plot)
+
+
+        self.canvas.Bind(wx.EVT_LEFT_DOWN, self._on_click)
+
+    def _on_click(self, event):
+        print("click")
+        pass
+
+
+class wxParetoPlot(wxplot.PlotCanvas):
+    """
+    """
+    def __init__(self, parent):
+        pass
+
+    def _draw(self):
+        pass
+
+    def draw(data):
+        pass
 
 # ---------------------------------------------------------------------------
 ### wxmplot Plots
@@ -250,7 +275,7 @@ class LinePlot(wx.Panel):
                             color=self._color,
                             linestyle='-',
                             marker='o',
-                            drawstyle='steps-post',
+                            drawstyle='steps-mid',
                             picker=5,
                             )
         # and the linear regression
@@ -750,11 +775,11 @@ def main():
 
     # Example wx App
     app = wx.App()
-    frame = wx.Frame(None, size=(1300, 600))
+    frame = wx.Frame(None, size=(1000, 800))
 
     panel = wx.Panel(frame)
 
-    hbox = wx.BoxSizer(wx.HORIZONTAL)
+    grid = wx.GridSizer(2, 2, 5, 5)
 
     # Line Plot
     plot = LinePlot(panel)
@@ -765,7 +790,7 @@ def main():
     y = [random.uniform(-1, 1) + (_x * 0.5) + 2 for _x in reversed(x)]
     plot.draw(x, y, 'g')
 
-    hbox.Add(plot, 1, wx.EXPAND)
+    grid.Add(plot, 1, wx.EXPAND)
 
     # Pareto Plot
     labels = ["a", "b", "c", "d", "e", "e", "e", "e", "d", "d", "e", "c", "c"]
@@ -775,8 +800,15 @@ def main():
     plot.draw(data, True, 0.91)
 
 
-    hbox.Add(plot, 1, wx.EXPAND)
-    panel.SetSizer(hbox)
+    grid.Add(plot, 1, wx.EXPAND)
+
+    x = np.array([1, 2, 3, 4, 5])
+    y = np.array([5, 3, 8, 4, 9])
+    data = np.array(list(zip(x, y)))
+    plot = wxLinePlot(panel, data)
+    grid.Add(plot, 1, wx.EXPAND)
+
+    panel.SetSizer(grid)
 
 
 
