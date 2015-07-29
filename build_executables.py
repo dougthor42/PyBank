@@ -11,6 +11,8 @@ Created on Mon Jun 22 13:08:24 2015
 # Standard Library
 import sys
 import logging
+import os.path
+import glob
 
 # Third Party
 from cx_Freeze import setup, Executable
@@ -40,7 +42,11 @@ packages = [
 #            'scipy.stats',
 #            'scipy',
             'numpy',
-            'matplotlib',
+#            'matplotlib',
+#            'matplotlib.lines',
+#            'matplotlib.patches',
+#            'matplotlib.figure',
+
             ]
 
 # included modules
@@ -55,8 +61,8 @@ includes = [
 include_files = [
                  "pybank\\test_database.db",
                  ("log\\README.txt", "log\\README.txt"),  # (source, dest)
-                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs.pyd", "_ufuncs.pyd"),
-                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs_cxx.pyd", "_ufuncs_cxx.pyd"),
+#                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs.pyd", "_ufuncs.pyd"),
+#                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs_cxx.pyd", "_ufuncs_cxx.pyd"),
                  ]
 
 # list of names of files to include when determining dependencies of
@@ -67,12 +73,40 @@ bin_includes = [
 
                 ]
 
+# list of names of moduels to exclude
+excludes = [
+            "tkinter",
+            "ssl",
+            "pillow",
+            "pil",
+            "PyQt4",
+            "multiprocessing",
+            "bz2",
+            "coverage",
+            "zmq",
+            ]
+
+mplBackendsPath = os.path.join(os.path.split(sys.executable)[0],
+                               "Lib\\site-packages\\matplotlib\\backends\\backend_*")
+
+fileList = glob.glob(mplBackendsPath)
+
+moduleList = []
+
+for mod in fileList:
+    module = os.path.splitext(os.path.basename(mod))[0]
+    if not module in ("backend_wxagg", "backend_wx", "backend_agg"):
+        moduleList.append("matplotlib.backends." + module)
+
+excludes += moduleList
+
 # Options for build_exe
 build_exe_opts = {
                   "packages": packages,
                   "includes": includes,
                   "include_files": include_files,
 #                  "bin_includes": bin_includes,
+                  "excludes": excludes,
                   "silent": True,
                   }
 

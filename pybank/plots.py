@@ -19,26 +19,32 @@ Options:
 # ---------------------------------------------------------------------------
 # Standard Library
 import logging
-import sys
-import decimal
-import os.path as osp
-from operator import itemgetter
+#import sys
+#import decimal
+#import os.path as osp
+#from operator import itemgetter
 import random
-from enum import Enum
+#from enum import Enum
 
 # Third Party
 import wx
-import wx.lib.plot as wxplot
+#import wx.lib.plot as wxplot
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import wxmplot
+#import matplotlib as mpl
+#from matplotlib import lines as mpl_lines
+#import matplotlib.lines as mpl_lines
+from matplotlib.lines import Line2D as mpl_Line2D
+#from matplotlib import patches as mpl_patches
+#import matplotlib.patches as mpl_patches
+from matplotlib.patches import Rectangle as mpl_Rectangle
+#import matplotlib.pyplot as plt
+#import wxmplot
 #from paretochart import paretochart
 #from scipy import stats
 #import scipy.stats as stats
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+#from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
 
 # Package / Application
@@ -351,14 +357,14 @@ class ParetoPlot(wx.Panel):
         a bar was clicked. >:-(
         """
         print("picked")
-        if isinstance(event.artist, mpl.lines.Line2D):
+        if isinstance(event.artist, mpl_Line2D):
             print("Picked a line")
             thisline = event.artist
             xdata = thisline.get_xdata()
             ydata = thisline.get_ydata()
             ind = event.ind
             print("onpick points: {}  {}".format(xdata[ind], ydata[ind]))
-        elif isinstance(event.artist, mpl.patches.Rectangle):
+        elif isinstance(event.artist, mpl_Rectangle):
             print("Picked a bar")
 
     def _on_mouse_click(self, event):
