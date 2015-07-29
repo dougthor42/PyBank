@@ -52,6 +52,7 @@ try:
     from . import __init__ as __pybank_init
     from . import pbsql
     from . import plots
+    from . import utils
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
@@ -59,12 +60,14 @@ except SystemError:
         import __init__ as __pybank_init
         import pbsql
         import plots
+        import utils
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
         from pybank import __init__ as __pybank_init
         from pybank import pbsql
         from pybank import plots
+        from pybank import utils
         logging.debug("imports for Executable")
 
 
@@ -448,27 +451,24 @@ class SamplePlotPanel3(wx.Panel):
         title = wx.StaticText(self, -1, label, (5, 5))
 
         self.plot = plots.LinePlot(self)
+        self.pareto = plots.ParetoPlot(self)
 
         self.btn = wx.Button(self, wx.ID_ANY, "Update")
 
         vbox = wx.BoxSizer(wx.VERTICAL)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
         vbox.Add(title, 0)
-        vbox.Add(self.plot, 0, wx.EXPAND)
-        vbox.Add(self.btn, 0, wx.EXPAND)
+        hbox.Add(self.plot, 0, wx.EXPAND)
+#        vbox.Add(self.btn, 0, wx.EXPAND)
+        hbox.Add(self.pareto, 0, wx.EXPAND)
+        vbox.Add(hbox, 0, wx.EXPAND)
         self.SetSizer(vbox)
 
-        self.Bind(wx.EVT_BUTTON, self._on_btn, self.btn)
+#        self.Bind(wx.EVT_BUTTON, self._on_btn, self.btn)
 
-    def _on_btn(self, event):
-        print("you pressed the button!")
-        self.plot.clear()
-        dlen = 15
-        x = np.arange(dlen)
-        y = [random.uniform(-1, 1) + _x for _x in x]
-        self.plot.draw(x, y, 'b')
-        self.Refresh()
-        self.Update()
-        self.GetTopLevelParent().Update()
+#    def _on_btn(self, event):
+#        logging.debug("you pressed the button!")
+#        self.plot.clear()
 
 class NotebookPages(Enum):
     """
@@ -567,6 +567,11 @@ class MainNotebook(wx.Notebook):
         plot = self.GetPage(NotebookPages.plots.value).plot
         plot.clear()    # XXX: Not working (panel not updating?)
         plot.draw(x, y, 'r')
+
+        pareto = self.GetPage(NotebookPages.plots.value).pareto
+        pareto.clear()
+        y = np.array([x[4] for x in d], dtype=np.str)
+        pareto.draw(y)
 
 
 class LedgerPanel(wx.Panel):

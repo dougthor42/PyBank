@@ -123,8 +123,10 @@ __description__ = "Finance tracking software"
 __long_descr__ = """/
 """
 
-LOG_LEVEL_FILE = logging.DEBUG
-LOG_LEVEL_CONSOLE = logging.DEBUG
+LOG_LEVEL_BASE = logging.DEBUG
+LOG_LEVEL_FILE = LOG_LEVEL_BASE
+LOG_LEVEL_CONSOLE = LOG_LEVEL_BASE
+LOG_LEVEL_GUI = LOG_LEVEL_BASE
 
 
 def _setup_logging():
@@ -187,6 +189,7 @@ def _setup_logging():
     TimedRotatingFileHandler:
         http://www.blog.pythonlibrary.org/2014/02/11/
             python-how-to-create-rotating-logs/
+
     """
     logfmt = ("%(asctime)s.%(msecs)03d"
               " [%(levelname)-8.8s]"
@@ -198,14 +201,17 @@ def _setup_logging():
 
     # Create the logger
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(LOG_LEVEL_CONSOLE)
 
     ### Console Handler #####################################################
     handler = logging.StreamHandler()
     handler.setLevel(LOG_LEVEL_CONSOLE)
     formatter = logging.Formatter(logfmt, datefmt)
     handler.setFormatter(formatter)
+    handler.set_name("Console Handler")
     logger.addHandler(handler)
+
+    logging.info("Console logging initialized")
 
 
     ### File Handler ########################################################
@@ -244,8 +250,10 @@ def _setup_logging():
     handler.setLevel(LOG_LEVEL_FILE)
     formatter = logging.Formatter(logfmt, datefmt)
     handler.setFormatter(formatter)
+    handler.set_name("File Handler")
     logger.addHandler(handler)
 
+    logging.info("File logging initialized")
 
 ### Module Executions #######################################################
 _setup_logging()
