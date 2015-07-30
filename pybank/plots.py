@@ -140,6 +140,9 @@ class wxLinePlot(wxplot.PlotCanvas):
                                    xLabel="X label",
                                    yLabel="Monies",
                                    )
+
+        self.SetGridColour(wx.Colour(230, 230, 230, 255))
+        self.SetEnableGrid(True)
         self.Draw(plot)
 
 
@@ -802,8 +805,8 @@ def main():
 
     grid.Add(plot, 1, wx.EXPAND)
 
-    x = np.array([1, 2, 3, 4, 5])
-    y = np.array([5, 3, 8, 4, 9])
+    x = np.array([1, 2, 3, 4, 5, 6, 7])
+    y = np.array([5, 3, 8, 4, 9, 13, 15])
     data = np.array(list(zip(x, y)))
     plot = wxLinePlot(panel, data)
     grid.Add(plot, 1, wx.EXPAND)
