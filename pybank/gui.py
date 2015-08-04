@@ -30,7 +30,7 @@ import wx
 import wx.grid
 import wx.lib.plot as wxplot
 import numpy as np
-import wxmplot
+#import wxmplot
 #import wx.gizmos
 import wx.lib.mixins.listctrl as listmix
 #from wx.lib.splitter import MultiSplitterWindow
@@ -377,6 +377,13 @@ class SamplePlotPanel(wx.Panel):
 
         # Then set up how we're presenting the data. Lines? Point? Color?
         tdata = list(zip(self.fake_x_data, self.fake_y_data))
+
+        line = wxplot.PolyLine(tdata,
+                               colour='red',
+                               width=2,
+                               drawstyle='steps-post',
+                               )
+
         data = wxplot.PolyMarker(tdata,
                                  legend="Green Line",
                                  colour='red',
@@ -386,56 +393,18 @@ class SamplePlotPanel(wx.Panel):
 #                                 style=wx.PENSTYLE_SOLID,
                                  )
 
-        plot = wxplot.PlotGraphics([data],
+        plot = wxplot.PlotGraphics([line, data],
                                    title="Title",
                                    xLabel="X label",
                                    yLabel="Monies",
                                    )
+        self.client.SetGridColour(wx.Colour(230, 230, 230, 255))
+        self.client.SetEnableGrid(True)
         self.client.Draw(plot)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(title, 0)
         self.sizer.Add(self.client, 0)
-        self.SetSizer(self.sizer)
-
-
-class SamplePlotPanel2(wx.Panel):
-    """
-    Example plotting using the wxmplot package.
-
-    Note that wxmplot hasn't been maintained very well recently. In addition,
-    it requires matplotlib and numpy package which will (greatly?)
-    increase the size of the executable.
-
-    The advantages of using this package are:
-
-    1.  Looks nicer
-    2.  Easier to use
-    3.  Includes things like zoom, pan/drag, etc. all built in.
-    4.  Has many more plotting options including but not limited to pie
-        pti charts, pareto plots, 3d, etc.
-    5.  Since mpl needs numpy, I can use numpy elsewhere.
-
-    The disadvantes are:
-
-    1.  Executable will be much larger because of the numpy/matplotlib reqs
-    2.  I have to figure out how to correctly built the exe
-
-    """
-    def __init__(self, parent, colour, label):
-        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
-        self.SetBackgroundColour(colour)
-        title = wx.StaticText(self, -1, label, (5, 5))
-
-        self.fake_x_data = np.array([1, 2, 3, 4, 5, 6, 7])
-        self.fake_y_data = np.array([15, 13.6, 18.8, 12, 2, -6, 25])
-
-        self.pframe = wxmplot.PlotPanel(self)
-        self.pframe.scatterplot(self.fake_x_data, self.fake_y_data)
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(title, 0)
-        self.sizer.Add(self.pframe, 0, wx.EXPAND)
         self.SetSizer(self.sizer)
 
 
@@ -459,16 +428,10 @@ class SamplePlotPanel3(wx.Panel):
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         vbox.Add(title, 0)
         hbox.Add(self.plot, 0, wx.EXPAND)
-#        vbox.Add(self.btn, 0, wx.EXPAND)
         hbox.Add(self.pareto, 0, wx.EXPAND)
         vbox.Add(hbox, 0, wx.EXPAND)
         self.SetSizer(vbox)
 
-#        self.Bind(wx.EVT_BUTTON, self._on_btn, self.btn)
-
-#    def _on_btn(self, event):
-#        logging.debug("you pressed the button!")
-#        self.plot.clear()
 
 class NotebookPages(Enum):
     """
@@ -479,6 +442,7 @@ class NotebookPages(Enum):
     plots = 2
     wxmplot = 3
     wxlibplot = 4
+
 
 class MainNotebook(wx.Notebook):
     """
@@ -509,9 +473,6 @@ class MainNotebook(wx.Notebook):
 
         p2 = SamplePlotPanel3(self, "green", "Plotting with matplotlib backend")
         self.AddPage(p2, "Various Plots")
-
-        p3 = SamplePlotPanel2(self, "sky blue", "Plotting with wxmplot")
-        self.AddPage(p3, "Even more stuff")
 
         p4 = SamplePlotPanel(self, "orange", "Plotting with wx.lib.plot")
         self.AddPage(p4, "Even more stuff")

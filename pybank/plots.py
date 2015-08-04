@@ -38,7 +38,6 @@ from matplotlib.lines import Line2D as mpl_Line2D
 #import matplotlib.patches as mpl_patches
 from matplotlib.patches import Rectangle as mpl_Rectangle
 #import matplotlib.pyplot as plt
-#import wxmplot
 #from paretochart import paretochart
 #from scipy import stats
 #import scipy.stats as stats
@@ -165,21 +164,6 @@ class wxParetoPlot(wxplot.PlotCanvas):
     def draw(data):
         pass
 
-# ---------------------------------------------------------------------------
-### wxmplot Plots
-# ---------------------------------------------------------------------------
-
-
-#class LinePlot(wxmplot.PlotPanel):
-#    """
-#    """
-#    def __init__(self, parent):
-#        wxmplot.PlotPanel.__init__(self, parent)
-#        self.fake_x_data = np.array([1, 2, 3, 4, 5, 6, 7])
-#        self.fake_y_data = np.array([15, 13.6, 18.8, 12, 2, -6, 25])
-#
-#
-#        self.scatterplot(self.fake_x_data, self.fake_y_data)
 
 
 # ---------------------------------------------------------------------------
