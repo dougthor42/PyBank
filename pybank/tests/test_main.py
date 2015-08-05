@@ -28,13 +28,13 @@ from docopt import docopt
 
 # Package / Application
 try:
-    from .. import pybank
+    from .. import main
 except (SystemError, ImportError):
     if __name__ == "__main__":
         # Allow module to be run as script
         print("Running module as script")
         sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import pybank
+        import main
     else:
         raise
 
