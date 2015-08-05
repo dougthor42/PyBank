@@ -55,9 +55,9 @@ Other Items:
 
 """
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Imports
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Standard Library
 import sys
 import io
@@ -75,25 +75,28 @@ from bs4 import BeautifulSoup
 # Package / Application
 try:
     # Imports used for unittests
-    from . import __init__ as __pybank_init
+#    from . import sibling_module
 #    from . import pbsql
+    from . import __version__
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
-        import __init__ as __pybank_init
+#        import sibling_module
 #        import pbsql
+        from __init__ import __version__
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import __init__ as __pybank_init
+#        from package import sibling_module
 #        from pybank import pbsql
+        from pybank import __version__
         logging.debug("imports for Executable")
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Module Constants
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Some of this is black magic - I've no idea where it comes from.
 DEFAULT_APP_ID = 'QWIN'
 DEFAULT_APP_VERSION = '2200'
@@ -858,9 +861,9 @@ class CreditCardAccountFrom(object):
     def __init__(self):
         self.acct_id = None
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Misc.
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 class Status(object):
     """
@@ -924,9 +927,9 @@ class OFXBalance(object):
         self.as_of_date = None
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Accounts
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 class AccountType(Enum):
     """
@@ -1001,9 +1004,9 @@ class CreditCardAccount(Account):
         super().__init__()
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Statements
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 class OFXStatement(object):
     """
@@ -1043,9 +1046,9 @@ class InvestmentStatement(OFXStatement):
         super().__init__()
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Transactions
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 class TransactionType(Enum):
     unknown = 0
@@ -1285,7 +1288,7 @@ EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
 
 def main():
     """ Code to run when module called directly, just some quick checks. """
-    docopt(__doc__, version=__pybank_init.__version__)
+    docopt(__doc__, version=__version__)
     file = "tests\\data\\rs_checking.ofx"
 
     with open(file, 'r') as openf:

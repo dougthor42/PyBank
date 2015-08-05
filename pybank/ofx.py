@@ -12,9 +12,9 @@ Options:
     --version           # Show version.
 
 """
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Imports
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Standard Library
 import sys
 import os.path as osp
@@ -35,25 +35,27 @@ import keyring
 # Package / Application
 try:
     # Imports used for unittests
-    from . import __init__ as __pybank_init
     from .parseofx import ParseOFX
+#    from . import __init__ as __pybank_init
+    from . import __version__
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
-        import __init__ as __pybank_init
         from parseofx import ParseOFX
+#        import __init__ as __pybank_init
+        from __init__ import __version__
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import __init__ as __pybank_init
         from parseofx import ParseOFX
+        from pybank import __version__
         logging.debug("Imports for Executable")
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Module Constants
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # This is black magic - I've no idea where it comes from.
 DEFAULT_APP_ID = 'QWIN'
 DEFAULT_APP_VERSION = '2200'
@@ -198,9 +200,9 @@ NEWFILEUID:{fileid}
 """
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Module Functions
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 def docstring():
     """
@@ -399,9 +401,9 @@ def download_accounts():
 
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Re-implementing ofxclient
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 #
 #   Original code Copyright (c) 2012 David Bartle
 #
@@ -414,7 +416,7 @@ def download_accounts():
 #   + Updated for Python 3.3+
 #   + Additional docstrings and comments
 #
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 
 def ofx_uid():
@@ -663,9 +665,9 @@ def now():
     return time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### End Re-implementing ofxclient
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 
 def main():
@@ -684,7 +686,7 @@ def main():
     ------
     RuntimeError
     """
-    docopt(__doc__, version=__pybank_init.__version__)
+    docopt(__doc__, version=__version__)
 
     salt, hashed = salt_and_hash("Secret")
     print(validate_password("Secret", salt, hashed))

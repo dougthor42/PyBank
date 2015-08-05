@@ -29,19 +29,19 @@ from docopt import docopt
 # Package / Application
 try:
     # Imports used for unittests
-    from . import __init__ as __pybank_init
 #    from . import pbsql
+    from . import __version__
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
-        import __init__ as __pybank_init
 #        import pbsql
+        from __init__ import __version__
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import __init__ as __pybank_init
 #        from pybank import pbsql
+        from pybank import __version__
         logging.debug("imports for Executable")
 
 
@@ -462,9 +462,9 @@ def create_db(filename=DATABASE):
     create_trans_tbl(filename, 0)
     create_ledger_view(filename, 0)
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Core Database Functions
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 # TODO: Can I separate the sqlite3.connect command into a different function?
 # TODO: Refactor for better unittests
@@ -1084,9 +1084,9 @@ def generate_category_strings(cat_list,
         return retval
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### Other
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 # TODO: rename
 def find_if_payee_already_in_payee_table(payee):
@@ -1247,12 +1247,12 @@ def main():
     ------
     RuntimeError
     """
-    docopt(__doc__, version=__pybank_init.__version__)
+    docopt(__doc__, version=__version__)
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### DELETE
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 import colorama
 import inspect
 import datetime
@@ -1608,9 +1608,9 @@ def test3():
     conn.close()
 
 
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 ### END DELETE
-### #------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 def main():
     """ """

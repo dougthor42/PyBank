@@ -49,25 +49,37 @@ except ImportError:
 # Package / Application
 try:
     # Imports used for unittests
-    from . import __init__ as __pybank_init
     from . import pbsql
     from . import plots
     from . import utils
+#    from . import __init__ as __pybank_init
+    from . import (__project_name__,
+                   __version__,
+                   )
+
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
-        import __init__ as __pybank_init
         import pbsql
         import plots
         import utils
+#        import __init__ as __pybank_init
+        from __init__ import (__project_name__,
+                              __version__,
+                              )
+
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import __init__ as __pybank_init
         from pybank import pbsql
         from pybank import plots
         from pybank import utils
+#        from pybank import __init__ as __pybank_init
+        from pybank import (__project_name__,
+                            __version__,
+                            )
+
         logging.debug("imports for Executable")
 
 
@@ -82,6 +94,8 @@ LEDGER_COLOR_VALUE_NEGATIVE = wx.Colour(255, 0, 0, 255)
 LEDGER_COLOR_VALUE_POSITIVE = wx.Colour(0, 0, 0, 255)
 DATABASE = "test_database.db"
 
+TITLE_TEXT = "{} v{}".format(__project_name__, __version__)
+
 # ---------------------------------------------------------------------------
 ### Classes
 # ---------------------------------------------------------------------------
@@ -91,7 +105,7 @@ class MainApp(object):
     def __init__(self):
         self.app = wx.App()
 
-        self.frame = MainFrame("PyBank", (1200, 700))
+        self.frame = MainFrame(TITLE_TEXT, (1200, 700))
 
         self.frame.Show()
         self.app.MainLoop()

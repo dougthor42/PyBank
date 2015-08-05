@@ -49,22 +49,22 @@ from matplotlib.figure import Figure
 # Package / Application
 try:
     # Imports used for unittests
-    from . import __init__ as __pybank_init
     from . import pbsql
     from . import utils
+    from . import __version__
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
-        import __init__ as __pybank_init
         import pbsql
         import utils
+        from __init__ import __version__
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import __init__ as __pybank_init
         from pybank import pbsql
         from pybank import utils
+        from pybank import __version__
         logging.debug("imports for Executable")
 
 # ---------------------------------------------------------------------------
