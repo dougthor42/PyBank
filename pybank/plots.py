@@ -122,17 +122,17 @@ class wxLinePlot(wxplot.PlotCanvas):
         # Then set up how we're presenting the data. Lines? Point? Color?
         # XXX: Note that wxplot.PolyLine has been changed by me!
         line = wxplot.PolyLine(data,
-                                 colour='red',
-                                 width=2,
-                                 drawstyle='steps-post',
-                                 )
+                               colour='red',
+                               width=2,
+                               drawstyle='steps-post',
+                               )
 
         markers = wxplot.PolyMarker(data,
-                                 colour='red',
-#                                 width=3,
-                                 size=2,
-                                 marker='square',
-                                 )
+                                    colour='red',
+#                                    width=3,
+                                    size=2,
+                                    marker='square',
+                                    )
 
         plot = wxplot.PlotGraphics([line, markers],
                                    title="Title",
@@ -155,8 +155,60 @@ class wxLinePlot(wxplot.PlotCanvas):
 class wxParetoPlot(wxplot.PlotCanvas):
     """
     """
-    def __init__(self, parent):
-        pass
+    def __init__(self, parent, data):
+        wxplot.PlotCanvas.__init__(self, parent=parent, size=(400, 300))
+
+
+        # create the cumulative % data
+        counts, categories = calc_pareto_data(data)
+        num_categories = len(categories)
+
+        # Fake the cumulative line - make it use the left axis
+        cum_line_data = list(zip(np.arange(num_categories),
+                                 np.cumsum(np.array(counts)))
+                             )
+
+
+        # Create the bar plots
+        # For now, we create them as lines from the x axis up to the point.
+        bars = []
+        for n, (count, category) in enumerate(zip(counts, categories)):
+            pts = [(n, 0), (n, count)]
+            ln = wxplot.PolyLine(pts,
+                                 colour='green',
+#                                 legend='Feb.',
+                                 width=20,
+                                 )
+
+            bars.append(ln)
+
+
+        # Create the cumulative data line and pts
+        cum_line = wxplot.PolyLine(cum_line_data,
+                                   colour='blue',
+                                   width=2,
+                                   )
+
+        cum_line_pts = wxplot.PolyMarker(cum_line_data,
+                                         colour='blue',
+                                         width=2,
+                                         marker='square',
+                                         )
+
+        plot_items = bars + [cum_line, cum_line_pts]
+
+        plot = wxplot.PlotGraphics(plot_items,
+                                   title="Pareto",
+                                   xLabel="X",
+                                   yLabel="Y",
+                                   )
+
+        self.GridPen = wx.Pen(wx.Colour(230, 230, 230, 255),
+                              1,
+                              wx.PENSTYLE_DOT)
+
+        self.EnableGrid = True
+        self.Draw(plot)
 
     def _draw(self):
         pass
@@ -780,11 +832,12 @@ def main():
     grid.Add(plot, 1, wx.EXPAND)
 
     # Pareto Plot
-    labels = ["a", "b", "c", "d", "e", "e", "e", "e", "d", "d", "e", "c", "c"]
-    data = [random.choice(labels) for _ in range(150)]
+    labels = ["a", "b", "c", "d", "e", "e", "d", "d", "e", "e", "c"]
+    data = [random.choice(labels) for _ in range(100)]
+    pareto_data = data
 
     plot = ParetoPlot(panel)
-    plot.draw(data, True, 0.91)
+    plot.draw(data, True, 0.9991)
 
 
     grid.Add(plot, 1, wx.EXPAND)
@@ -798,11 +851,14 @@ def main():
     panel.SetSizer(grid)
 
 
+    pareto = wxParetoPlot(panel, pareto_data)
+    grid.Add(pareto, 1, wx.EXPAND)
+
 
     frame.Show()
     app.MainLoop()
 
 if __name__ == "__main__":
-    random.seed(153121)
+    random.seed(5633)
     main()
     get_double_click_time()
