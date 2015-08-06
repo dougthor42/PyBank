@@ -108,6 +108,7 @@ build_exe_opts = {
 #                  "bin_includes": bin_includes,
                   "excludes": excludes,
                   "silent": True,
+                  "include_msvcr": True,
                   }
 
 
