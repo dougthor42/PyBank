@@ -140,8 +140,8 @@ class wxLinePlot(wxplot.PlotCanvas):
                                    yLabel="Monies",
                                    )
 
-        self.SetGridColour(wx.Colour(230, 230, 230, 255))
-        self.SetEnableGrid(True)
+        self.GridPen = wx.Pen(wx.Colour(230, 230, 230, 255))
+        self.EnableGrid = (True, True)
         self.Draw(plot)
 
 
@@ -207,7 +207,7 @@ class wxParetoPlot(wxplot.PlotCanvas):
                               1,
                               wx.PENSTYLE_DOT)
 
-        self.EnableGrid = True
+        self.EnableGrid = (False, True)
         self.Draw(plot)
 
     def _draw(self):
