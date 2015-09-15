@@ -412,39 +412,14 @@ class SamplePlotPanel(wx.Panel):
                                    xLabel="X label",
                                    yLabel="Monies",
                                    )
-        self.client.SetGridColour(wx.Colour(230, 230, 230, 255))
-        self.client.SetEnableGrid(True)
+        self.client.GridPen = wx.Pen(wx.Colour(230, 230, 230, 255))
+        self.client.EnableGrid = True
         self.client.Draw(plot)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(title, 0)
         self.sizer.Add(self.client, 0)
         self.SetSizer(self.sizer)
-
-
-class SamplePlotPanel3(wx.Panel):
-    """
-    Example plotting using the matplotlib wx backend directly, via the `plots`
-    module of this project.
-
-    """
-    def __init__(self, parent, colour, label):
-        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
-        self.SetBackgroundColour(colour)
-        title = wx.StaticText(self, -1, label, (5, 5))
-
-        self.plot = plots.LinePlot(self)
-        self.pareto = plots.ParetoPlot(self)
-
-        self.btn = wx.Button(self, wx.ID_ANY, "Update")
-
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
-        vbox.Add(title, 0)
-        hbox.Add(self.plot, 0, wx.EXPAND)
-        hbox.Add(self.pareto, 0, wx.EXPAND)
-        vbox.Add(hbox, 0, wx.EXPAND)
-        self.SetSizer(vbox)
 
 
 class NotebookPages(Enum):
@@ -484,9 +459,6 @@ class MainNotebook(wx.Notebook):
 
         self.ledger_page = LedgerPanel(self)
         self.AddPage(self.ledger_page, "Ledger")
-
-        p2 = SamplePlotPanel3(self, "green", "Plotting with matplotlib backend")
-        self.AddPage(p2, "Various Plots")
 
         p4 = SamplePlotPanel(self, "orange", "Plotting with wx.lib.plot")
         self.AddPage(p4, "Even more stuff")
