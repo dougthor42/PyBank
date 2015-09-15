@@ -409,28 +409,12 @@ def main():
 
     grid = wx.GridSizer(2, 2, 5, 5)
 
-    # Line Plot
-    plot = LinePlot(panel)
-    plot.draw(x, y, 'r')
-    plot.clear()
-    y = [random.uniform(-1, 1) + _x + 2 for _x in x]
-    plot.draw(x, y, 'b')
-    y = [random.uniform(-1, 1) + (_x * 0.5) + 2 for _x in reversed(x)]
-    plot.draw(x, y, 'g')
-
-    grid.Add(plot, 1, wx.EXPAND)
-
-    # Pareto Plot
+    # Pareto Data
     labels = ["a", "b", "c", "d", "e", "e", "d", "d", "e", "e", "c"]
     data = [random.choice(labels) for _ in range(100)]
     pareto_data = data
 
-    plot = ParetoPlot(panel)
-    plot.draw(data, True, 0.9991)
-
-
-    grid.Add(plot, 1, wx.EXPAND)
-
+    # Line Plot
     x = np.array([1, 2, 3, 4, 5, 6, 7])
     y = np.array([5, 3, 8, 4, 9, 13, 15])
     data = np.array(list(zip(x, y)))
