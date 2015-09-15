@@ -161,7 +161,7 @@ NEWFILEUID:{fileid}
 </OFX>
 """
 
-ACCOUNTS = """
+LIST_ACCTS_STR = """
 OFXHEADER:100
 DATA:OFXSGML
 VERSION:102
@@ -326,13 +326,20 @@ def validate_password(secret, salt, hashed):
     hashbrowns = hashlib.sha512(salt + secret.encode('utf-8')).hexdigest()
     return hashbrowns == hashed
 
-
 def download_transactions():
     """
     Actually downlaods the transactions
     """
     a = Client()
-    b = a.post(CHECKING.format(uname=prompt_user(), pw=prompt_password()))
+    b = a.post(CHECKING.format(dtclient=now(),
+                               uname=prompt_user(),
+                               pw=prompt_password(),
+                               fileid=ofx_uid(),
+                               trnuid=ofx_uid(),
+                               routing="000000000",
+                               acct_num="0000000000",
+                               )
+               )
     for _l in str(b, encoding='utf-8').split("\r\n"):
         logging.debug(_l)
     return b
@@ -353,15 +360,16 @@ def list_accounts():
     Lists accouts at the institution
     """
     logging.debug("Listing accounts")
-    a = Client()
+    ofx_client = Client()
 
-    b = a.post(ACCOUNTS.format(dtclient=now(),
+    acct_str = LIST_ACCTS_STR.format(dtclient=now(),
                                uname=prompt_user(),
                                pw=prompt_password(),
                                fileid=ofx_uid(),
-                               trnuid=ofx_uid()
+                               trnuid=ofx_uid(),
                                )
-               )
+
+    b = ofx_client.post(acct_str)
 
     c = str(b, encoding='utf-8')
     for _line in c.split("\r\n"):
@@ -692,7 +700,13 @@ def main():
     print(validate_password("Secret", salt, hashed))
     print()
     a = Client()
-    b = a.post(ACCOUNTS.format(uname=prompt_user(), pw=prompt_password()))
+    b = a.post(LIST_ACCTS_STR.format(dtclient=now(),
+                                     uname=prompt_user(),
+                                     pw=prompt_password(),
+                                     fileid=ofx_uid(),
+                                     trnuid=ofx_uid(),
+                                     )
+               )
     print(b)
     for _l in str(b, encoding='utf-8').split("\r\n"):
         print(_l)
@@ -700,18 +714,12 @@ def main():
     d = download_transactions()
     with open("temp.ofx", 'wb') as openf:
         openf.write(d)
-    with open("temp.ofx", 'rb') as openf:
+    with open("temp.ofx", 'r') as openf:
         o = ParseOFX(openf)
-    print(o.account.number)
-    print(o.account.routing_number)
-    print(o.account.statement)
-    print(o.account.statement.start_date)
-    print(o.account.statement.end_date)
-    print(o.account.statement.transactions)
-    print(o.account.statement.balance)
-    print(o.account.statement.available_balance)
+    print(o.accounts)
+    print(o.statement)
 
 
 if __name__ == "__main__":
-#    main()
-    list_accounts()
+    main()
+#    list_accounts()

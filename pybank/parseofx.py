@@ -168,7 +168,12 @@ class ParseOFX(object):
             ofx_data = str(ofx_data, encoding='utf-8')
             ofx_data = io.StringIO(ofx_data, newline=self.newline)
         elif type(ofx_data) == io.BufferedReader:
-            ofx_data = io.StringIO(ofx_data.read(), newline=self.newline)
+            try:
+                ofx_data = io.StringIO(ofx_data.read(),
+                                       newline=self.newline)
+            except TypeError:
+                ofx_data = io.StringIO(ofx_data.read().decode("utf-8"),
+                                       newline=self.newline)
 #            pass
         elif type(ofx_data) == io.StringIO:
             pass

@@ -37,8 +37,8 @@ logging.disable(logging.CRITICAL)
 # ---------------------------------------------------------------------------
 # included packages and their submodules
 packages = [
-            'matplotlib.backends.backend_wxagg',
-            'matplotlib.backends.backend_wx',
+#            'matplotlib.backends.backend_wxagg',
+#            'matplotlib.backends.backend_wx',
 #            'scipy.stats',
 #            'scipy',
             'numpy',
@@ -98,7 +98,7 @@ for mod in fileList:
     if not module in ("backend_wxagg", "backend_wx", "backend_agg"):
         moduleList.append("matplotlib.backends." + module)
 
-excludes += moduleList
+#excludes += moduleList
 
 # Options for build_exe
 build_exe_opts = {

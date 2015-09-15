@@ -30,21 +30,6 @@ import random
 import wx
 import wx.lib.plot as wxplot
 import numpy as np
-#import matplotlib as mpl
-#from matplotlib import lines as mpl_lines
-#import matplotlib.lines as mpl_lines
-from matplotlib.lines import Line2D as mpl_Line2D
-#from matplotlib import patches as mpl_patches
-#import matplotlib.patches as mpl_patches
-from matplotlib.patches import Rectangle as mpl_Rectangle
-#import matplotlib.pyplot as plt
-#from paretochart import paretochart
-#from scipy import stats
-#import scipy.stats as stats
-
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-#from matplotlib.backends.backend_wx import NavigationToolbar2Wx
-from matplotlib.figure import Figure
 
 # Package / Application
 try:
@@ -103,11 +88,6 @@ MB_RIGHT = 3
 # ---------------------------------------------------------------------------
 ### Classes
 # ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-### wx.lib.plot Plots
-# ---------------------------------------------------------------------------
 class wxLinePlot(wxplot.PlotCanvas):
     """
     A Simple line graph with points.
@@ -116,6 +96,8 @@ class wxLinePlot(wxplot.PlotCanvas):
     of (y1, y2, y3, ..., yn) values. In this case, the x-values are
     assumed to be (1, 2, 3, ..., n)
     """
+    # TODO: Add linear fit
+    #       +
     def __init__(self, parent, data, *args, **wkargs):
         wxplot.PlotCanvas.__init__(self, parent=parent, size=(400, 300))
 
@@ -152,9 +134,41 @@ class wxLinePlot(wxplot.PlotCanvas):
         pass
 
 
+    #-- From the old MPL code. Need to modify for wx --#
+    def _lin_fit(self):
+        """
+        Performs a linear regression fit on the data
+        """
+        linreg = linear_regression(self._xdata, self._ydata)
+        slope, intercept, r_value = linreg
+        rsq = r_value**2
+        return slope, intercept, rsq
+
+    #-- From the old MPL code. Need to modify for wx --#
+    def _draw_lin_fit(self):
+        """
+        Draws the line of best fit, extrapolating a few points.
+        """
+        predict = 3
+        slope, intercept, _ = self._lin_fit()
+        xstart, xend = np.min(self._xdata) - 1, np.max(self._xdata) + predict
+        ystart = (slope * xstart) + intercept
+        yend = (slope * xend) + intercept
+
+        xdata = [xstart, xend]
+        ydata = [ystart, yend]
+
+        self.axes.plot(xdata, ydata, color=self._color)
+
+
 class wxParetoPlot(wxplot.PlotCanvas):
     """
     """
+    # TODO: Add events to ParetoPlot, mimicing those I made in MPL.
+    #       + On click of a box, highlight it.
+    #       + On double-click of a box, break down into subgroups?
+    #       + On-Pick event that gets the closest point. This needed?
+
     def __init__(self, parent, data):
         wxplot.PlotCanvas.__init__(self, parent=parent, size=(400, 300))
 
@@ -215,431 +229,6 @@ class wxParetoPlot(wxplot.PlotCanvas):
 
     def draw(data):
         pass
-
-
-
-# ---------------------------------------------------------------------------
-### matplotlib Plots, without using wxmplot
-# ---------------------------------------------------------------------------
-
-class LinePlot(wx.Panel):
-    """
-    """
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        self._xdata = None
-        self._ydata = None
-        self._color = None
-
-        self._init_ui()
-
-    def _init_ui(self):
-        """
-        Initialize the empty plot
-        """
-        # Create the figure and plot
-        self.fig = Figure(figsize=(5, 4))
-        self.axes = self.fig.add_subplot(111)
-
-
-
-
-
-        # Create the canvas and add the figure.
-        self.canvas = FigureCanvas(self, wx.ID_ANY, self.fig)
-
-        # Set up the layout of the panel.
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.canvas, 1, wx.EXPAND)
-        self.SetSizer(vbox)
-        self.Fit()
-
-    def _on_pick(self, event):
-        thisline = event.artist
-        xdata = thisline.get_xdata()
-        ydata = thisline.get_ydata()
-        ind = event.ind
-        print("onpick points: {}  {}".format(xdata[ind], ydata[ind]))
-
-    def _format_axes(self):
-        """
-        Formats the axes
-        """
-        # Enable gridlines
-        self.axes.minorticks_on()
-        self.axes.grid(b=True,              # not sure what this is...
-                       which='major',
-                       color='0.10',        # black
-                       linestyle='-',       # solid line
-                       )
-        self.axes.grid(b=True,
-                       which='minor',
-                       color='0.50',        # grey
-#                       linestyle='--',     # dashed line (default is dotted)
-                       )
-
-
-    def _lin_fit(self):
-        """
-        Performs a linear regression fit on the data
-        """
-        linreg = linear_regression(self._xdata, self._ydata)
-        slope, intercept, r_value = linreg
-        rsq = r_value**2
-        return slope, intercept, rsq
-
-    def _draw_lin_fit(self):
-        """
-        Draws the line of best fit, extrapolating a few points.
-        """
-        predict = 3
-        slope, intercept, _ = self._lin_fit()
-        xstart, xend = np.min(self._xdata) - 1, np.max(self._xdata) + predict
-        ystart = (slope * xstart) + intercept
-        yend = (slope * xend) + intercept
-
-        xdata = [xstart, xend]
-        ydata = [ystart, yend]
-
-        self.axes.plot(xdata, ydata, color=self._color)
-
-    def _draw(self):
-        """
-        Actually draw the plot items
-        """
-        self.canvas.mpl_connect('pick_event', self._on_pick)
-
-        # Plot the line and points
-        p1 = self.axes.plot(self._xdata, self._ydata,
-                            color=self._color,
-                            linestyle='-',
-                            marker='o',
-                            drawstyle='steps-mid',
-                            picker=5,
-                            )
-        # and the linear regression
-        self._draw_lin_fit()
-        self._format_axes()
-
-
-    def draw(self, xdata, ydata, color):
-        """
-        Draw data.
-
-        Parameters:
-        -----------
-        xdata : array-like
-            1D array of [x1, x2, x3, ...] values.
-
-        ydata : array-like
-            1D array of [y1, y2, y3, ...] values.
-
-        color : valid MatPlotLib color
-            Determines the color of the plotted items. Must be a valid
-            matplotlib color.
-        """
-        # convert to numpy arrays if needed
-        if not isinstance(xdata, np.ndarray):
-            xdata = np.array(xdata)
-        if not isinstance(ydata, np.ndarray):
-            ydata = np.array(ydata)
-
-        self._xdata = xdata
-        self._ydata = ydata
-        self._color = color
-        self._draw()
-
-    def clear(self):
-        """
-        Clears the plot
-        """
-        self.fig.gca()
-        self.axes.cla()
-        self.Layout()
-
-class ParetoPlot(wx.Panel):
-    """
-    Most code taken from Abraham Lee:
-        https://github.com/tisimst/paretochart
-
-    Modified to work on numpy arrays of raw data (automatically counts
-    each unique element)
-    """
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        self._data = None           # raw data
-        self._cumplot = True        # Plot the cumulative line?
-        self._limit = 1.0           # Trim the data
-
-        self._pdata = None          # Pareto data
-        self._plabels = None        # Pareto category labels
-        self._pcum = None           # Pareto cumulative %age data
-
-        self._init_ui()
-
-#    @property
-#    def pdata(self):
-#        return _pdata
-#
-#    @_pdata.setter
-#    def pdata(self, value):
-#        if self._limit < 1.0:
-
-    def _init_ui(self):
-        """
-        """
-        # Create the figure and plot
-        self.fig = Figure(figsize=(5, 4))       # FigSize is in inches :-(
-        self.axes = self.fig.add_subplot(111)
-        self.ax2 = self.axes.twinx()
-
-        # Create the canvas and add the figure.
-        self.canvas = FigureCanvas(self, wx.ID_ANY, self.fig)
-
-        # Set up the layout of the panel.
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.canvas, 1, wx.EXPAND)
-        self.SetSizer(vbox)
-        self.Fit()
-
-        self._bind_events()
-
-    ### Events ##############################################################
-    def _bind_events(self):
-        """
-        """
-        self.canvas.mpl_connect('button_press_event', self._on_mouse_click)
-        self.canvas.mpl_connect('pick_event', self._on_pick)
-
-    def _on_pick(self, event):
-        """
-        Picking only works on the topmost axis.
-
-        See http://matplotlib.1069221.n5.nabble.com/onpick-on-a-2-y-plot-via-twinx-seems-to-only-allow-picking-of-second-axes-s-artists-td6421.html
-
-        So I need to have the _on_mouse_click event do the check if
-        a bar was clicked. >:-(
-        """
-        print("picked")
-        if isinstance(event.artist, mpl_Line2D):
-            print("Picked a line")
-            thisline = event.artist
-            xdata = thisline.get_xdata()
-            ydata = thisline.get_ydata()
-            ind = event.ind
-            print("onpick points: {}  {}".format(xdata[ind], ydata[ind]))
-        elif isinstance(event.artist, mpl_Rectangle):
-            print("Picked a bar")
-
-    def _on_mouse_click(self, event):
-        """
-        Handle mouse click events.
-
-        Note that matplotlib does not distinguish between single and double
-        clicks. I have to implement that manually via a wx.timer.
-        -OR-
-        If I make the single-click event something mundane, then I can just
-        always process the single-click event. Example would be highlighting
-        the item.
-
-        """
-        # If we're not in the axes, ignore the event.
-        if not event.inaxes:
-            return
-
-        # Branch based on double-click and button
-        # This prevents the single-click event from firing twice upon
-        # double click. However, it does *not* stop the single-click event
-        # from firing on the 1st click of the double-click. To stop that,
-        # a software debouncer would be needed.
-        if event.dblclick:
-            if event.button == MB_LEFT:
-                self._mouse_click_left_double(event)
-            elif event.button == MB_MIDDLE:
-                pass
-            elif event.button == MB_RIGHT:
-                self._mouse_click_right_double(event)
-            else:
-                return
-        else:
-            if event.button == MB_LEFT:
-                self._mouse_click_left(event)
-            elif event.button == MB_MIDDLE:
-                pass
-            elif event.button == MB_RIGHT:
-                self._mouse_click_right(event)
-            else:
-                return
-
-        # Redraw the figure
-        # For some reason, Update() and Refresh() don't work
-        self.Layout()
-
-
-    ### Mouse Click Handlers ################################################
-    def _mouse_click_left(self, event):
-        """
-        Displays the value and changes the color of the bar that was clicked on
-        """
-        # Revert things back to the default colors
-        for item in self.axes.patches:
-            item.set_facecolor(None)        # None means default
-
-
-        # Check if the event happened inside one of the pareto Bars
-        in_bar = False
-        for n, item in enumerate(self.axes.patches):
-            if item.contains(event)[0]:
-                bar = item
-                bar_num = n
-                in_bar = True
-                break
-        else:
-            in_bar = False
-
-        if in_bar:
-            lot_str = "Clicked inside bar #{}, value = {}"
-            logging.debug(lot_str.format(bar_num, self._pdata[bar_num]))
-            bar.set_facecolor('r')
-
-    def _mouse_click_left_double(self, event):
-        """
-        Super special things.
-        """
-        logging.debug("Double Left Click")
-
-    def _mouse_click_right(self, event):
-        """
-        No idea what this should do...
-        """
-        logging.debug("Right Click")
-
-    def _mouse_click_right_double(self, event):
-        """
-        No idea what this should do, if anything.
-        """
-        logging.debug("Double Right Click")
-
-    def _draw_pareto(self):
-        """
-        Draws and formats the pareto plot.
-        """
-        # Plot the Pareto
-        length = len(self._pdata)
-        self.axes.bar(range(length),
-                      self._pdata,
-                      align='center',
-                      picker=10,
-                      )
-
-        # Format it
-        self.axes.grid()
-        self.axes.set_axisbelow(True)
-
-        self.axes.set_xticks(range(length))
-        self.axes.set_xlim(-0.5, length - 0.5)
-        self.axes.set_xticklabels(self._plabels)
-
-    def _draw_pareto_cum(self, line_data, total_data, limit):
-        """
-        Draws the pareto cumulative % line.
-        """
-        # TODO: Clean up this method
-        ax2 = self.ax2
-        # Add the plot
-        x_data = range(len(line_data))
-
-        ax2.plot(x_data,
-                 [_x * 100 for _x in line_data],
-                 linestyle='--',
-                 color='r',
-                 marker='o',
-                 picker=5,
-                 )
-        # Adjust the 2nd axis labels.
-
-        # since the sum-total value is not likely to be one of the ticks,
-        # we make it the top-most one regardless of label closeness
-        self.axes.set_ylim(0, total_data)
-        loc = self.axes.get_yticks()
-        newloc = [loc[i] for i in range(len(loc)) if loc[i] <= total_data]
-        newloc += [total_data]
-        self.axes.set_yticks(newloc)
-        ax2.set_ylim(0, 100)
-
-        yt = ["{:3d}%".format(int(_x)) for _x in ax2.get_yticks()]
-        ax2.set_yticklabels(yt)
-
-        # Add a limit line.
-        if limit < 1.0:
-            xmin, xmax = self.axes.get_xlim()
-            ax2.axhline(limit * 100, xmin - 1, xmax - 1,
-                        linestyle='--',
-                        color='r',
-                        )
-
-    def _draw(self):
-        """
-        """
-        # Create cumulative line data
-        self._pcum = calc_pareto_cum_line(self._pdata)
-
-        # Trim the data to the limit
-        # TODO: Clean up
-        if self._limit < 1:
-            (self._pdata,
-             self._plabels,
-             self._pcum,
-             ) = trim_pareto_data(self._limit,
-                                  self._pdata,
-                                  self._plabels,
-                                  self._pcum)
-
-        # Plot the Pareto Bars
-        self._draw_pareto()
-
-        # Add the cumulative plot and format it.
-        if self._cumplot:
-            self._draw_pareto_cum(self._pcum, len(self._data), self._limit)
-
-    def draw(self, data, cum_plot=True, limit=1.0):
-        """
-        Plots a pareto chart of data.
-
-        Parameters:
-        -----------
-        data : array-like
-            An array of discrete data points.
-
-        cum_plot : boolean
-            If True, plots the cumulative distribution of the pareto.
-
-        limit : float
-            Must be between 0 and 1 inclusive. Cumulative percentage value
-            after which data will not be plotted. Useful for plots with many
-            small categories and few large categories.
-
-        Returns:
-        --------
-        None
-        """
-        # convert to numpy arrays if needed
-        if not isinstance(data, np.ndarray):
-            data = np.array(data)
-
-        self._data = data
-        self._pdata, self._plabels = calc_pareto_data(data)
-        self._cumplot = cum_plot
-        self._limit = limit
-
-        self._draw()
-
-    @utils.logged
-    def clear(self):
-        """ """
-        self.axes.cla()
-        self.ax2.cla()
-        self.Layout()
 
 
 @utils.logged
