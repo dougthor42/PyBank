@@ -16,11 +16,18 @@ Options:
 ### Imports
 # ---------------------------------------------------------------------------
 # Standard Library
+import os
 import logging
+import base64
+import io
+import sqlite3
 
 # Third Party
-from cryptography.fernet import Fernet
 import keyring
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # Package / Application
 try:
@@ -28,7 +35,6 @@ try:
 #    from . import pbsql
 #    from . import plots
 #    from . import utils
-#    from . import __init__ as __pybank_init
 #    from . import (__project_name__,
 #                   __version__,
 #                   )
@@ -39,7 +45,6 @@ except SystemError:
 #        import pbsql
 #        import plots
 #        import utils
-#        import __init__ as __pybank_init
 #        from __init__ import (__project_name__,
 #                              __version__,
 #                              )
@@ -49,7 +54,6 @@ except SystemError:
 #        from pybank import pbsql
 #        from pybank import plots
 #        from pybank import utils
-#        from pybank import __init__ as __pybank_init
 #        from pybank import (__project_name__,
 #                            __version__,
 #                            )
@@ -75,9 +79,9 @@ def encrypted_read(file, key):
         data = openf.read()
 
     f = Fernet(key)
-    decrypted_data = f.decrypt(data)
 
-    return decrypted_data
+#    return io.BytesIO(f.decrypt(data))
+    return f.decrypt(data)
 
 
 def encrypted_write(file, key, data):
@@ -100,37 +104,105 @@ def encrypt_file(file, key, copy=False):
     """
     # First we need to read in the file's contents
     with open(file, 'rb') as openf:
-        unencrypted_data = openf.read()
+        decrypted_data = openf.read()
 
-    encrypted_write("crypto_" + file, key, unencrypted_data)
+    encrypted_write("crypto_" + file, key, decrypted_data)
 
     return
 
 
 def decrypt_file(file, key, new_file=None):
     """ Decrypts a given file """
-    new_file = "decrypted_" + file
-
+    if new_file is None:
+        new_file = "decrypted_" + file
 
     with open(new_file, 'wb') as openf:
         openf.write(encrypted_read(file, key))
 
-    return
+    return new_file
 
 
 def main():
-    print("====================")
-    print("Creating Key:")
-    key = Fernet.generate_key()
-    print(key)
+    # Read or create salt file.         # XXX: Put in config file?
+    salt_file = "salt.txt"
+    if not os.path.exists(salt_file):
+        with open(salt_file, 'wb') as openf:
+            salt = os.urandom(32)
+            openf.write(salt)
+    else:
+        with open(salt_file, 'rb') as openf:
+            salt = openf.read()
 
+    print("Salt is:\n{}".format(salt))
+
+    # Prompt the user for a password
+    pw_input = input("type in the password 'secret'  >> ")
+    password = keyring.get_password('PyBank', 'user').encode('utf-8')
+    if password != pw_input.encode('utf-8'):
+        raise Exception("I said type in 'secret'!")
+
+    # Add a pepper. Not really useful since this is open-source, but /shrug.
+    # TODO: look into alternate pepper solution
+    #       - perhaps unique to the computer it's running on?
+    #         - But what if the user wants to change computers...
+    #       - secondary password?
+    password += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
+
+    # Use the password and the salt to generate the key
+    #   kdf: Key Derivation Function
+    #   PBKDF2HMAC: Password-Based Key Derivation Function 2,
+    #               Hash-based Message Authentication Code
+    # https://cryptography.io/en/latest/fernet/#using-passwords-with-fernet
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                     length=32,
+                     salt=salt,
+                     iterations=100000,
+                     backend=default_backend()
+                     )
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+
+    # Encrypt or Decrypt the file.
     print("Encrypting encrypted file: PyBank.db")
     encrypt_file("PyBank.db", key)
 
-    input("Press enter to read the encrypted file.")
+#    input("Press enter to read the encrypted file.")
     print("Decrypting file")
-    decrypt_file("crypto_PyBank.db", key)
+    a = encrypted_read("crypto_PyBank.db", key)
+
+
+    # Since I can't read/write directly to the encrypted database,
+    # and I can't open a database from a BytesIO stream, I've decided
+    # to do the following:
+    # 1.  decrypt the DB once to a temporary file
+    # 2.  copy it to a memory db (http://stackoverflow.com/a/4019182/1354930)
+    # 3.  Remove temporary file.
+    # This will minimize the amount of time that the file is not encrypted.
+
+    # TODO: Secure delete using Gutmann method?
+    #       https://en.wikipedia.org/wiki/Gutmann_method
+
+    # TODO: Get security review by someone else.
+
+    # 1. Decrypt to temporary file
+    temp_file = decrypt_file("crypto_PyBank.db", key)
+
+    # 2. Copy it to an in-memory database
+    main_db = sqlite3.connect(":memory:")
+    file_db = sqlite3.connect(temp_file)
+    query = "".join(line for line in file_db.iterdump())
+    main_db.executescript(query)
+    file_db.close()
+
+    # 3. Delete the temporary file
+    os.remove(temp_file)
+
+    # Next, we make changes to the in-memory database.
+    # pass
+
+    # And periodically, we wri
+
 
 
 if __name__ == "__main__":
     main()
+
