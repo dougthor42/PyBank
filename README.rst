@@ -60,9 +60,31 @@ Features
 
 + Handle multiple accounts in a single file
 
-Notes
------
+Notes for the User
+------------------
 None Yet
+
+
+Notes for me (developer)
+------------------------
++ [ ] Need to make sure that when the program crashes, the SQLite db file
+      is still encrypted.
+      + I can switch to using an in-memory database for the standard
+        transactions, and then periodically decrypt-update-encrypt the
+        persistent file. This will keep the time that the file's decrypted
+        down to a minimum.
+      + Alternatively, I can just read the file into memory once then just
+        always overwrite it. That way, it's only ever decrypted at the start
+        of the program.
++ [ ] Update source code with my current best practices.
++ [ ] Export data as csv.
+
+
+
+
+
+
+
 
 .. |travis-ci| image:: https://api.travis-ci.org/dougthor42/PyBank.svg?branch=master
   :target: https://travis-ci.org/dougthor42/PyBank

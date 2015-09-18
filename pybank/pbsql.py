@@ -45,6 +45,14 @@ except SystemError:
         logging.debug("imports for Executable")
 
 
+# TODO: SQL Injection Prevention
+#   https://www.owasp.org/index.php/SQL_Injection_Prevention_Cheat_Sheet
+#   Though is it needed? I won't be having users write queries, so maybe not?
+
+# TODO: Use SQLAlchemy
+#       - for creating new databases
+#       - for everything.
+
 DATABASE = "test_database.db"
 
 def docstring():
