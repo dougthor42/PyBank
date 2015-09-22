@@ -55,3 +55,18 @@ docs/_build/
 
 # PyBuilder
 target/
+
+##############################
+### Project-Specific Items ###
+##############################
+
+# Cryptography
+salt.txt
+
+# Possibly contains personal info
+# (though I'm pretty sure I cleaned all these files already)
+PyBank.db
+_sqlalchemy_db.db
+crypto_PyBank.db
+temp.ofx
+test_database.db
