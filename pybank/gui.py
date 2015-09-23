@@ -97,7 +97,7 @@ DATABASE = "test_database.db"
 TITLE_TEXT = "{} v{}".format(__project_name__, __version__)
 
 # ---------------------------------------------------------------------------
-### Classes
+### Main GUI
 # ---------------------------------------------------------------------------
 
 class MainApp(object):
@@ -1483,5 +1483,134 @@ class LedgerHeaderBar(wx.Panel):
         self.SetSizer(vbox)
 
 
+# ---------------------------------------------------------------------------
+### Password Prompts
+# ---------------------------------------------------------------------------
+class PasswordPromptDialog(wx.Dialog):
+    """ Dialog Box for user password. """
+    def __init__(self):
+        wx.Dialog.__init__(self, None, title="PyBank")
+
+        # Main Prompt
+        label = wx.StaticText(self, -1, "Please enter your password:")
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+
+        self.text_box = wx.TextCtrl(self, size=(150, -1), style=wx.TE_PASSWORD)
+        sizer.Add(self.text_box, 1, wx.ALIGN_CENTER|wx.ALL, 5)
+
+
+        btnsizer = wx.StdDialogButtonSizer()
+
+        btn = wx.Button(self, wx.ID_OK)
+        btn.SetDefault()
+        btnsizer.AddButton(btn)
+
+        btn = wx.Button(self, wx.ID_CANCEL)
+        btnsizer.AddButton(btn)
+        btnsizer.Realize()
+
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
+
+        self.SetSizer(sizer)
+        self.Center()
+        sizer.Fit(self)
+
+
+def password_prompt():
+    """ Prompt the user for a password """
+    app = wx.App()
+    dialog = PasswordPromptDialog()
+    # XXX: Is this a security risk? Sending an unencrypted
+    #      password between functions and modules?
+    if dialog.ShowModal() == wx.ID_OK:
+        retval = dialog.text_box.GetValue()
+    else:
+        retval = None
+    dialog.Destroy()
+    app.MainLoop()
+    return retval
+
+
+class PasswordCreateDialog(wx.Dialog):
+    """ Dialog Box for creating a password. """
+    def __init__(self):
+        wx.Dialog.__init__(self, None, title="PyBank")
+
+        label = wx.StaticText(self, -1, "Please choose a password.")
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(label, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+
+        label = wx.StaticText(self, wx.ID_ANY, "Password:")
+        self.pw1 = wx.TextCtrl(self, size=(-1, -1), style=wx.TE_PASSWORD)
+
+        grid = wx.FlexGridSizer(2, 5, 0)
+        alignment = wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT
+        padding = wx.LEFT|wx.RIGHT
+        grid.Add(label, 0, alignment|padding, 5)
+        grid.Add(self.pw1, 1, wx.EXPAND|padding, 5)
+
+
+        label = wx.StaticText(self, wx.ID_ANY, "Confirm:", size=(-1, -1))
+        self.pw2 = wx.TextCtrl(self, size=(-1, -1), style=wx.TE_PASSWORD)
+
+        grid.Add(label, 0, alignment|padding, 5)
+        grid.Add(self.pw2, 1, wx.EXPAND|padding, 5)
+
+        grid.Fit(self)
+
+        sizer.Add(grid, 0, wx.ALL, 5)
+
+
+        btnsizer = wx.StdDialogButtonSizer()
+
+        self.ok_btn = wx.Button(self, wx.ID_OK)
+        self.ok_btn.SetDefault()
+        self.ok_btn.Disable()
+        btnsizer.AddButton(self.ok_btn)
+
+        btn = wx.Button(self, wx.ID_CANCEL)
+        btnsizer.AddButton(btn)
+        btnsizer.Realize()
+
+        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|padding|wx.BOTTOM, 5)
+
+        self.SetSizer(sizer)
+        self.Center()
+        sizer.Fit(self)
+
+        self.Bind(wx.EVT_TEXT, self.on_txt_change, self.pw1)
+        self.Bind(wx.EVT_TEXT, self.on_txt_change, self.pw2)
+
+    def on_txt_change(self, event):
+        """ Disable the "OK" button if the passwords don't match """
+        pw1 = self.pw1.GetValue()
+        pw2 = self.pw2.GetValue()
+        if pw1 == pw2 and pw1 != '':
+            self.ok_btn.Enable()
+        else:
+            self.ok_btn.Disable()
+
+
+def password_create():
+    """ Prompt the user for a password """
+    app = wx.App()
+    dialog = PasswordCreateDialog()
+    # XXX: Is this a security risk? Sending an unencrypted
+    #      password between functions and modules?
+    if dialog.ShowModal() == wx.ID_OK:
+        retval = dialog.pw1.GetValue()
+    else:
+        retval = None
+    dialog.Destroy()
+    app.MainLoop()
+    return retval
+
+# ---------------------------------------------------------------------------
+### Run module as standalone
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    MainApp()
+#    MainApp()
+    password_create()

@@ -124,6 +124,21 @@ def decrypt_file(file, key, new_file=None):
     return new_file
 
 
+def check_password(password):
+    """ Checks a password against the keyring """
+    password = password.encode('utf-8')
+    service = 'PyBank'
+    user = 'user'
+    return password == keyring.get_password(service, user).encode('utf-8')
+
+
+def create_password(password):
+    """ Creates a new password for PyBank in the keyring """
+    service = "PyBank"
+    user = 'user'
+    keyring.set_password(service, user, password)
+
+
 def main():
     # Read or create salt file.         # XXX: Put in config file?
     salt_file = "salt.txt"

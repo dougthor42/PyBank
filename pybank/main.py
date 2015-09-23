@@ -22,27 +22,39 @@ Options:
 import sys
 import logging
 import os.path
+import time
 
 # Third-Party
 from docopt import docopt
 
 # Package / Application
-# Package / Application
 try:
     # Imports used for unittests
     from . import pbsql
-    from . import __version__
+    from . import gui
+    from . import crypto
+    from . import (__project_name__,
+                   __version__,
+                   )
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
         import pbsql
-        from __init__ import __version__
+        import gui
+        import crypto
+        from __init__ import (__project_name__,
+                              __version__,
+                              )
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
         from pybank import pbsql
-        from pybank import __version__
+        from pybank import gui
+        from pybank import crypto
+        from pybank import (__project_name__,
+                            __version__,
+                            )
         logging.debug("imports for Executable")
 
 
@@ -50,92 +62,95 @@ except SystemError:
 ### Module Constants
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+### Classes
+# ---------------------------------------------------------------------------
 
-def save_account():
-    """
-    Save account info to the database.
-    """
-    pass
+# ---------------------------------------------------------------------------
+### Functions
+# ---------------------------------------------------------------------------
+def password_prompt_loop():
+    # Password Prompt Loop
+    logging.debug('Starting password prompt loop')
+    while True:
+        password = gui.password_prompt()
+        if password is None:
+            logging.debug('User canceled password prompt; exiting')
+            return
+        elif crypto.check_password(password):
+            logging.debug('Password OK')
+            break
+        else:
+            logging.debug('Invalid password')
+            time.sleep(0.5)     # slow down brute-force attempts
+            continue
 
-def save_institution():
-    """
-    Save institution info to the database.
-    """
-    pass
-
-def read_institution():
-    """
-    Read insitution info from the database.
-    """
-    pass
-
-def read_account():
-    """
-    Read account info from the database.
-    """
-    pass
-
-def save_transaction():
-    """
-    Saves a transaction
-
-    This function is the primary workhorse of the ledger.
-
-    It needs to:
-
-    1. find the payee in the payee table
-        + find the category in the category table
-        + find the payee display name in the display_name table
-
-    """
-    pass
-
-
-def read_transaction():
-    """
-    Reads a single transaction from a transaction table.
-
-    Handles the joining of tables so that only display_names are shown.
-
-    Parameters:
-    -----------
-    account : int
-        Account_ID from the acct table.
-
-    Returns:
-    --------
-    data : tuple
-        A tuple of the data to be used in the GUI.
-
-    """
-    pass
-
-
-def get_transactions_for_gui(account):
-    """
-    Reads the entire transaction table for a given account and returns the
-    data in a format that the gui will like.
-
-    Parameters:
-    -----------
-    account : int
-        Account_ID from the acct table
-
-    Returns:
-    --------
-    data : dict
-        Dictionary-formatted dataset for the gui.
-
-    """
-
+def password_create_loop():
+    # Password Prompt Loop
+    logging.debug('Starting password prompt loop')
+    while True:
+        password = gui.password_prompt()
+        if password is None:
+            logging.debug('User canceled password prompt; exiting')
+            return
+        elif crypto.check_password(password):
+            logging.debug('Password OK')
+            break
+        else:
+            logging.debug('Invalid password')
+            time.sleep(0.5)     # slow down brute-force attempts
+            continue
 
 def main():
     """
     Main entry point
+
+    Flow:
+    + Check for database file
+      + if doesn't exist, create file and password. Encrypt file.
+    + Ask for password
+    + If dbfile didn't exists, create and encrypt
+    + Decrypt file to local copy
+    + copy to memory database
+    + delete local copy
+    + Gui loop
+    + Auto-save loop
+
     """
     docopt(__doc__, version=__version__)
-    print("Running pybank.py")
-    print("End")
+    logging.debug("Running pybank.py")
+
+    # Check if the database file exists
+    database_file = 'PyBank.db'
+    logging.debug('Checking for existing database: {}'.format(database_file))
+    if not os.path.isfile(database_file):
+        logging.debug('Prompting user to make a password')
+        pw = gui.password_create()
+        if pw is None:
+            logging.debug('User canceled password creation; exiting')
+            return
+        crypto.create_password(pw)
+        logging.debug('Creating database file')
+#        pbsql.create_db(database_file)
+    else:
+        pw = password_prompt_loop()
+        logging.debug('creating key')
+#        key = crypto.create_key(pw)
+
+        logging.debug('decrypting database')
+        temp_file = 'temp.db'
+#        crypto.decrypt_file(database_file, key, temp_file)
+
+        logging.debug('copying db to memory')
+        # magic
+
+        logging.debug('deleting temporary db file')
+#        os.remove(temp_file)
+
+    logging.debug('starting gui')
+    gui.MainApp()
+
+    logging.debug("End")
 
 
 if __name__ == "__main__":
