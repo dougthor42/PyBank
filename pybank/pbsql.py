@@ -13,6 +13,9 @@ Options:
 
 """
 
+# ---------------------------------------------------------------------------
+### Imports
+# ---------------------------------------------------------------------------
 # Standard Library
 import sys
 import shutil
@@ -21,9 +24,12 @@ import logging
 import abc
 import os.path as osp
 from contextlib import closing
+from decimal import Decimal as D
 
 # Third-Party
 from docopt import docopt
+import sqlalchemy as sa
+from sqlalchemy.ext import compiler as sa_compiler
 
 # Package / Application
 # Package / Application
@@ -53,6 +59,10 @@ except SystemError:
 #       - for creating new databases
 #       - for everything.
 
+
+# ---------------------------------------------------------------------------
+### Module Constants
+# ---------------------------------------------------------------------------
 DATABASE = "test_database.db"
 
 def docstring():
@@ -220,6 +230,76 @@ Joins everything together, yay!
 """
     pass
 
+
+# ---------------------------------------------------------------------------
+### Items needed to create a view in SQLAlchemy
+# ---------------------------------------------------------------------------
+class CreateView(sa.schema.DDLElement):
+    """ Create a new View """
+    def __init__(self, name, selectable):
+        self.name = name
+        self.selectable = selectable
+
+class DropView(sa.schema.DDLElement):
+    """ Drop a View """
+    def __init__(self, name):
+        self.name = name
+
+@sa_compiler.compiles(CreateView)
+def compile(element, compiler, **kw):
+    sql_str = "CREATE VIEW {} AS {}"
+    process_compiler = compiler.sql_compiler.process(element.selectable)
+    return sql_str.format(element.name, process_compiler)
+
+@sa_compiler.compiles(DropView)
+def compile(element, compiler, if_exists=False, **kw):
+    sql_str = "DROP VIEW IF EXISTS {}"
+    return sql_str.format(element.name)
+
+def view(name, metadata, selectable):
+    t = sa.sql.table(name)
+
+    for c in selectable.c:
+        c._make_proxy(t)
+
+    CreateView(name, selectable).execute_at('after-create', metadata)
+    DropView(name).execute_at('before-drop', metadata)
+    return t
+
+# ---------------------------------------------------------------------------
+### Helper Classes
+# ---------------------------------------------------------------------------
+class SqliteNumeric(sa.types.TypeDecorator):
+    """
+    Custom-made Numeric type specifically for SQLite.
+
+    Converts a Decimal to a string when writing to the database, and converts
+    it back to a Decimal when reading.
+
+    See http://stackoverflow.com/a/10386911/1354930
+    """
+    impl = sa.types.String
+    def load_dialect_impl(self, dialect):
+        return dialect.type_descriptor(sa.types.VARCHAR(30))
+
+    def process_bind_param(self, value, dialect):
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return D(value)
+
+
+# ---------------------------------------------------------------------------
+### Classes
+# ---------------------------------------------------------------------------
+
+
+
+# ---------------------------------------------------------------------------
+### Functions
+# ---------------------------------------------------------------------------
 
 # TODO: SQLite adapters and converters
 # https://docs.python.org/3.4/library/sqlite3.html#sqlite-and-python-types
@@ -469,6 +549,126 @@ def create_db(filename=DATABASE):
 
     create_trans_tbl(filename, 0)
     create_ledger_view(filename, 0)
+
+def create_db_sa(filename=DATABASE):
+    """
+    Creates the SQLite database using SQLAlchemy.
+
+    Parameters:
+    -----------
+    filename : string, optional
+        The filename to save the database as. Defaults to DATABASE.
+
+    Returns:
+    --------
+    None
+
+    """
+    logging.info("Creating empty database")
+
+    engine = sa.create_engine("sqlite:///:memory:", echo=False)
+
+    metadata = sa.MetaData(engine)
+
+    acct = sa.Table('Account', metadata,
+        sa.Column('AccountID', sa.Integer, primary_key=True),
+        sa.Column('AccountNum', sa.String, nullable=False),
+        sa.Column('Name', sa.String, nullable=False),
+        sa.Column('InstitutionID', None, sa.ForeignKey('Institution.InstitutionID')),
+        sa.Column('UserName', sa.String, nullable=False),
+        sa.Column('AccountGroupID', sa.Integer, sa.ForeignKey('AccountGroup.AccountGroupID')),
+        )
+
+    account_group = sa.Table('AccountGroup', metadata,
+        sa.Column('AccountGroupID', sa.Integer, primary_key=True),
+        sa.Column('Name', sa.String, nullable=False)
+        )
+
+    category = sa.Table('Category', metadata,
+        sa.Column('CategoryID', sa.Integer, primary_key=True),
+        sa.Column('Name', sa.String, nullable=True),
+        sa.Column('Parent', None, sa.ForeignKey('Category.CategoryID')),
+        )
+
+    display_name = sa.Table('DisplayName', metadata,
+        sa.Column('DisplayNameID', sa.Integer, primary_key=True),
+        sa.Column('Name', sa.String, nullable=False),
+        )
+
+    # TODO: split out ofx data to separate table
+    institution = sa.Table('Institution', metadata,
+        sa.Column('InstitutionID', sa.Integer, primary_key=True),
+        sa.Column('Name', sa.String, nullable=False),   # unique?
+        sa.Column('OfxID', sa.Integer, sa.ForeignKey('Ofx.OfxID'), nullable=False),
+        )
+
+    ofx = sa.Table('Ofx', metadata,
+        sa.Column('OfxID', sa.Integer, primary_key=True),
+        sa.Column('Name', sa.String),
+        sa.Column('OfxOrg', sa.String, nullable=False),
+        sa.Column('OfxUrl', sa.String, nullable=False),
+        )
+
+    transaction_label = sa.Table('TransactionLabel', metadata,
+        sa.Column('TransactionLabelID', sa.Integer, primary_key=True),
+        sa.Column('Name', sa.String, nullable=False),
+        )
+
+    payee = sa.Table('Payee', metadata,
+        sa.Column('PayeeID', sa.Integer, primary_key=True),
+        sa.Column('Name', sa.String, nullable=False),   # unique?
+        sa.Column('DisplayNameID', None, sa.ForeignKey('DisplayName.DisplayNameID')),
+        sa.Column('CategoryID', None, sa.ForeignKey('Category.CategoryID')),
+        )
+
+    transaction = sa.Table('Transaction', metadata,
+        sa.Column('TransactionID', sa.Integer, primary_key=True),
+        sa.Column('AccountID', None, sa.ForeignKey('Account.AccountID')),
+        sa.Column('Date', sa.Date, nullable=False),  # datetime?
+        sa.Column('EnterDate', sa.Date),             # datetime?
+        sa.Column('CheckNum', sa.Integer),
+    #    sa.Column('Amount', sa.Numeric),
+        sa.Column('Amount', SqliteNumeric),
+        sa.Column('PayeeID', None, sa.ForeignKey('Payee.PayeeID')),
+        sa.Column('CategoryID', None, sa.ForeignKey('Category.CategoryID')),
+        sa.Column('TransactionLabelID', None, sa.ForeignKey('TransactionLabel.TransactionLabelID')),
+        sa.Column('MemoID', sa.String),
+        sa.Column('Fitid', sa.Integer),
+        )
+
+    memo = sa.Table('Memo', metadata,
+        sa.Column('MemoID', sa.Integer, primary_key=True),
+        sa.Column('Text', sa.String),
+        )
+
+    # TODO: do I want outer joins?
+    oj = sa.outerjoin(transaction, payee)
+    oj = sa.outerjoin(oj, category, category.c.CategoryID==transaction.c.CategoryID)
+    oj = sa.outerjoin(oj, transaction_label)
+    oj = sa.outerjoin(oj, display_name, display_name.c.DisplayNameID==payee.c.DisplayNameID)
+    oj = sa.outerjoin(oj, acct, acct.c.AccountID==transaction.c.AccountID)
+    oj = sa.outerjoin(oj, memo, memo.c.MemoID==transaction.c.MemoID)
+
+    func = sa.sql.func
+
+    ledger_view = view('ledger_view', metadata,
+        sa.select([transaction.c.Date,
+                   transaction.c.AccountID,
+                   acct.c.Name.label('AccountName'),
+                   transaction.c.EnterDate,
+                   transaction.c.CheckNum,
+                   func.coalesce(display_name.c.Name,
+                                 payee.c.Name).label('Payee'),
+                   payee.c.Name.label('DownloadedPayee'),
+                   transaction_label.c.Name.label('TransactionLabel'),
+                   category.c.Name.label('Category'),
+                   memo.c.Text.label('Memo'),
+                   transaction.c.Amount.label('Amount')]).\
+        select_from(oj))
+
+    engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
+    metadata.create_all()
+
 
 # ---------------------------------------------------------------------------
 ### Core Database Functions

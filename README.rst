@@ -60,8 +60,8 @@ Features
 
 + Handle multiple accounts in a single file
 
-Notes for the User
-------------------
+Notes
+-----
 None Yet
 
 
