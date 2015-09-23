@@ -60,6 +60,8 @@ except SystemError:
         logging.debug("imports for Executable")
 
 
+# TODO: Once pysqlcipher gets to python3, switch to that.
+
 # ---------------------------------------------------------------------------
 ### Module Constants
 # ---------------------------------------------------------------------------

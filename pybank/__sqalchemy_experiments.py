@@ -103,3 +103,48 @@ for row in conn.execute(s):
 print(repr(users.c.id == addresses.c.user_id))
 print(users.c.id == addresses.c.user_id)
 
+#############################################################################
+#############################################################################
+#
+# Now to do the same thing with the ORM...
+#
+#############################################################################
+#############################################################################
+
+engine = sa.create_engine('sqlite:///:memory:', echo=True)
+
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String)
+    fullname = sa.Column(sa.String)
+    password = sa.Column(sa.String)
+
+    def __repr__(self):
+        return "<User(name='[]', fullname='{}', password='{}')>".format(
+                self.name, self.fullname, self.password)
+
+Base.metadata.create_all(engine)
+
+from sqlalchemy.orm import sessionmaker
+Session = sessionmaker(bind=engine)
+session = Session()
+
+ed_user = User(name='ed', fullname='Ed Jones', password='edspassword')
+session.add(ed_user)
+
+session.add_all([
+    User(name='wendy', fullname='Wendy Williams', password='foobar'),
+    User(name='mary', fullname='Mary Contrary', password='xxg527'),
+    User(name='fred', fullname='Fred Flinstone', password='blah'),
+    ])
+
+ed_user.password = 'f8s7ccs'
+print(session.dirty)
+print(session.new)
+session.commit()
+
