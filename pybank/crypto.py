@@ -139,6 +139,48 @@ def create_password(password):
     keyring.set_password(service, user, password)
 
 
+def create_key(password, salt):
+    """
+    Create a Fernet key from a (peppered) password and salt.
+
+    Uses the PBKDF2HMAC key-derivation function.
+
+    Parameters:
+    -----------
+    password : bytes
+        The password to use as the base of the key derivation function. This
+        should be peppered.
+
+    salt : bytes
+        A salt to use. This should be 16 bytes minimum, 32 or 64 preferred.
+
+    Returns:
+    --------
+    key : bytes
+        A URL-safe base64-encoded 32-byte key. This **must** be kept secret.
+
+    Notes:
+    ------
+    See:
+
+    + https://cryptography.io/en/latest/fernet
+    + https://cryptography.io/en/latest/fernet/#using-passwords-with-fernet
+    + kdf: Key Derivation Function
+    + PBKDF2HMAC: Password-Based Key Derivation Function 2, Hash-based
+      Message Authentication Code
+
+    """
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                     length=32,
+                     salt=salt,
+                     iterations=100000,
+                     backend=default_backend()
+                     )
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    return key
+
+
+
 def main():
     # Read or create salt file.         # XXX: Put in config file?
     salt_file = "salt.txt"
@@ -165,18 +207,7 @@ def main():
     #       - secondary password?
     password += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
 
-    # Use the password and the salt to generate the key
-    #   kdf: Key Derivation Function
-    #   PBKDF2HMAC: Password-Based Key Derivation Function 2,
-    #               Hash-based Message Authentication Code
-    # https://cryptography.io/en/latest/fernet/#using-passwords-with-fernet
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
-                     length=32,
-                     salt=salt,
-                     iterations=100000,
-                     backend=default_backend()
-                     )
-    key = base64.urlsafe_b64encode(kdf.derive(password))
+    key = create_key(password, salt)
 
     # Encrypt or Decrypt the file.
     print("Encrypting encrypted file: PyBank.db")

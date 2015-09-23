@@ -6,7 +6,7 @@ echo ----- Running build script -----
 python build_executables.py build
 echo ----- Launching Application -----
 cd .\build\exe.win-amd64-3.4\
-gui.exe
+PyBank.exe
 cd ..\..
 echo ----- Finished -----
 @echo off

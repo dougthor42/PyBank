@@ -37,22 +37,21 @@ logging.disable(logging.CRITICAL)
 # ---------------------------------------------------------------------------
 # included packages and their submodules
 packages = [
-#            'matplotlib.backends.backend_wxagg',
-#            'matplotlib.backends.backend_wx',
 #            'scipy.stats',
 #            'scipy',
             'numpy',
-#            'matplotlib',
-#            'matplotlib.lines',
-#            'matplotlib.patches',
-#            'matplotlib.figure',
-
+            'keyring',
+            'cryptography',
+            'cffi',                 # needed by cryptography
+            'win32timezone',        # needed by keyring?
             ]
 
 # included modules
 includes = [
             "pybank/pbsql",
             "pybank/plots",
+            "pybank/crypto",
+            "pybank/gui",
 #            "scipy/special/ufuncs_cxx",
 #            "scipy/special/ufuncs",
             ]
@@ -115,7 +114,7 @@ build_exe_opts = {
 # ---------------------------------------------------------------------------
 ### Executable Definitions
 # ---------------------------------------------------------------------------
-file_to_build = "pybank\\gui.py"
+file_to_build = "pybank\\main.py"
 
 # Application Base
 base = None
@@ -124,7 +123,7 @@ base = None
 
 exe1 = Executable(file_to_build,
                   base=base,
-#                  targetName="PyBank",         # Doesn't work :-(
+                  targetName="PyBank.exe",
                   )
 
 # List of which executables to build.
