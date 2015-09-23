@@ -124,6 +124,7 @@ def main():
     database_file = 'PyBank.db'
     logging.debug('Checking for existing database: {}'.format(database_file))
     if not os.path.isfile(database_file):
+        logging.debug('database file not found, will create')
         logging.debug('Prompting user to make a password')
         pw = gui.password_create()
         if pw is None:
@@ -133,6 +134,7 @@ def main():
         logging.debug('Creating database file')
 #        pbsql.create_db(database_file)
     else:
+        logging.debug('database file found')
         pw = password_prompt_loop()
         logging.debug('creating key')
 #        key = crypto.create_key(pw)

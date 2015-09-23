@@ -52,6 +52,7 @@ try:
     from . import pbsql
     from . import plots
     from . import utils
+    from . import crypto
 #    from . import __init__ as __pybank_init
     from . import (__project_name__,
                    __version__,
@@ -64,6 +65,7 @@ except SystemError:
         import pbsql
         import plots
         import utils
+        import crypto
 #        import __init__ as __pybank_init
         from __init__ import (__project_name__,
                               __version__,
@@ -75,6 +77,7 @@ except SystemError:
         from pybank import pbsql
         from pybank import plots
         from pybank import utils
+        from pybank import crypto
 #        from pybank import __init__ as __pybank_init
         from pybank import (__project_name__,
                             __version__,
@@ -1497,8 +1500,8 @@ class PasswordPromptDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(label, 0, wx.ALIGN_CENTER|wx.ALL, 5)
 
-        self.text_box = wx.TextCtrl(self, size=(150, -1), style=wx.TE_PASSWORD)
-        sizer.Add(self.text_box, 1, wx.ALIGN_CENTER|wx.ALL, 5)
+        self.pw1 = wx.TextCtrl(self, size=(150, -1), style=wx.TE_PASSWORD)
+        sizer.Add(self.pw1, 1, wx.ALIGN_CENTER|wx.ALL, 5)
 
 
         btnsizer = wx.StdDialogButtonSizer()
@@ -1514,8 +1517,8 @@ class PasswordPromptDialog(wx.Dialog):
         sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
 
         self.SetSizer(sizer)
-        self.Center()
         sizer.Fit(self)
+        self.Center()
 
 
 def password_prompt():
@@ -1525,7 +1528,7 @@ def password_prompt():
     # XXX: Is this a security risk? Sending an unencrypted
     #      password between functions and modules?
     if dialog.ShowModal() == wx.ID_OK:
-        retval = dialog.text_box.GetValue()
+        retval = dialog.pw1.GetValue()
     else:
         retval = None
     dialog.Destroy()
@@ -1577,12 +1580,12 @@ class PasswordCreateDialog(wx.Dialog):
 
         sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|padding|wx.BOTTOM, 5)
 
-        self.SetSizer(sizer)
-        self.Center()
-        sizer.Fit(self)
-
         self.Bind(wx.EVT_TEXT, self.on_txt_change, self.pw1)
         self.Bind(wx.EVT_TEXT, self.on_txt_change, self.pw2)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.Center()
 
     def on_txt_change(self, event):
         """ Disable the "OK" button if the passwords don't match """
@@ -1608,9 +1611,39 @@ def password_create():
     app.MainLoop()
     return retval
 
+
+def password_change():
+    """ Prompt the user to change the password """
+    app = wx.App()
+    while True:
+        dialog = PasswordPromptDialog()
+        if dialog.ShowModal() == wx.ID_OK:
+            # verify the password.
+            if crypto.check_password(dialog.pw1.GetValue()):
+                break
+            else:
+                continue
+        else:
+            return None
+
+    dialog.Destroy()
+
+    dialog = PasswordCreateDialog()
+    if dialog.ShowModal() == wx.ID_OK:
+        new_pass = dialog.pw1.GetValue()
+        crypto.create_password(dialog.pw1.GetValue())
+    else:
+        new_pass = None
+    dialog.Destroy()
+    app.MainLoop()
+    return new_pass
+
+
+
+
 # ---------------------------------------------------------------------------
 ### Run module as standalone
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
 #    MainApp()
-    password_create()
+    password_change()
