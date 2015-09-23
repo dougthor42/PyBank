@@ -118,6 +118,7 @@ class SqliteNumeric(sa.types.TypeDecorator):
 # ---------------------------------------------------------------------------
 
 
+
 engine = sa.create_engine("sqlite:///:memory:", echo=False)
 #engine = sa.create_engine("sqlite:///_slqalchemy_db.db", echo=False)
 
@@ -259,7 +260,21 @@ print('\n\n=============== Start of ORM ===============')
 ### Classes
 # ---------------------------------------------------------------------------
 
+from sqlalchemy import event
+
+# I don't really need events if I'm going with what I was doing earlier:
+#   Decrypt the file to a temp one, do all actions on that, then periodically
+#   re-encrypt with the new data.
+def on_checkout(dbapi_conn, connection_rec, connection_proxy):
+    print("handling on_checkout")
+
+def on_connect(dbapi_conn, connection_record):
+    print('handling on_connect')
+
+
 engine = sa.create_engine('sqlite:///:memory:', echo=False)
+event.listen(engine, 'checkout', on_checkout)
+event.listen(engine, 'connect', on_connect)
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
@@ -404,6 +419,7 @@ ledger_view = view('ledger_view', Base.metadata,
                Transaction.amount.label('Amount')]).\
     select_from(oj))
 
+print('drop if exists')
 engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
 #metadata.create_all()
 
@@ -413,6 +429,7 @@ engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
 #Session = sessionmaker(bind=engine)
 #session = Session()
 
+print('create all')
 Base.metadata.create_all(engine)
 
 
@@ -466,8 +483,10 @@ session = Session()
 session.add_all([trans, display_name, payee, trans_label,
                  cat, account, acct_group])
 
+print("committing")
 session.commit()
 
+print('select')
 result = engine.execute(sa.select([ledger_view])).fetchall()
 print(result)
 
