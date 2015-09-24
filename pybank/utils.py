@@ -19,6 +19,8 @@ Options:
 import logging
 import functools
 import time
+import sys
+import os.path
 
 # Third-Party
 from docopt import docopt
@@ -112,6 +114,15 @@ def _init_logging(target, level=DEFAULT_LOG_LEVEL):
     logging.info("GUI Logging Initialized, level = {}".format(level))
 
 
+def find_data_file(filename):
+    """ Something """
+    if getattr(sys, 'frozen', False):
+        datadir = os.path.dirname(sys.executable)
+    else:
+        datadir = os.path.dirname(__file__)
+
+    return os.path.join(datadir, filename)
+
 def main():
     """
     Main entry point
@@ -128,6 +139,8 @@ def main():
 #    logging.exception("exception")
 
     print("End")
+    a = find_data_file('PyBank.py')
+    print(a)
 
 
 if __name__ == "__main__":

@@ -30,23 +30,25 @@ from decimal import Decimal as D
 from docopt import docopt
 import sqlalchemy as sa
 from sqlalchemy.ext import compiler as sa_compiler
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
 
 # Package / Application
 # Package / Application
 try:
     # Imports used for unittests
-#    from . import pbsql
+    from . import utils
     from . import __version__
     logging.debug("Imports for UnitTests")
 except SystemError:
     try:
         # Imports used by Spyder
-#        import pbsql
+        import utils
         from __init__ import __version__
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-#        from pybank import pbsql
+        from pybank import utils
         from pybank import __version__
         logging.debug("imports for Executable")
 
@@ -267,7 +269,7 @@ def view(name, metadata, selectable):
     return t
 
 # ---------------------------------------------------------------------------
-### Helper Classes
+### SQLAlchemy Helper Classes
 # ---------------------------------------------------------------------------
 class SqliteNumeric(sa.types.TypeDecorator):
     """
@@ -292,9 +294,180 @@ class SqliteNumeric(sa.types.TypeDecorator):
 
 
 # ---------------------------------------------------------------------------
-### Classes
+### SQLAlchemy Classes
 # ---------------------------------------------------------------------------
+Base = declarative_base()
 
+class Account(Base):
+    """
+    Account
+
+    Contains the accound_id, account_num, user_name, institution_id,
+    and account_group_id.
+
+    """
+    __tablename__ = 'account'
+
+    account_id = sa.Column(sa.Integer, primary_key=True)
+    account_num = sa.Column(sa.String, nullable=False)
+    name = sa.Column(sa.String, nullable=False)
+    user_name = sa.Column(sa.String, nullable=False)
+    institution_id = sa.Column(sa.Integer,
+                               sa.ForeignKey('institution.institution_id'))
+    account_group_id = sa.Column(sa.Integer,
+                                 sa.ForeignKey('account_group.account_group_id'))
+
+    institution = relationship('Institution')
+    account_group = relationship('AccountGroup')
+
+class AccountGroup(Base):
+    """
+    AccountGroup
+
+    not currently used.
+
+    """
+    __tablename__ = 'account_group'
+
+    account_group_id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String, nullable=False)
+
+
+class Category(Base):
+    """
+    Category
+
+    Uses Adjacency List Model. See
+    http://mikehillyer.com/articles/managing-hierarchical-data-in-mysql/
+
+    Contains the category_id, name, and parent.
+    """
+    __tablename__ = 'category'
+
+    category_id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String)
+    parent = sa.Column(sa.Integer, sa.ForeignKey('category.category_id'))
+
+    children = relationship("Category")
+
+
+class DisplayName(Base):
+    """
+    DisplayName
+
+    Contains the display_name_id and name.
+
+    """
+    __tablename__ = 'display_name'
+
+    display_name_id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.Integer)
+
+
+class Institution(Base):
+    """
+    Institution
+
+    Contains the institution_id, name, and ofx_id
+
+    """
+    __tablename__ = 'institution'
+
+    institution_id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String)
+    ofx_id = sa.Column(sa.Integer, sa.ForeignKey('ofx.ofx_id'))
+
+    ofx = relationship('Ofx')
+
+
+class Memo(Base):
+    """
+    Memo
+
+    Contains the memo_id and text.
+
+    """
+    __tablename__ = 'memo'
+
+    memo_id = sa.Column(sa.Integer, primary_key=True)
+    text = sa.Column(sa.String)
+
+
+class Ofx(Base):
+    """
+    Ofx
+
+    Contains the ofx_id, name, url, and org.
+
+    """
+    __tablename__ = 'ofx'
+
+    ofx_id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String)
+    org = sa.Column(sa.String)
+    url = sa.Column(sa.String)
+
+
+class Payee(Base):
+    """
+    Payee
+
+    Contains the payee_id, name, display_name_id, and category_id.
+
+    """
+    __tablename__ = 'payee'
+
+    payee_id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String)
+    display_name_id = sa.Column(sa.Integer,
+                                sa.ForeignKey('display_name.display_name_id'),
+                                )
+    category_id = sa.Column(sa.Integer,
+                            sa.ForeignKey('category.category_id'),
+                            )
+
+    display_name = relationship('DisplayName')
+    category = relationship('Category')
+
+class Transaction(Base):
+    """
+    Transaction
+
+    Contains the transaction_id, account_id, date, enter_date, check_num,
+    amount, payee_id, category_id, transaction_label_id, memo_id, and fitid.
+
+    """
+    __tablename__ = 'transaction'
+
+    transaction_id = sa.Column(sa.Integer, primary_key=True)
+    account_id = sa.Column(sa.Integer, sa.ForeignKey('account.account_id'))
+    date = sa.Column(sa.Date)
+    enter_date = sa.Column(sa.Date)
+    check_num = sa.Column(sa.Integer)
+    amount = sa.Column(SqliteNumeric)
+    payee_id = sa.Column(sa.Integer, sa.ForeignKey('payee.payee_id'))
+    category_id = sa.Column(sa.Integer, sa.ForeignKey('category.category_id'))
+    transaction_label_id = sa.Column(sa.Integer, sa.ForeignKey('transaction_label.transaction_label_id'))
+    memo_id = sa.Column(sa.Integer, sa.ForeignKey('memo.memo_id'))
+    fitid = sa.Column(sa.Integer)
+
+    payee = relationship('Payee')
+    category = relationship('Category')
+    transaction_label = relationship('TransactionLabel')
+    memo = relationship('Memo')
+
+
+class TransactionLabel(Base):
+    """
+    TransactionLabel
+
+    Contains the transaction_label_id and name.
+
+    """
+    __tablename__ = 'transaction_label'
+
+    transaction_label_id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String)
 
 
 # ---------------------------------------------------------------------------
@@ -550,9 +723,11 @@ def create_db(filename=DATABASE):
     create_trans_tbl(filename, 0)
     create_ledger_view(filename, 0)
 
+
 def create_db_sa(filename=DATABASE):
     """
-    Creates the SQLite database using SQLAlchemy.
+    Creates the SQLite database using SQLAlchemy. If the database file
+    doesn't exist, it is created (only applies to SQLite though, I think).
 
     Parameters:
     -----------
@@ -561,113 +736,28 @@ def create_db_sa(filename=DATABASE):
 
     Returns:
     --------
-    None
+    engine : SQLAlchemy.Engine
 
     """
     logging.info("Creating empty database")
 
-    engine = sa.create_engine("sqlite:///:memory:", echo=False)
+    # TODO: refactor, account for absolute, relative, and memory DBs,
+    #       and also driver
+    # dialect+driver://username:password@host:port/database
+    # http://docs.sqlalchemy.org/en/rel_1_1/core/engines.html
+    if filename == ':memory:':
+        url = 'sqlite:///:memory:'
+    else:
+        # assume absolute path
+        url = 'sqlite:///' + utils.find_data_file(filename)
+    logging.debug("database url: `{}`".format(url))
 
-    metadata = sa.MetaData(engine)
+    engine = sa.create_engine(url, echo=False)
+    Base.metadata.create_all(engine)
+    logging.info("Database created at: `{}`".format(engine.url))
 
-    acct = sa.Table('Account', metadata,
-        sa.Column('AccountID', sa.Integer, primary_key=True),
-        sa.Column('AccountNum', sa.String, nullable=False),
-        sa.Column('Name', sa.String, nullable=False),
-        sa.Column('InstitutionID', None, sa.ForeignKey('Institution.InstitutionID')),
-        sa.Column('UserName', sa.String, nullable=False),
-        sa.Column('AccountGroupID', sa.Integer, sa.ForeignKey('AccountGroup.AccountGroupID')),
-        )
+    return engine
 
-    account_group = sa.Table('AccountGroup', metadata,
-        sa.Column('AccountGroupID', sa.Integer, primary_key=True),
-        sa.Column('Name', sa.String, nullable=False)
-        )
-
-    category = sa.Table('Category', metadata,
-        sa.Column('CategoryID', sa.Integer, primary_key=True),
-        sa.Column('Name', sa.String, nullable=True),
-        sa.Column('Parent', None, sa.ForeignKey('Category.CategoryID')),
-        )
-
-    display_name = sa.Table('DisplayName', metadata,
-        sa.Column('DisplayNameID', sa.Integer, primary_key=True),
-        sa.Column('Name', sa.String, nullable=False),
-        )
-
-    # TODO: split out ofx data to separate table
-    institution = sa.Table('Institution', metadata,
-        sa.Column('InstitutionID', sa.Integer, primary_key=True),
-        sa.Column('Name', sa.String, nullable=False),   # unique?
-        sa.Column('OfxID', sa.Integer, sa.ForeignKey('Ofx.OfxID'), nullable=False),
-        )
-
-    ofx = sa.Table('Ofx', metadata,
-        sa.Column('OfxID', sa.Integer, primary_key=True),
-        sa.Column('Name', sa.String),
-        sa.Column('OfxOrg', sa.String, nullable=False),
-        sa.Column('OfxUrl', sa.String, nullable=False),
-        )
-
-    transaction_label = sa.Table('TransactionLabel', metadata,
-        sa.Column('TransactionLabelID', sa.Integer, primary_key=True),
-        sa.Column('Name', sa.String, nullable=False),
-        )
-
-    payee = sa.Table('Payee', metadata,
-        sa.Column('PayeeID', sa.Integer, primary_key=True),
-        sa.Column('Name', sa.String, nullable=False),   # unique?
-        sa.Column('DisplayNameID', None, sa.ForeignKey('DisplayName.DisplayNameID')),
-        sa.Column('CategoryID', None, sa.ForeignKey('Category.CategoryID')),
-        )
-
-    transaction = sa.Table('Transaction', metadata,
-        sa.Column('TransactionID', sa.Integer, primary_key=True),
-        sa.Column('AccountID', None, sa.ForeignKey('Account.AccountID')),
-        sa.Column('Date', sa.Date, nullable=False),  # datetime?
-        sa.Column('EnterDate', sa.Date),             # datetime?
-        sa.Column('CheckNum', sa.Integer),
-    #    sa.Column('Amount', sa.Numeric),
-        sa.Column('Amount', SqliteNumeric),
-        sa.Column('PayeeID', None, sa.ForeignKey('Payee.PayeeID')),
-        sa.Column('CategoryID', None, sa.ForeignKey('Category.CategoryID')),
-        sa.Column('TransactionLabelID', None, sa.ForeignKey('TransactionLabel.TransactionLabelID')),
-        sa.Column('MemoID', sa.String),
-        sa.Column('Fitid', sa.Integer),
-        )
-
-    memo = sa.Table('Memo', metadata,
-        sa.Column('MemoID', sa.Integer, primary_key=True),
-        sa.Column('Text', sa.String),
-        )
-
-    # TODO: do I want outer joins?
-    oj = sa.outerjoin(transaction, payee)
-    oj = sa.outerjoin(oj, category, category.c.CategoryID==transaction.c.CategoryID)
-    oj = sa.outerjoin(oj, transaction_label)
-    oj = sa.outerjoin(oj, display_name, display_name.c.DisplayNameID==payee.c.DisplayNameID)
-    oj = sa.outerjoin(oj, acct, acct.c.AccountID==transaction.c.AccountID)
-    oj = sa.outerjoin(oj, memo, memo.c.MemoID==transaction.c.MemoID)
-
-    func = sa.sql.func
-
-    ledger_view = view('ledger_view', metadata,
-        sa.select([transaction.c.Date,
-                   transaction.c.AccountID,
-                   acct.c.Name.label('AccountName'),
-                   transaction.c.EnterDate,
-                   transaction.c.CheckNum,
-                   func.coalesce(display_name.c.Name,
-                                 payee.c.Name).label('Payee'),
-                   payee.c.Name.label('DownloadedPayee'),
-                   transaction_label.c.Name.label('TransactionLabel'),
-                   category.c.Name.label('Category'),
-                   memo.c.Text.label('Memo'),
-                   transaction.c.Amount.label('Amount')]).\
-        select_from(oj))
-
-    engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
-    metadata.create_all()
 
 
 # ---------------------------------------------------------------------------
@@ -1456,395 +1546,6 @@ def main():
     RuntimeError
     """
     docopt(__doc__, version=__version__)
-
-
-# ---------------------------------------------------------------------------
-### DELETE
-# ---------------------------------------------------------------------------
-import colorama
-import inspect
-import datetime
-
-
-
-
-class Decorator(object):
-    """
-    Abstract Base Class: Decorator
-    This stores the decorator information, such as the name (__decor__) and
-    the docstring (__decordoc__)
-    """
-
-    # This is needed so that Decorator is an Abstract Base Class
-    __metaclass__ = abc.ABCMeta
-
-    def __init__(self, func, *args):
-        self.func = func
-
-        if inspect.isfunction(self.func):
-            self.__name__ = self.func.__name__
-
-        elif inspect.isclass(self.func):
-            self.__name__ = self.func.__class__.__name__
-
-        elif inspect.ismethod(self.func):
-            self.__name__ = self.func.__name__
-
-        # Create the new attributes for __decor__ and __decordoc__
-        self._set_decor()
-        self._set_decordoc()
-        self._set_doc()
-
-    def _set_decor(self):
-        """ Sets the __decor__ attribute to the decorator name """
-        # functions = methods & classes = string repr. of method/class
-        self.__decor__ = self.func.__decor__ = self.__str__()
-
-    def _set_decordoc(self):
-        """ Sets the __decordoc__ attribute to the decorator docscring """
-        # functions = methods & classes = string repr. of method/class
-        self.__decordoc__ = self.func.__decordoc__ = self.__doc__
-
-    def _set_doc(self):
-        """ Sets the __doc__ attribute to the funcion's docstring """
-        self.__doc__ = self.func.__doc__
-
-    def __get__(self, obj, objtype):
-        """ Support instance methods. """
-        @functools.wraps(self.func)
-        def wrapper(*args, **kwargs):
-            return self.func(obj, *args, **kwargs)
-        setattr(obj, self.func.__name__, wrapper)
-        return wrapper
-
-    # force child classes to have a __call__ method
-    @abc.abstractmethod
-    def __call__(self):
-        pass
-
-    # force child classes to have a __str__ method
-    @abc.abstractmethod
-    def __str__(self):
-        pass
-
-
-class CodeTimer(object):
-    """
-    A Simple code execution timer.
-
-    My attempt at making a simple code timer. The idea is that a user can
-    just call this simple thing, once to start and once again to stop. Upon
-    stopping, it prints out the time delta.
-
-    Stop times are printed in Red, while lap times are printed in Cyan. Time
-    differences, as provided by the ``delta()`` method, are printed in Yellow.
-
-    Parameters:
-    -------
-    label : string
-        An optional label for the timer. Will be displayed upon stopping or
-        lapping the timer.
-
-    Public Attributes:
-    ------------------
-    label : string
-        The label for the timer instance.
-
-    running : bool
-        Returns ``True`` if the timer is currently running.
-
-    start_t : datetime.datetime object
-        The time, in seconds, that the timer was last started, as reported
-        by the built-in time.clock() function. Returns ``None`` if the
-        timer has never been started.
-
-    stop_t : datetime.datetime object
-        The time, in seconds, that the timer was last stopped, as reported
-        by the built-in time.clock() function. Returns ``None`` if the
-        timer has never been stopped.
-
-    diff : float
-        The time between the the last lap or stop event and the start event.
-        Returns ``None`` if the timer has never been lapped or stopped.
-
-    prev_t : datetime.datetime object
-        The timestamp of the previous lap, start, or delta event. Returns
-        ``None`` if the timer has never been started.
-
-    Public Methods:
-    ---------------
-    start(self) :
-        Start the timer.
-
-    stop(self, override_label=None) :
-        Stops the timer and prints out the elapsed time, optionally
-        overriding the label temporarily. Returns the elapsed time as a
-        datetime.timedelta object.
-
-    reset(self) :
-        Resets the timer and clears the last start_t, stop_t, and diff values.
-
-    lap(self, override_label=None) :
-        Prints out the current elapsed time, optionally overrideing the
-        label temporarily. Returns the elapsed time as a
-        datetime.timedelta object.
-
-    delta(self, override_label=None) :
-        Prints out the time delta between this call and the previous call
-        of ``delta``, ``lap``, or ``start``. Returns the value as a
-        datetime.timedelta object.
-
-    Examples:
-    --------
-    Basic Usage:
-
-    >>> ct = CodeTimer("my_label")
-    >>> ct.start()
-    >>> # code to time
-    >>> ct.stop()           # doctest: +SKIP
-    my_label: 13.2725267063 seconds.
-
-    Printing out lap times:
-
-    >>> ct = CodeTimer()
-    >>> ct.start()
-    >>> for _i in range(3):
-    ...     ct.lap()        # doctest: +SKIP
-    Current Exec: 6.99158129829 seconds.
-    Current Exec: 6.9916975028 seconds.
-    Current Exec: 6.99176305405 seconds.
-    >>> ct.stop()           # doctest: +SKIP
-    Exec time: 18.8153060201 seconds.
-    """
-    def __init__(self, label=None):
-        """ __init__(self, label: string = None) -> CodeTimer """
-        # Initialize class attributes
-        self.label = label
-        self.temp_label = None
-        self.running = False
-        self.start_t = None
-        self.stop_t = None
-        self.diff = None
-        self.prev_t = None
-
-    def __str__(self):
-        return "Timer: {}".format(self.label)
-
-    def start(self):
-        """ Start the timer """
-#        self.start_t = time.clock()
-        self.start_t = datetime.datetime.utcnow()
-        self.prev_t = self.start_t
-        self.running = True
-
-    def stop(self, override_label=None):
-        """ Stop the timer and return and print the delta with label. """
-        if override_label is None:
-            # Use the class label for the timer
-            self.temp_label = self.label
-        else:
-            # Use the temporary override label for the timer
-            self.temp_label = override_label
-        if not self.running:
-            raise RuntimeError("Timer not started.")
-
-        self.running = False
-#        self.stop_t = time.clock()
-        self.stop_t = datetime.datetime.utcnow()
-        self.diff = self.stop_t - self.start_t
-        if self.temp_label is None:
-            print_red("Exec time: {diff}".format(diff=self.diff))
-            print()
-        else:
-            print_red("{lbl}: {diff}".format(lbl=self.temp_label,
-                                             diff=self.diff))
-            print()
-        return self.diff
-
-    def reset(self):
-        """ Reset the timer. """
-        self.start_t = None
-        self.stop_t = None
-        self.diff = None
-        self.prev_t = None
-        self.start()
-
-    def lap(self, override_label=None):
-        """ Returns and prints out the current timer value. """
-        if override_label is None:
-            # Use the class label for the timer
-            self.temp_label = self.label
-        else:
-            # Use the temporary override label for the timer
-            self.temp_label = override_label
-        if not self.running:
-            raise RuntimeError("Timer not started.")
-
-        self.running = True
-#        self.stop_t = time.clock()
-        self.stop_t = datetime.datetime.utcnow()
-        self.prev_t = self.stop_t
-        self.diff = self.stop_t - self.start_t
-        if self.temp_label is None:
-            cprint("Current Exec: {diff}".format(diff=self.diff),
-                   'c')
-            print()
-        else:
-            cprint("{lbl}: {diff}".format(lbl=self.temp_label,
-                                          diff=self.diff),
-                   'c')
-            print()
-        return self.diff
-
-    def delta(self, override_label=None):
-        """
-        Prints out the time delta between this call and the previous
-        call of ``delta``, ``lap`` or ``start``. Returns the value
-        as a datetime.timedelta object.
-        """
-        if override_label is None:
-            # Use the class label for the timer
-            self.temp_label = self.label
-        else:
-            # Use the temporary override label for the timer
-            self.temp_label = override_label
-        if not self.running:
-            raise RuntimeError("Timer not started.")
-
-        self.running - True
-#        self.stop_t = time.clock()
-        self.stop_t = datetime.datetime.utcnow()
-        self.diff = self.stop_t - self.prev_t
-        self.prev_t = self.stop_t
-        if self.temp_label is None:
-            cprint("Delta: {diff}".format(diff=self.diff),
-                   'y')
-            print()
-        else:
-            cprint("{lbl}: {diff}".format(lbl=self.temp_label,
-                                          diff=self.diff),
-                   'y')
-            print()
-        return self.diff
-
-def print_red(text):
-    """ Prints text as bright red """
-    cprint(text, 'red')
-
-def cprint(text, color, end='\n'):
-    """ Prints text as the specified color. Accepts RGB, CMYK, and White. """
-    colors = {'r': colorama.Fore.RED,
-              'red': colorama.Fore.RED,
-              'g': colorama.Fore.GREEN,
-              'green': colorama.Fore.GREEN,
-              'b': colorama.Fore.BLUE,
-              'blue': colorama.Fore.BLUE,
-              'c': colorama.Fore.CYAN,
-              'cyan': colorama.Fore.CYAN,
-              'y': colorama.Fore.YELLOW,
-              'yellow': colorama.Fore.YELLOW,
-              'm': colorama.Fore.MAGENTA,
-              'magenta': colorama.Fore.MAGENTA,
-              'k': colorama.Fore.BLACK,
-              'black': colorama.Fore.BLACK,
-              'w': colorama.Fore.WHITE,
-              'white': colorama.Fore.WHITE}
-    colorama.init(strip=False)      # for Spyder: don't strip format chars
-    print(colors[color.lower()] + colorama.Style.BRIGHT + text, end=end)
-    print(colorama.Style.RESET_ALL, end='')
-    colorama.deinit()
-
-class Timed(Decorator):
-    """
-    Decorator.
-    Times a given function execution.
-    """
-    def __init__(self, func):
-        """ Init instance attributes """
-        Decorator.__init__(self, func)
-        self.codetimer = CodeTimer(self.func.__name__)
-
-    def __call__(self, *args, **kwargs):
-        """ Actually call the function """
-        self.codetimer.start()
-        result = self.func(*args, **kwargs)
-        self.codetimer.stop()
-        return result
-
-    def __str__(self):
-        return "Timed"
-
-
-
-
-
-def db_query2(conn, query, *args):
-    with closing(conn.cursor()) as cursor:
-        cursor.execute(query, args)
-        retval = cursor.fetchall()
-    return retval
-
-def db_query3(cursor, query, *args):
-    cursor.execute(query, args)
-    return cursor.fetchall()
-
-@Timed
-def test():
-    fn = "C:\\WinPython34_x64\\projects\\github\\PyBank\\pybank\\test_database.db"
-    query = "SELECT * FROM acct WHERE id=1"
-    for _ in range(5000):
-        db_query(fn, query)
-
-@Timed
-def test2():
-    fn = "C:\\WinPython34_x64\\projects\\github\\PyBank\\pybank\\test_database.db"
-    query = "SELECT * FROM acct WHERE id=1"
-    conn = sqlite3.connect(fn)
-    for _ in range(5000):
-        db_query2(conn, query)
-    conn.close()
-
-@Timed
-def test3():
-    fn = "C:\\WinPython34_x64\\projects\\github\\PyBank\\pybank\\test_database.db"
-    query = "SELECT * FROM acct WHERE id=1"
-    conn = sqlite3.connect(fn)
-    cursor = conn.cursor()
-    for _ in range(5000):
-        db_query3(cursor, query)
-    cursor.close()
-    conn.close()
-
-
-# ---------------------------------------------------------------------------
-### END DELETE
-# ---------------------------------------------------------------------------
-
-def main():
-    """ """
-
-#    copy_blank_db()
-#    payee = PayeeTable(DATABASE, 'payee')
-#    a = payee.add({'name':"dfsf", 'category_id':5})
-#    b = payee.read(a)
-#    print(b)
-#    query_str = """
-#        SELECT * FROM category
-#        """
-#
-#    result = db_query(DATABASE, query_str)
-#
-#    a = generate_category_strings(result)
-#    for item in sorted(a):
-#        print(item)
-
-    test()
-    test3()
-    test2()
-
-    a = db_query_single(DATABASE,
-                                     "SELECT COUNT(*) FROM v_ledger_0")[0]
-    print(a)
 
 
 if __name__ == "__main__":

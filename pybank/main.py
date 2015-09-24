@@ -33,6 +33,7 @@ try:
     from . import pbsql
     from . import gui
     from . import crypto
+    from . import utils
     from . import (__project_name__,
                    __version__,
                    )
@@ -43,6 +44,7 @@ except SystemError:
         import pbsql
         import gui
         import crypto
+        import utils
         from __init__ import (__project_name__,
                               __version__,
                               )
@@ -52,6 +54,7 @@ except SystemError:
         from pybank import pbsql
         from pybank import gui
         from pybank import crypto
+        from pybank import utils
         from pybank import (__project_name__,
                             __version__,
                             )
@@ -101,6 +104,7 @@ def password_create_loop():
             time.sleep(0.5)     # slow down brute-force attempts
             continue
 
+
 def main():
     """
     Main entry point
@@ -121,10 +125,10 @@ def main():
     logging.debug("Running pybank.py")
 
     # Check if the database file exists
-    database_file = 'PyBank.db'
+    database_file = utils.find_data_file('PyBank.db')
     logging.debug('Checking for existing database: {}'.format(database_file))
     if not os.path.isfile(database_file):
-        logging.debug('database file not found, will create')
+        logging.debug('database file not found, an empty one will be created')
         logging.debug('Prompting user to make a password')
         pw = gui.password_create()
         if pw is None:
@@ -132,7 +136,8 @@ def main():
             return
         crypto.create_password(pw)
         logging.debug('Creating database file')
-#        pbsql.create_db(database_file)
+#        create_db_file(database_file)
+        pbsql.create_db_sa(database_file)
     else:
         logging.debug('database file found')
         pw = password_prompt_loop()

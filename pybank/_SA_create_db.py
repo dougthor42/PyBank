@@ -424,8 +424,6 @@ engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
 #metadata.create_all()
 
 
-
-
 #Session = sessionmaker(bind=engine)
 #session = Session()
 
