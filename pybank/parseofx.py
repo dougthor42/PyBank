@@ -74,7 +74,7 @@ from bs4 import BeautifulSoup
 
 # Package / Application
 try:
-    # Imports used for unittests
+    # Imports used by unit test runners
 #    from . import sibling_module
 #    from . import pbsql
     from . import __version__

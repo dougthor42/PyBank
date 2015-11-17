@@ -34,7 +34,7 @@ import keyring
 
 # Package / Application
 try:
-    # Imports used for unittests
+    # Imports used by unit test runners
     from .parseofx import ParseOFX
 #    from . import __init__ as __pybank_init
     from . import __version__
