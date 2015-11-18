@@ -73,36 +73,39 @@ except SystemError:
 ### Functions
 # ---------------------------------------------------------------------------
 def password_prompt_loop():
+    """ Password Prompt Loop """
     # Password Prompt Loop
     logging.debug('Starting password prompt loop')
     while True:
         password = gui.password_prompt()
         if password is None:
             logging.debug('User canceled password prompt; exiting')
+#            return False
             return
         elif crypto.check_password(password):
             logging.debug('Password OK')
-            break
+            return password
+#            break
         else:
             logging.debug('Invalid password')
             time.sleep(0.5)     # slow down brute-force attempts
             continue
 
-def password_create_loop():
-    # Password Prompt Loop
-    logging.debug('Starting password prompt loop')
-    while True:
-        password = gui.password_prompt()
-        if password is None:
-            logging.debug('User canceled password prompt; exiting')
-            return
-        elif crypto.check_password(password):
-            logging.debug('Password OK')
-            break
-        else:
-            logging.debug('Invalid password')
-            time.sleep(0.5)     # slow down brute-force attempts
-            continue
+#def password_create_loop():
+#    # Password Prompt Loop
+#    logging.debug('Starting password prompt loop')
+#    while True:
+#        password = gui.password_prompt()
+#        if password is None:
+#            logging.debug('User canceled password prompt; exiting')
+#            return
+#        elif crypto.check_password(password):
+#            logging.debug('Password OK')
+#            break
+#        else:
+#            logging.debug('Invalid password')
+#            time.sleep(0.5)     # slow down brute-force attempts
+#            continue
 
 
 def main():
@@ -130,10 +133,11 @@ def main():
     if not os.path.isfile(database_file):
         logging.debug('database file not found, an empty one will be created')
         logging.debug('Prompting user to make a password')
+        # Use pw = 'pybank' for testing
         pw = gui.password_create()
         if pw is None:
             logging.debug('User canceled password creation; exiting')
-            return
+            return    # this needs to return outside the if statement
         crypto.create_password(pw)
         logging.debug('Creating database file')
 #        create_db_file(database_file)
@@ -141,6 +145,10 @@ def main():
     else:
         logging.debug('database file found')
         pw = password_prompt_loop()
+        print(pw)
+        if pw is None:
+            logging.debug('User canceled password prompt; exiting')
+            return
         logging.debug('creating key')
 #        key = crypto.create_key(pw)
 
