@@ -163,12 +163,15 @@ class MainFrame(wx.Frame):
                                   "Create a new PyBank file")
         self.mf_open = wx.MenuItem(self.mfile, 102, "&Open\tCtrl+O",
                                    "Open a PyBank file")
+        self.mf_close = wx.MenuItem(self.mfile, 104, "&Close",
+                                    "Close the current PyBank file.")
         self.mf_exit = wx.MenuItem(self.mfile, 103, "&Exit\tCtrl+Q",
                                    "Exit the application")
 
         # Add menu items to the menu
         self.mfile.Append(self.mf_new)
         self.mfile.Append(self.mf_open)
+        self.mfile.Append(self.mf_close)
         self.mfile.AppendSeparator()
         self.mfile.Append(self.mf_exit)
         self.menu_bar.Append(self.mfile, "&File")
@@ -297,6 +300,7 @@ class MainFrame(wx.Frame):
         # File Menu
         self.Bind(wx.EVT_MENU, self._on_new, id=101)
         self.Bind(wx.EVT_MENU, self._on_open, id=102)
+        self.Bind(wx.EVT_MENU, self._on_close, id=104)
         self.Bind(wx.EVT_MENU, self._on_quit, id=103)
 
         # Edit Menu
@@ -327,6 +331,10 @@ class MainFrame(wx.Frame):
         logging.debug("on new")
         logging.info("Creating new file")
 
+    def _on_close(self, event):
+        """ Create a new file """
+        logging.debug("on close")
+        logging.info("Closing current file.")
     def _on_toggle_ledger_col(self, event):
         """ Toggles a ledger column on or off """
         col_num = event.Id - 30200      # Ledger columns are 0-indexed

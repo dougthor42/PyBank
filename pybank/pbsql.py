@@ -715,13 +715,15 @@ def create_db(filename=DATABASE):
     else:
         # runs if no error
         cursor.close()
-        conn.close()
+#        conn.close()
     finally:
         # runs if there's an error, then error re-raised after this
         pass
 
     create_trans_tbl(filename, 0)
     create_ledger_view(filename, 0)
+
+    return conn
 
 
 def create_db_sa(filename=DATABASE):

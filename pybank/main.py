@@ -108,6 +108,16 @@ def password_prompt_loop():
 #            continue
 
 
+def nothing():
+    """
+    what if, instead of trying to encrypt and decrypt the sqlite file itself,
+    I encrypt and decrypt the SQLite dump string... Then I could intercept
+    and encrypt the string before it gets written to disk...
+    +
+    """
+    pass
+
+
 def main():
     """
     Main entry point
@@ -122,45 +132,88 @@ def main():
     + delete local copy
     + Gui loop
     + Auto-save loop
+      + every 2 minutes, copy DB to file, encrypt it.
 
     """
     docopt(__doc__, version=__version__)
     logging.debug("Running pybank.py")
 
+    db_file = 'test_database.db'
+    db_file_encrypted = 'test_database.txt'
+
     # Check if the database file exists
-    database_file = utils.find_data_file('PyBank.db')
-    logging.debug('Checking for existing database: {}'.format(database_file))
+    database_file = utils.find_data_file(db_file_encrypted)
+    logging.debug('Checking for existing database: {}'.format(db_file_encrypted))
     if not os.path.isfile(database_file):
         logging.debug('database file not found, an empty one will be created')
         logging.debug('Prompting user to make a password')
-        # Use pw = 'pybank' for testing
-        pw = gui.password_create()
+        pw = gui.password_create()   # Use pw = 'pybank' for testing
         if pw is None:
             logging.debug('User canceled password creation; exiting')
             return    # this needs to return outside the if statement
+
+        #####################################################################
+        # some stuff that needs to be moved to crypto module
+        salt_file = "salt.txt"
+        if not os.path.exists(salt_file):
+            with open(salt_file, 'wb') as openf:
+                salt = os.urandom(32)
+                openf.write(salt)
+        else:
+            with open(salt_file, 'rb') as openf:
+                salt = openf.read()
+
+        print("Salt is:\n{}".format(salt))
+
+        pw = pw.encode('utf-8')
+        pw += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
+        key = crypto.create_key(pw, salt)
+        #####################################################################
+
         crypto.create_password(pw)
         logging.debug('Creating database file')
-#        create_db_file(database_file)
-        pbsql.create_db_sa(database_file)
+        # 1. Create an unencrypted file based on the template
+        db = pbsql.create_db_sa(":memory:")
+        # 2. Dump it, encrypt the dump, and then save the encrypted dump.
+        # Move to pbsql module
+        dump = "".join(line for line in db.iterdump())
+        dump = dump.encode('utf-8')
+        # 3. Encrypt the dump amd save it to a file
+        crypto.encrypted_write(db_file_encrypted, key, dump)
     else:
         logging.debug('database file found')
         pw = password_prompt_loop()
-        print(pw)
         if pw is None:
             logging.debug('User canceled password prompt; exiting')
             return
         logging.debug('creating key')
-#        key = crypto.create_key(pw)
+        #####################################################################
+        # some stuff that needs to be moved to crypto module
+        salt_file = "salt.txt"
+        if not os.path.exists(salt_file):
+            with open(salt_file, 'wb') as openf:
+                salt = os.urandom(32)
+                openf.write(salt)
+        else:
+            with open(salt_file, 'rb') as openf:
+                salt = openf.read()
 
+        print("Salt is:\n{}".format(salt))
+
+        pw = pw.encode('utf-8')
+        pw += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
+        key = crypto.create_key(pw, salt)
+        #####################################################################
         logging.debug('decrypting database')
-        temp_file = 'temp.db'
-#        crypto.decrypt_file(database_file, key, temp_file)
+        new_dump = crypto.decrypt_file(db_file_encrypted, key)
+        new_dump = new_dump.decode('utf-8')
 
         logging.debug('copying db to memory')
-        # magic
+        db = pbsql.create_db_sa(":memory:")
+        db.executescript(new_dump)
 
-        logging.debug('deleting temporary db file')
-#        os.remove(temp_file)
+        # this db object needs to be sent around everywhere.
+
 
     logging.debug('starting gui')
     gui.MainApp()
@@ -170,3 +223,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
