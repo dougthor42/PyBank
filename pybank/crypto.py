@@ -21,6 +21,7 @@ import logging
 import base64
 import io
 import sqlite3
+import time
 
 # Third Party
 import keyring
@@ -32,7 +33,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 # Package / Application
 try:
     # Imports used for unittests
-#    from . import pbsql
+    from . import pbsql
 #    from . import plots
 #    from . import utils
 #    from . import (__project_name__,
@@ -42,7 +43,7 @@ try:
 except SystemError:
     try:
         # Imports used by Spyder
-#        import pbsql
+        import pbsql
 #        import plots
 #        import utils
 #        from __init__ import (__project_name__,
@@ -51,7 +52,7 @@ except SystemError:
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-#        from pybank import pbsql
+        from pybank import pbsql
 #        from pybank import plots
 #        from pybank import utils
 #        from pybank import (__project_name__,
@@ -83,14 +84,23 @@ def encrypted_read(file, key):
     f = Fernet(key)
 
 #    return io.BytesIO(f.decrypt(data))
-    return f.decrypt(data)
+#    return f.decrypt(data)
+
+    a = time.perf_counter()
+    d = f.decrypt(data)
+    b = time.perf_counter()
+    print("decryption took {}s".format(b-a))
+    return d
 
 
 def encrypted_write(file, key, data):
     """ Writes to an encrypted file """
 
     f = Fernet(key)
+    a = time.perf_counter()
     encrypted_data = f.encrypt(data)
+    b = time.perf_counter()
+    print("encryption took {}s".format(b-a))
 
     with open(file, 'wb') as openf:
         openf.write(encrypted_data)
@@ -182,7 +192,7 @@ def create_key(password, salt):
 
 
 def main():
-    # Read or create salt file.         # XXX: Put in config file?
+#    # Read or create salt file.         # XXX: Put in config file?
     salt_file = "salt.txt"
     if not os.path.exists(salt_file):
         with open(salt_file, 'wb') as openf:
@@ -194,61 +204,88 @@ def main():
 
     print("Salt is:\n{}".format(salt))
 
-    # Prompt the user for a password
-    pw_input = input("type in the password 'secret'  >> ")
-    password = keyring.get_password('PyBank', 'user').encode('utf-8')
-    if password != pw_input.encode('utf-8'):
-        raise Exception("I said type in 'secret'!")
-
-    # Add a pepper. Not really useful since this is open-source, but /shrug.
-    # TODO: look into alternate pepper solution
-    #       - perhaps unique to the computer it's running on?
-    #         - But what if the user wants to change computers...
-    #       - secondary password?
+#    # Prompt the user for a password
+#    pw_input = input("type in the password 'secret'  >> ")
+#    password = keyring.get_password('PyBank', 'user').encode('utf-8')
+#    if password != pw_input.encode('utf-8'):
+#        raise Exception("I said type in 'secret'!")
+#
+#    # Add a pepper. Not really useful since this is open-source, but /shrug.
+#    # TODO: look into alternate pepper solution
+#    #       - perhaps unique to the computer it's running on?
+#    #         - But what if the user wants to change computers...
+#    #       - secondary password?
+    password = 'pybank'.encode('utf-8')
     password += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
-
+#
     key = create_key(password, salt)
-
-    # Encrypt or Decrypt the file.
-    print("Encrypting encrypted file: PyBank.db")
-    encrypt_file("PyBank.db", key)
-
-#    input("Press enter to read the encrypted file.")
-    print("Decrypting file")
-    a = encrypted_read("crypto_PyBank.db", key)
+#
+#    # Encrypt or Decrypt the file.
+#    print("Encrypting encrypted file: PyBank.db")
+#    encrypt_file("PyBank.db", key)
+#
+##    input("Press enter to read the encrypted file.")
+#    print("Decrypting file")
+#    a = encrypted_read("crypto_PyBank.db", key)
 
 
     # Since I can't read/write directly to the encrypted database,
     # and I can't open a database from a BytesIO stream, I've decided
     # to do the following:
+    # ===== UPDATE 2015-11-24: no longer doing this. See below =====
     # 1.  decrypt the DB once to a temporary file
     # 2.  copy it to a memory db (http://stackoverflow.com/a/4019182/1354930)
     # 3.  Remove temporary file.
     # This will minimize the amount of time that the file is not encrypted.
 
-    # TODO: Secure delete using Gutmann method?
+    # =======================================================================
+    # Update 2015-11-24: instead of decrypting to a temp file, let's save
+    # the SQLite dump string. I can encrypt and decrypt that before saving
+    # anywhere, and this database should stay relatively small (< 50k lines)
+    # so I *think* it will be quick...
+    #
+    # First-order benchmarks
+    #              Database          Times           File Size
+    # Lines     Dump   write    Encrypt  Decrypt   DB       Encrypted Text
+    # 10        3.8ms  3ms      550us    312us     36kB     13kB
+    # 10k       57ms   16ms     29ms     25.5ms    529kB    1206kB
+    # 50k       295ms  788ms    72ms     65ms      5.3MB    6MB
+    # =======================================================================
+
+    # NOTE: Secure delete using Gutmann method? (if needed)
     #       https://en.wikipedia.org/wiki/Gutmann_method
+    #       Not needed because I'm no longer deleting anything and most
+    #       hard drives are starting to become solid state anyway... this
+    #       method is for magnetic platter storage
 
     # TODO: Get security review by someone else.
 
-    # 1. Decrypt to temporary file
-    temp_file = decrypt_file("crypto_PyBank.db", key)
+    file_db = sqlite3.connect("test_database_large.db")
+    a = time.perf_counter()
+    dump = "".join(line for line in file_db.iterdump())
+    b = time.perf_counter()
+    print("iterdump took {}s".format(b-a))
+    dump = dump.encode('utf-8')
+    encrypted_write("test_database_large_dump_encrypted.txt", key, dump)
+#    with open("test_database_dump.txt", "w") as openf:
+#        openf.write(dump)
 
-    # 2. Copy it to an in-memory database
+    new_dump = encrypted_read("test_database_large_dump_encrypted.txt", key)
+    new_dump = new_dump.decode('utf-8')
+    with open("test_database_dump_2.txt", "w") as openf:
+        openf.write(new_dump)
+
     main_db = sqlite3.connect(":memory:")
-    file_db = sqlite3.connect(temp_file)
-    query = "".join(line for line in file_db.iterdump())
-    main_db.executescript(query)
-    file_db.close()
-
-    # 3. Delete the temporary file
-    os.remove(temp_file)
-
-    # Next, we make changes to the in-memory database.
-    # pass
-
-    # And periodically, we wri
-
+    a = time.perf_counter()
+    main_db.executescript(new_dump)
+    b = time.perf_counter()
+    print("dbwrite took {}s".format(b-a))
+    cursor = main_db.cursor()
+    cursor.execute("SELECT * FROM acct")
+    data = cursor.fetchall()
+    print()
+    print()
+    print(data)
 
 
 if __name__ == "__main__":
