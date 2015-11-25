@@ -136,6 +136,8 @@ class MainFrame(wx.Frame):
 
         self.panel = MainPanel(self)
 
+        self.ledger = self.panel.panel2.ledger_page.ledger
+
     def _create_menus(self):
         """ Create each menu for the menu bar """
         # TODO: Switch to wx.RibbonBar? It looks pretty nice.
@@ -163,7 +165,7 @@ class MainFrame(wx.Frame):
                                   "Create a new PyBank file")
         self.mf_open = wx.MenuItem(self.mfile, 102, "&Open\tCtrl+O",
                                    "Open a PyBank file")
-        self.mf_close = wx.MenuItem(self.mfile, 104, "&Close",
+        self.mf_close = wx.MenuItem(self.mfile, 104, "&Close\tCtrl+W",
                                     "Close the current PyBank file.")
         self.mf_exit = wx.MenuItem(self.mfile, 103, "&Exit\tCtrl+Q",
                                    "Exit the application")
@@ -324,21 +326,48 @@ class MainFrame(wx.Frame):
     def _on_open(self, event):
         """ Open a file """
         logging.debug("on open")
-        logging.info("Opening file")
+
+        dialog = wx.FileDialog(self,
+                               "Choose a PyBank datatbase file to open",
+                               ".",
+                               "",
+                               "PyBank database (*.pybank)|*.pybank",
+                               wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+                               )
+
+        if dialog.ShowModal() == wx.ID_CANCEL:
+            return
+
+        path = dialog.GetPath()
+
+        logging.info("Opening file: `{}`".format(path))
+
+        self.ledger._setup()
+        self.ledger.table._update_data()
+        self.ledger._format_table()
 
     def _on_new(self, event):
         """ Create a new file """
         logging.debug("on new")
         logging.info("Creating new file")
+        logging.info("(Not yet implemented)")
 
     def _on_close(self, event):
         """ Create a new file """
         logging.debug("on close")
         logging.info("Closing current file.")
+
+        self.ledger.table.data = [[]]
+
+        self.ledger.ClearGrid()
+        self.ledger._format_table()
+
     def _on_toggle_ledger_col(self, event):
         """ Toggles a ledger column on or off """
         col_num = event.Id - 30200      # Ledger columns are 0-indexed
                                         # but we always show the # col
+            # I don't rememer where 30200 comes from, but it's needed
+            # to make col_num 0-indexed.
         new_val = event.IsChecked()
         self.panel.panel2.ledger_page.ledger.SetColumnShown(col_num, new_val)
 
@@ -423,6 +452,8 @@ class SamplePlotPanel(wx.Panel):
                                    xLabel="X label",
                                    yLabel="Monies",
                                    )
+        self.plot = plot
+
         self.client.GridPen = wx.Pen(wx.Colour(230, 230, 230, 255))
         self.client.EnableGrid = True
         self.client.Draw(plot)
@@ -522,14 +553,42 @@ class MainNotebook(wx.Notebook):
         x = np.arange(1, len(d) + 1)
 #        y = [random.uniform(-1, 1) + _x for _x in x]
         y = np.array([x[10] for x in d], dtype=np.float)
-        plot = self.GetPage(NotebookPages.plots.value).plot
-        plot.clear()    # XXX: Not working (panel not updating?)
-        plot.draw(x, y, 'r')
+        client = self.GetPage(NotebookPages.plots.value).client
+        client.Clear()    # XXX: Not working (panel not updating?)
+#        plot.draw(x, y, 'r')
 
-        pareto = self.GetPage(NotebookPages.plots.value).pareto
-        pareto.clear()
-        y = np.array([x[4] for x in d], dtype=np.str)
-        pareto.draw(y)
+        tdata = list(zip(x, y))
+
+        line = wxplot.PolyLine(tdata,
+                               colour='red',
+                               width=2,
+                               drawstyle='steps-post',
+                               )
+
+        data = wxplot.PolyMarker(tdata,
+                                 legend="Green Line",
+                                 colour='red',
+                                 width=4,
+                                 size=1,
+                                 marker='square',
+#                                 style=wx.PENSTYLE_SOLID,
+                                 )
+
+        plot = wxplot.PlotGraphics([line, data],
+                                   title="Title",
+                                   xLabel="X label",
+                                   yLabel="Monies",
+                                   )
+
+        client.GridPen = wx.Pen(wx.Colour(230, 230, 230, 255))
+        client.EnableGrid = True
+        client.Draw(plot)
+
+
+#        pareto = self.GetPage(NotebookPages.plots.value).pareto
+#        pareto.clear()
+#        y = np.array([x[4] for x in d], dtype=np.str)
+#        pareto.draw(y)
 
 
 class LedgerPanel(wx.Panel):
@@ -568,7 +627,7 @@ class LedgerPanel(wx.Panel):
         self.SetSizer(self.vbox)
 
 
-# Not used
+#%% Not used
 class LedgerULC(ulc.UltimateListCtrl,
 #                listmix.ColumnSorterMixin,
                 listmix.ListCtrlAutoWidthMixin,
@@ -771,8 +830,7 @@ class LedgerULC(ulc.UltimateListCtrl,
         """ Modifies a row to edit-style. """
         logging.debug("modifying row {}".format(row))
 
-
-# Not used
+#%% Not used
 class LedgerVirtual(wx.ListCtrl,
 #                    listmix.ColumnSorterMixin,
                     listmix.ListCtrlAutoWidthMixin,
@@ -837,9 +895,9 @@ class LedgerVirtual(wx.ListCtrl,
 
         self._bind_events()
 
-    ### #--------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     ### Method Overrides
-    ### #--------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     # Used by ColumnSorterMixin, see wx/lib/mixins/listctrl.py
     def GetListCtrl(self):
@@ -860,9 +918,9 @@ class LedgerVirtual(wx.ListCtrl,
     def OnGetItemImage(self, item):
         return -1
 
-    ### #--------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     ### Private Methods
-    ### #--------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     def _create_columns(self):
         """
@@ -997,7 +1055,7 @@ class LedgerVirtual(wx.ListCtrl,
         """ Modifies a row to edit-style. """
         logging.debug("modifying row {}".format(row))
 
-
+#%% Good
 class LedgerGridBaseTable(wx.grid.GridTableBase):
     """
     """
@@ -1005,17 +1063,18 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         wx.grid.GridTableBase.__init__(self)
         self.parent = parent
         self.column_labels, self.col_types = self._set_columns()
+        self.data = [[]]
 
         self._update_data()
 
 
-    ### #--------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     ### Override Methods
-    ### #--------------------------------------------------------------------
-
+    # -----------------------------------------------------------------------
     def GetNumberRows(self):
-        rows = pbsql.db_query_single(DATABASE,
-                                     "SELECT COUNT(*) FROM v_ledger_0")[0]
+        rows = len(self.data)
+#        rows = pbsql.db_query_single(DATABASE,
+#                                     "SELECT COUNT(*) FROM v_ledger_0")[0]
         return rows + 1
 #        return len(self.data) + 1
 
@@ -1071,11 +1130,11 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             # gotta get the tid and send *that* to the update method
             # to account for deleted entries.
             tid = self.data[row][0]
-            self.ledger.update_transaction(tid, col, value)
+            self.ledger_view.update_transaction(tid, col, value)
         except IndexError:
             # add a new row
             logging.debug("Adding a new row")
-            self.ledger.insert_row()
+            self.ledger_view.insert_row()
             self._update_data()         # Must come before _set_value()
             self._set_value(row, col, value)
 
@@ -1085,7 +1144,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             self.GetView().ProcessTableMessage(msg)
             self.parent._format_table()
         else:
-            # run if no errors
+            # run this if no errors
             self._update_data()
             # _update_data() does not update the balance for all rows. hmm...
             # Update values
@@ -1107,9 +1166,9 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
     def CanSetValueAs(self, row, column, type_name):
         return self.CanGetValueAs(row, column, type_name)
 
-    ### #--------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     ### Private Methods
-    ### #--------------------------------------------------------------------
+    # -----------------------------------------------------------------------
 
     def _set_columns(self):
         """
@@ -1141,8 +1200,8 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
     def _update_data(self):
         # grab the table data from the database
-        self.ledger = pbsql.LedgerView(DATABASE, 0)
-        data = self.ledger.read_all()
+        self.ledger_view = pbsql.LedgerView(DATABASE, 0)
+        data = self.ledger_view.read_all()
 
         # calculate the running balance and add it to the data
         starting_bal = decimal.Decimal(200)
@@ -1162,9 +1221,26 @@ class LedgerGrid(wx.grid.Grid):
         logging.debug("Initializing LedgerGrid")
         wx.grid.Grid.__init__(self, parent, wx.ID_ANY)
 
-        table = LedgerGridBaseTable(self)
+        self._setup()
 
-        self.SetTable(table, True)
+#        self.table = LedgerGridBaseTable(self)
+#
+#        self.SetTable(self.table, True)
+#
+#        self.SetRowLabelSize(30)
+#        self.SetMargins(0, 0)
+#        self.AutoSizeColumns(True)
+#
+#        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK,
+#                  self._on_left_dclick,
+#                  self)
+#
+#        self._format_table()
+
+    def _setup(self):
+        self.table = LedgerGridBaseTable(self)
+
+        self.SetTable(self.table, takeOwnership=True)
 
         self.SetRowLabelSize(30)
         self.SetMargins(0, 0)
@@ -1653,5 +1729,5 @@ def password_change():
 ### Run module as standalone
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-#    MainApp()
-    password_change()
+    MainApp()
+#    password_change()
