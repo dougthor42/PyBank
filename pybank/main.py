@@ -138,12 +138,11 @@ def main():
     docopt(__doc__, version=__version__)
     logging.debug("Running pybank.py")
 
-    db_file = 'test_database.db'
-    db_file_encrypted = 'test_database.txt'
+    db_file = 'test_database.pybank'
 
     # Check if the database file exists
-    database_file = utils.find_data_file(db_file_encrypted)
-    logging.debug('Checking for existing database: {}'.format(db_file_encrypted))
+    database_file = utils.find_data_file(db_file)
+    logging.debug('Checking for existing database: {}'.format(db_file))
     if not os.path.isfile(database_file):
         logging.debug('database file not found, an empty one will be created')
         logging.debug('Prompting user to make a password')
@@ -152,23 +151,9 @@ def main():
             logging.debug('User canceled password creation; exiting')
             return    # this needs to return outside the if statement
 
-        #####################################################################
-        # some stuff that needs to be moved to crypto module
-        salt_file = "salt.txt"
-        if not os.path.exists(salt_file):
-            with open(salt_file, 'wb') as openf:
-                salt = os.urandom(32)
-                openf.write(salt)
-        else:
-            with open(salt_file, 'rb') as openf:
-                salt = openf.read()
-
-        print("Salt is:\n{}".format(salt))
-
-        pw = pw.encode('utf-8')
-        pw += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
+        salt = crypto.get_salt()
+        pw = crypto.encode_and_pepper_pw(pw)
         key = crypto.create_key(pw, salt)
-        #####################################################################
 
         crypto.create_password(pw)
         logging.debug('Creating database file')
@@ -179,7 +164,7 @@ def main():
         dump = "".join(line for line in db.iterdump())
         dump = dump.encode('utf-8')
         # 3. Encrypt the dump amd save it to a file
-        crypto.encrypted_write(db_file_encrypted, key, dump)
+        crypto.encrypted_write(db_file, key, dump)
     else:
         logging.debug('database file found')
         pw = password_prompt_loop()
@@ -187,25 +172,13 @@ def main():
             logging.debug('User canceled password prompt; exiting')
             return
         logging.debug('creating key')
-        #####################################################################
-        # some stuff that needs to be moved to crypto module
-        salt_file = "salt.txt"
-        if not os.path.exists(salt_file):
-            with open(salt_file, 'wb') as openf:
-                salt = os.urandom(32)
-                openf.write(salt)
-        else:
-            with open(salt_file, 'rb') as openf:
-                salt = openf.read()
 
-        print("Salt is:\n{}".format(salt))
-
-        pw = pw.encode('utf-8')
-        pw += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
+        salt = crypto.get_salt()
+        pw = crypto.encode_and_pepper_pw(pw)
         key = crypto.create_key(pw, salt)
-        #####################################################################
+
         logging.debug('decrypting database')
-        new_dump = crypto.decrypt_file(db_file_encrypted, key)
+        new_dump = crypto.decrypt_file(db_file, key)
         new_dump = new_dump.decode('utf-8')
 
         logging.debug('copying db to memory')

@@ -194,7 +194,7 @@ def _setup_logging():
     logfmt = ("%(asctime)s.%(msecs)03d"
               " [%(levelname)-8.8s]"
               " [%(module)-8.8s]"       # Note implicit string concatenation.
-              " [%(funcName)-12.12s]"
+              " [%(funcName)-16.16s]"
               "  %(message)s"
               )
     datefmt = "%Y-%m-%d %H:%M:%S"
