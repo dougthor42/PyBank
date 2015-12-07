@@ -53,6 +53,7 @@ try:
     from . import plots
     from . import utils
     from . import crypto
+    from . import gui_utils
 #    from . import __init__ as __pybank_init
     from . import (__project_name__,
                    __version__,
@@ -66,6 +67,7 @@ except SystemError:
         import plots
         import utils
         import crypto
+        import gui_utils
 #        import __init__ as __pybank_init
         from __init__ import (__project_name__,
                               __version__,
@@ -78,6 +80,7 @@ except SystemError:
         from pybank import plots
         from pybank import utils
         from pybank import crypto
+        from pybank import gui_utils
 #        from pybank import __init__ as __pybank_init
         from pybank import (__project_name__,
                             __version__,
@@ -1571,163 +1574,7 @@ class LedgerHeaderBar(wx.Panel):
 
 
 # ---------------------------------------------------------------------------
-### Password Prompts
-# ---------------------------------------------------------------------------
-class PasswordPromptDialog(wx.Dialog):
-    """ Dialog Box for user password. """
-    def __init__(self):
-        wx.Dialog.__init__(self, None, title="PyBank")
-
-        # Main Prompt
-        label = wx.StaticText(self, -1, "Please enter your password:")
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(label, 0, wx.ALIGN_CENTER|wx.ALL, 5)
-
-        self.pw1 = wx.TextCtrl(self, size=(150, -1), style=wx.TE_PASSWORD)
-        sizer.Add(self.pw1, 1, wx.ALIGN_CENTER|wx.ALL, 5)
-
-
-        btnsizer = wx.StdDialogButtonSizer()
-
-        btn = wx.Button(self, wx.ID_OK)
-        btn.SetDefault()
-        btnsizer.AddButton(btn)
-
-        btn = wx.Button(self, wx.ID_CANCEL)
-        btnsizer.AddButton(btn)
-        btnsizer.Realize()
-
-        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
-
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-        self.Center()
-
-
-def password_prompt():
-    """ Prompt the user for a password """
-    app = wx.App()
-    dialog = PasswordPromptDialog()
-    # XXX: Is this a security risk? Sending an unencrypted
-    #      password between functions and modules?
-    if dialog.ShowModal() == wx.ID_OK:
-        retval = dialog.pw1.GetValue()
-    else:
-        retval = None
-    dialog.Destroy()
-    app.MainLoop()
-    return retval
-
-
-class PasswordCreateDialog(wx.Dialog):
-    """ Dialog Box for creating a password. """
-    def __init__(self):
-        wx.Dialog.__init__(self, None, title="PyBank")
-
-        label = wx.StaticText(self, -1, "Please choose a password.")
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(label, 0, wx.ALIGN_CENTER|wx.ALL, 5)
-
-        label = wx.StaticText(self, wx.ID_ANY, "Password:")
-        self.pw1 = wx.TextCtrl(self, size=(-1, -1), style=wx.TE_PASSWORD)
-
-        grid = wx.FlexGridSizer(2, 5, 0)
-        alignment = wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT
-        padding = wx.LEFT|wx.RIGHT
-        grid.Add(label, 0, alignment|padding, 5)
-        grid.Add(self.pw1, 1, wx.EXPAND|padding, 5)
-
-
-        label = wx.StaticText(self, wx.ID_ANY, "Confirm:", size=(-1, -1))
-        self.pw2 = wx.TextCtrl(self, size=(-1, -1), style=wx.TE_PASSWORD)
-
-        grid.Add(label, 0, alignment|padding, 5)
-        grid.Add(self.pw2, 1, wx.EXPAND|padding, 5)
-
-        grid.Fit(self)
-
-        sizer.Add(grid, 0, wx.ALL, 5)
-
-
-        btnsizer = wx.StdDialogButtonSizer()
-
-        self.ok_btn = wx.Button(self, wx.ID_OK)
-        self.ok_btn.SetDefault()
-        self.ok_btn.Disable()
-        btnsizer.AddButton(self.ok_btn)
-
-        btn = wx.Button(self, wx.ID_CANCEL)
-        btnsizer.AddButton(btn)
-        btnsizer.Realize()
-
-        sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL|padding|wx.BOTTOM, 5)
-
-        self.Bind(wx.EVT_TEXT, self.on_txt_change, self.pw1)
-        self.Bind(wx.EVT_TEXT, self.on_txt_change, self.pw2)
-
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-        self.Center()
-
-    def on_txt_change(self, event):
-        """ Disable the "OK" button if the passwords don't match """
-        pw1 = self.pw1.GetValue()
-        pw2 = self.pw2.GetValue()
-        if pw1 == pw2 and pw1 != '':
-            self.ok_btn.Enable()
-        else:
-            self.ok_btn.Disable()
-
-
-def password_create():
-    """ Prompt the user for a password """
-    app = wx.App()
-    dialog = PasswordCreateDialog()
-    # XXX: Is this a security risk? Sending an unencrypted
-    #      password between functions and modules?
-    if dialog.ShowModal() == wx.ID_OK:
-        retval = dialog.pw1.GetValue()
-    else:
-        retval = None
-    dialog.Destroy()
-    app.MainLoop()
-    return retval
-
-
-def password_change():
-    """ Prompt the user to change the password """
-    app = wx.App()
-    while True:
-        dialog = PasswordPromptDialog()
-        if dialog.ShowModal() == wx.ID_OK:
-            # verify the password.
-            if crypto.check_password(dialog.pw1.GetValue()):
-                break
-            else:
-                continue
-        else:
-            return None
-
-    dialog.Destroy()
-
-    dialog = PasswordCreateDialog()
-    if dialog.ShowModal() == wx.ID_OK:
-        new_pass = dialog.pw1.GetValue()
-        crypto.create_password(dialog.pw1.GetValue())
-    else:
-        new_pass = None
-    dialog.Destroy()
-    app.MainLoop()
-    return new_pass
-
-
-
-
-# ---------------------------------------------------------------------------
 ### Run module as standalone
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     MainApp()
-#    password_change()

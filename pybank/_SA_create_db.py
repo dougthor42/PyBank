@@ -28,6 +28,7 @@ from sqlalchemy.ext import compiler as sa_compiler
 try:
     # Imports used by unit test runners
 #    from . import utils
+    from . import _SA_test
 #    from . import (__project_name__,
 #                   __version__,
 #                   )
@@ -36,6 +37,7 @@ except SystemError:
     try:
         # Imports used by Spyder
 #        import utils
+        import _SA_test
 #        from __init__ import (__project_name__,
 #                              __version__,
 #                              )
@@ -43,6 +45,7 @@ except SystemError:
     except ImportError:
          # Imports used by cx_freeze
 #        from pybank import utils
+        from pybank import _SA_test
 #        from pybank import (__project_name__,
 #                            __version__,
 #                            )
@@ -118,131 +121,6 @@ class SqliteNumeric(sa.types.TypeDecorator):
 # ---------------------------------------------------------------------------
 
 
-
-engine = sa.create_engine("sqlite:///:memory:", echo=False)
-#engine = sa.create_engine("sqlite:///_slqalchemy_db.db", echo=False)
-
-metadata = sa.MetaData(engine)
-
-acct = sa.Table('Account', metadata,
-    sa.Column('AccountID', sa.Integer, primary_key=True),
-    sa.Column('AccountNum', sa.String, nullable=False),
-    sa.Column('Name', sa.String, nullable=False),
-    sa.Column('InstitutionID', None, sa.ForeignKey('Institution.InstitutionID')),
-    sa.Column('UserName', sa.String, nullable=False),
-    sa.Column('AccountGroupID', sa.Integer, sa.ForeignKey('AccountGroup.AccountGroupID')),
-    )
-
-account_group = sa.Table('AccountGroup', metadata,
-    sa.Column('AccountGroupID', sa.Integer, primary_key=True),
-    sa.Column('Name', sa.String, nullable=False)
-    )
-
-category = sa.Table('Category', metadata,
-    sa.Column('CategoryID', sa.Integer, primary_key=True),
-    sa.Column('Name', sa.String, nullable=True),
-    sa.Column('Parent', None, sa.ForeignKey('Category.CategoryID')),
-    )
-
-display_name = sa.Table('DisplayName', metadata,
-    sa.Column('DisplayNameID', sa.Integer, primary_key=True),
-    sa.Column('Name', sa.String, nullable=False),
-    )
-
-# TODO: split out ofx data to separate table
-institution = sa.Table('Institution', metadata,
-    sa.Column('InstitutionID', sa.Integer, primary_key=True),
-    sa.Column('Name', sa.String, nullable=False),   # unique?
-    sa.Column('OfxID', sa.Integer, sa.ForeignKey('Ofx.OfxID'), nullable=False),
-    )
-
-ofx = sa.Table('Ofx', metadata,
-    sa.Column('OfxID', sa.Integer, primary_key=True),
-    sa.Column('Name', sa.String),
-    sa.Column('OfxOrg', sa.String, nullable=False),
-    sa.Column('OfxUrl', sa.String, nullable=False),
-    )
-
-transaction_label = sa.Table('TransactionLabel', metadata,
-    sa.Column('TransactionLabelID', sa.Integer, primary_key=True),
-    sa.Column('Name', sa.String, nullable=False),
-    )
-
-payee = sa.Table('Payee', metadata,
-    sa.Column('PayeeID', sa.Integer, primary_key=True),
-    sa.Column('Name', sa.String, nullable=False),   # unique?
-    sa.Column('DisplayNameID', None, sa.ForeignKey('DisplayName.DisplayNameID')),
-    sa.Column('CategoryID', None, sa.ForeignKey('Category.CategoryID')),
-    )
-
-transaction = sa.Table('Transaction', metadata,
-    sa.Column('TransactionID', sa.Integer, primary_key=True),
-    sa.Column('AccountID', None, sa.ForeignKey('Account.AccountID')),
-    sa.Column('Date', sa.Date, nullable=False),  # datetime?
-    sa.Column('EnterDate', sa.Date),             # datetime?
-    sa.Column('CheckNum', sa.Integer),
-#    sa.Column('Amount', sa.Numeric),
-    sa.Column('Amount', SqliteNumeric),
-    sa.Column('PayeeID', None, sa.ForeignKey('Payee.PayeeID')),
-    sa.Column('CategoryID', None, sa.ForeignKey('Category.CategoryID')),
-    sa.Column('TransactionLabelID', None, sa.ForeignKey('TransactionLabel.TransactionLabelID')),
-    sa.Column('MemoID', sa.String),
-    sa.Column('Fitid', sa.Integer),
-    )
-
-memo = sa.Table('Memo', metadata,
-    sa.Column('MemoID', sa.Integer, primary_key=True),
-    sa.Column('Text', sa.String),
-    )
-
-# TODO: do I want outer joins?
-oj = sa.outerjoin(transaction, payee)
-oj = sa.outerjoin(oj, category, category.c.CategoryID==transaction.c.CategoryID)
-oj = sa.outerjoin(oj, transaction_label)
-oj = sa.outerjoin(oj, display_name, display_name.c.DisplayNameID==payee.c.DisplayNameID)
-oj = sa.outerjoin(oj, acct, acct.c.AccountID==transaction.c.AccountID)
-oj = sa.outerjoin(oj, memo, memo.c.MemoID==transaction.c.MemoID)
-
-func = sa.sql.func
-
-ledger_view = view('ledger_view', metadata,
-    sa.select([transaction.c.Date,
-               transaction.c.AccountID,
-               acct.c.Name.label('AccountName'),
-               transaction.c.EnterDate,
-               transaction.c.CheckNum,
-               func.coalesce(display_name.c.Name,
-                             payee.c.Name).label('Payee'),
-               payee.c.Name.label('DownloadedPayee'),
-               transaction_label.c.Name.label('TransactionLabel'),
-               category.c.Name.label('Category'),
-               memo.c.Text.label('Memo'),
-               transaction.c.Amount.label('Amount')]).\
-    select_from(oj))
-
-engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
-metadata.create_all()
-
-
-# Add some dummy data
-import datetime
-date = datetime.date.today()
-transaction.insert().execute(ID=1, AccountID=1, Date=date, EnterDate=date,
-                             CheckNum=100, Amount=10.34, PayeeID=1,
-                             CategoryID=1, TransactionLabelID=1,
-                             Memo="memo", Fitid=10)
-
-display_name.insert().execute(ID=1, Name="B")
-payee.insert().execute(ID=1, Name='aaa', DisplayNameID=1, CategoryID=1)
-transaction_label.insert().execute(ID=1, Name='some label')
-category.insert().execute(ID=1, Name='category_name', Parent=None)
-acct.insert().execute(ID=1, AccountNum="123456", Name="Wells Fargo Checking",
-                      InstitutionID=1, UserName="SomeUser",
-                      AccountGroup="AccountGroup_2")
-
-
-result = engine.execute(sa.select([ledger_view])).fetchall()
-print(result)
 
 
 
@@ -389,102 +267,115 @@ class TransactionLabel(Base):
     name = sa.Column(sa.String)
 
 
-# TODO: do I want outer joins?
-oj = sa.outerjoin(Transaction, Payee)
-oj = sa.outerjoin(oj, Category,
-                  Category.category_id==Transaction.category_id)
-oj = sa.outerjoin(oj, TransactionLabel,
-                  TransactionLabel.transaction_label_id==Transaction.transaction_label_id)
-oj = sa.outerjoin(oj, DisplayName,
-                  DisplayName.display_name_id==Payee.display_name_id)
-oj = sa.outerjoin(oj, Account,
-                  Account.account_id==Transaction.account_id)
-oj = sa.outerjoin(oj, Memo,
-                  Memo.memo_id==Transaction.memo_id)
+def add_some_data(engine, session):
+    # Add some dummy data
+    import datetime
+    date = datetime.date.today()
+    trans = Transaction(transaction_id=1,
+                        account_id=1,
+                        date=date,
+                        enter_date=date,
+                        check_num=100,
+                        amount=10.34,
+                        payee_id=1,
+                        category_id=1,
+                        transaction_label_id=1,
+                        memo_id=1,
+                        fit_id=12345,
+                        )
 
-func = sa.sql.func
-
-ledger_view = view('ledger_view', Base.metadata,
-    sa.select([Transaction.date,
-               Transaction.account_id,
-               Account.name.label('AccountName'),
-               Transaction.enter_date,
-               Transaction.check_num,
-               func.coalesce(DisplayName.name,
-                             Payee.name).label('Payee'),
-               Payee.name.label('DownloadedPayee'),
-               TransactionLabel.name.label('TransactionLabel'),
-               Category.name.label('Category'),
-               Memo.text.label('Memo'),
-               Transaction.amount.label('Amount')]).\
-    select_from(oj))
-
-print('drop if exists')
-engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
-#metadata.create_all()
-
-
-#Session = sessionmaker(bind=engine)
-#session = Session()
-
-print('create all')
-Base.metadata.create_all(engine)
-
-
-# Add some dummy data
-import datetime
-date = datetime.date.today()
-trans = Transaction(transaction_id=1,
-                    account_id=1,
-                    date=date,
-                    enter_date=date,
-                    check_num=100,
-                    amount=10.34,
-                    payee_id=1,
-                    category_id=1,
-                    transaction_label_id=1,
-                    memo_id=1,
-                    fit_id=12345,
-                    )
-
-display_name = DisplayName(display_name_id=1,
-                           name='B',
-                           )
-payee = Payee(payee_id=1,
-              name='aaa',
-              display_name_id=1,
-              category_id=1,
-              )
-trans_label = TransactionLabel(transaction_label_id=1,
-                               name='class-based label',
+    display_name = DisplayName(display_name_id=1,
+                               name='B',
                                )
-cat = Category(category_id=1,
-               name='category name',
-               parent=None,
-               )
-
-account = Account(account_id=1,
-                  account_num='987654321',
-                  name='Class-based',
-                  institution_id=1,
-                  user_name='SomeUser',
-                  account_group_id=1,
+    payee = Payee(payee_id=1,
+                  name='aaa',
+                  display_name_id=1,
+                  category_id=1,
                   )
+    trans_label = TransactionLabel(transaction_label_id=1,
+                                   name='class-based label',
+                                   )
+    cat = Category(category_id=1,
+                   name='category name',
+                   parent=None,
+                   )
 
-acct_group = AccountGroup(account_group_id=1,
-                          name='Some group',
-                          )
+    account = Account(account_id=1,
+                      account_num='987654321',
+                      name='Class-based',
+                      institution_id=1,
+                      user_name='SomeUser',
+                      account_group_id=1,
+                      )
+
+    acct_group = AccountGroup(account_group_id=1,
+                              name='Some group',
+                              )
 
 
-Session = sessionmaker(bind=engine)
-session = Session()
-session.add_all([trans, display_name, payee, trans_label,
-                 cat, account, acct_group])
+#    Session = sessionmaker(bind=engine)
+#    session = Session()
+    session.add_all([trans, display_name, payee, trans_label,
+                     cat, account, acct_group])
 
-print("committing")
-session.commit()
+    print("committing")
+    session.commit()
 
-print('select')
-result = engine.execute(sa.select([ledger_view])).fetchall()
-print(result)
 
+#def print_some_data(session):
+#    print('select')
+#    result = engine.execute(sa.select([ledger_view])).fetchall()
+#    print(result)
+
+
+
+
+if __name__ == "__main__":
+
+    # TODO: do I want outer joins?
+    oj = sa.outerjoin(Transaction, Payee)
+    oj = sa.outerjoin(oj, Category,
+                      Category.category_id==Transaction.category_id)
+    oj = sa.outerjoin(oj, TransactionLabel,
+                      TransactionLabel.transaction_label_id==Transaction.transaction_label_id)
+    oj = sa.outerjoin(oj, DisplayName,
+                      DisplayName.display_name_id==Payee.display_name_id)
+    oj = sa.outerjoin(oj, Account,
+                      Account.account_id==Transaction.account_id)
+    oj = sa.outerjoin(oj, Memo,
+                      Memo.memo_id==Transaction.memo_id)
+
+    func = sa.sql.func
+
+    ledger_view = view('ledger_view', Base.metadata,
+        sa.select([Transaction.date,
+                   Transaction.account_id,
+                   Account.name.label('AccountName'),
+                   Transaction.enter_date,
+                   Transaction.check_num,
+                   func.coalesce(DisplayName.name,
+                                 Payee.name).label('Payee'),
+                   Payee.name.label('DownloadedPayee'),
+                   TransactionLabel.name.label('TransactionLabel'),
+                   Category.name.label('Category'),
+                   Memo.text.label('Memo'),
+                   Transaction.amount.label('Amount')]).\
+        select_from(oj))
+
+    print('drop if exists')
+    engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
+    #metadata.create_all()
+
+
+    #Session = sessionmaker(bind=engine)
+    #session = Session()
+
+    print('create all')
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    # Add some dummy data
+    add_some_data(engine, session)
+
+    _SA_test.print_some_data(engine, session, [ledger_view])

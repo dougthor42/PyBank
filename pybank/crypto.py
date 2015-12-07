@@ -26,9 +26,11 @@ import time
 # Third Party
 import keyring
 from cryptography.fernet import Fernet
+from cryptography.fernet import InvalidToken
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.exceptions import InvalidKey
 
 # Package / Application
 try:
@@ -89,7 +91,12 @@ def encrypted_read(file, key):
 #    return f.decrypt(data)
 
     logging.debug("decrypting...")
-    d = f.decrypt(data)
+    try:
+        d = f.decrypt(data)
+    except InvalidToken:
+        logging.critical("Key Mismatch with file! Unable to decrypt!")
+        raise
+
     logging.debug("decryption complete")
     return d
 
@@ -125,7 +132,7 @@ def encrypt_file(file, key, copy=False):
 
 
 def decrypt_file(file, key, new_file=None):
-    """ Decrypts a given file """
+    """ Decrypts a given file, saving it as a new, unencrypted file. """
     if new_file is None:
         new_file = "decrypted_" + file
 
@@ -135,19 +142,26 @@ def decrypt_file(file, key, new_file=None):
     return new_file
 
 
-def check_password(password):
+def get_password(service="Pybank", user="user"):
+    return keyring.get_password(service, user)
+
+
+def check_password(password, service="Pybank", user="user"):
     """ Checks a password against the keyring """
     password = password.encode('utf-8')
-    service = 'PyBank'
-    user = 'user'
-    return password == keyring.get_password(service, user).encode('utf-8')
+    pw = get_password(service, user).encode('utf-8')
+    return password == pw
 
 
-def create_password(password):
+def create_password(password, service="Pybank", user="user"):
     """ Creates a new password for PyBank in the keyring """
-    service = "PyBank"
-    user = 'user'
     keyring.set_password(service, user, password)
+    return
+
+
+def check_password_exists(service="Pybank", user="user"):
+    """ Verify that a password for PyBank exists in the keyring """
+    return bool(keyring.get_password(service, user))
 
 
 def create_key(password, salt):
@@ -280,5 +294,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+#    main()
+    check_password_exists()
 

@@ -8,6 +8,7 @@ Created on Mon Sep 21 12:32:58 2015
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
 from sqlalchemy import select
+import sqlalchemy as sa
 
 # Create the database engine.
 # The databsse is not actually connected to at this point - it only connects
