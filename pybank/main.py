@@ -32,6 +32,7 @@ try:
     # Imports used by unit test runners
     from . import pbsql
     from . import gui
+    from . import gui_utils
     from . import crypto
     from . import utils
     from . import (__project_name__,
@@ -45,6 +46,7 @@ except SystemError:
         import gui
         import crypto
         import utils
+        import gui_utils
         from __init__ import (__project_name__,
                               __version__,
                               )
@@ -55,6 +57,7 @@ except SystemError:
         from pybank import gui
         from pybank import crypto
         from pybank import utils
+        from pybank import gui_utils
         from pybank import (__project_name__,
                             __version__,
                             )
@@ -72,42 +75,6 @@ except SystemError:
 # ---------------------------------------------------------------------------
 ### Functions
 # ---------------------------------------------------------------------------
-def password_prompt_loop():
-    """ Password Prompt Loop """
-    # Password Prompt Loop
-    logging.debug('Starting password prompt loop')
-    while True:
-        password = gui.password_prompt()
-        if password is None:
-            logging.debug('User canceled password prompt; exiting')
-#            return False
-            return
-        elif crypto.check_password(password):
-            logging.debug('Password OK')
-            return password
-#            break
-        else:
-            logging.debug('Invalid password')
-            time.sleep(0.5)     # slow down brute-force attempts
-            continue
-
-#def password_create_loop():
-#    # Password Prompt Loop
-#    logging.debug('Starting password prompt loop')
-#    while True:
-#        password = gui.password_prompt()
-#        if password is None:
-#            logging.debug('User canceled password prompt; exiting')
-#            return
-#        elif crypto.check_password(password):
-#            logging.debug('Password OK')
-#            break
-#        else:
-#            logging.debug('Invalid password')
-#            time.sleep(0.5)     # slow down brute-force attempts
-#            continue
-
-
 def nothing():
     """
     what if, instead of trying to encrypt and decrypt the sqlite file itself,
@@ -116,6 +83,37 @@ def nothing():
     +
     """
     pass
+
+
+def create_new(db_file):
+    """
+    """
+    logging.debug('database file not found, an empty one will be created')
+    logging.debug('Prompting user to make a password')
+    if not gui_utils.password_create():   # Use pw = 'pybank' for testing
+        logging.debug('User canceled password creation; exiting')
+        return    # this needs to return outside the if statement
+
+    salt = crypto.get_salt()
+    pw = crypto.encode_and_pepper_pw(crypto.get_password())
+    key = crypto.create_key(pw, salt)
+
+    crypto.create_password(pw)
+    logging.debug('Creating database file')
+    # 1. Create an unencrypted file based on the template
+#        db = pbsql.create_db_sa(":memory:")
+    db = pbsql.create_db(":memory:")
+    # 2. Dump it, encrypt the dump, and then save the encrypted dump.
+    # Move to pbsql module
+    dump = "".join(line for line in db.iterdump())
+    dump = dump.encode('utf-8')
+    # 3. Encrypt the dump amd save it to a file
+    crypto.encrypted_write(db_file, key, dump)
+
+
+def dump_to_memory():
+    """ """
+
 
 
 def main():
@@ -144,45 +142,25 @@ def main():
     database_file = utils.find_data_file(db_file)
     logging.debug('Checking for existing database: {}'.format(db_file))
     if not os.path.isfile(database_file):
-        logging.debug('database file not found, an empty one will be created')
-        logging.debug('Prompting user to make a password')
-        pw = gui.password_create()   # Use pw = 'pybank' for testing
-        if pw is None:
-            logging.debug('User canceled password creation; exiting')
-            return    # this needs to return outside the if statement
-
-        salt = crypto.get_salt()
-        pw = crypto.encode_and_pepper_pw(pw)
-        key = crypto.create_key(pw, salt)
-
-        crypto.create_password(pw)
-        logging.debug('Creating database file')
-        # 1. Create an unencrypted file based on the template
-        db = pbsql.create_db_sa(":memory:")
-        # 2. Dump it, encrypt the dump, and then save the encrypted dump.
-        # Move to pbsql module
-        dump = "".join(line for line in db.iterdump())
-        dump = dump.encode('utf-8')
-        # 3. Encrypt the dump amd save it to a file
-        crypto.encrypted_write(db_file, key, dump)
+        create_new(db_file)
     else:
         logging.debug('database file found')
-        pw = password_prompt_loop()
-        if pw is None:
+        if not gui_utils.prompt_pw():
             logging.debug('User canceled password prompt; exiting')
             return
         logging.debug('creating key')
 
         salt = crypto.get_salt()
-        pw = crypto.encode_and_pepper_pw(pw)
+        pw = crypto.encode_and_pepper_pw(crypto.get_password())
         key = crypto.create_key(pw, salt)
 
         logging.debug('decrypting database')
-        new_dump = crypto.decrypt_file(db_file, key)
+        new_dump = crypto.encrypted_read(db_file, key)
+        print(new_dump)
         new_dump = new_dump.decode('utf-8')
 
         logging.debug('copying db to memory')
-        db = pbsql.create_db_sa(":memory:")
+        db = pbsql.create_db(":memory:")
         db.executescript(new_dump)
 
         # this db object needs to be sent around everywhere.

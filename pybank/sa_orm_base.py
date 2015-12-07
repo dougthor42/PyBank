@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Demo of using SQLAlchemy to create the PyBank database.
+Base for the SQLAlchemy Object Relational Mapper (ORM).
 
-Created on Mon Sep 21 15:31:10 2015
+Contains all of the default table constructors used by PyBank.
+
+Created on Sun Dec  6 20:31:06 2015
 
 Usage:
-    _SA_create_db.py
+    sa_orm_base.py
 
 Options:
     -h --help           # Show this screen.
     --version           # Show version.
 
 """
-
 # ---------------------------------------------------------------------------
 ### Imports
 # ---------------------------------------------------------------------------
@@ -22,13 +23,15 @@ from decimal import Decimal as D
 
 # Third Party
 import sqlalchemy as sa
+from sqlalchemy import event
 from sqlalchemy.ext import compiler as sa_compiler
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
 
 # Package / Application
 try:
     # Imports used by unit test runners
 #    from . import utils
-    from . import _SA_test
 #    from . import (__project_name__,
 #                   __version__,
 #                   )
@@ -37,7 +40,6 @@ except SystemError:
     try:
         # Imports used by Spyder
 #        import utils
-        import _SA_test
 #        from __init__ import (__project_name__,
 #                              __version__,
 #                              )
@@ -45,7 +47,6 @@ except SystemError:
     except ImportError:
          # Imports used by cx_freeze
 #        from pybank import utils
-        from pybank import _SA_test
 #        from pybank import (__project_name__,
 #                            __version__,
 #                            )
@@ -55,19 +56,27 @@ except SystemError:
 # ---------------------------------------------------------------------------
 ### Module Constants
 # ---------------------------------------------------------------------------
+Base = declarative_base()
+engine = sa.create_engine('sqlite:///:memory:', echo=False)
+#engine = sa.create_engine("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\pybank\\temp.sqlite", echo=False)
 
 
 # ---------------------------------------------------------------------------
 ### Items needed to create a view in SQLAlchemy
+# See http://stackoverflow.com/a/9769411/1354930
+#     http://stackoverflow.com/a/9597404/1354930
+#     https://bitbucket.org/zzzeek/sqlalchemy/wiki/UsageRecipes/Views
 # ---------------------------------------------------------------------------
 class CreateView(sa.schema.DDLElement):
     def __init__(self, name, selectable):
         self.name = name
         self.selectable = selectable
 
+
 class DropView(sa.schema.DDLElement):
     def __init__(self, name):
         self.name = name
+
 
 @sa_compiler.compiles(CreateView)
 def compile(element, compiler, **kw):
@@ -75,12 +84,12 @@ def compile(element, compiler, **kw):
     process_compiler = compiler.sql_compiler.process(element.selectable)
     return sql_str.format(element.name, process_compiler)
 
+
 @sa_compiler.compiles(DropView)
 def compile(element, compiler, if_exists=False, **kw):
-#    sql_str = "DROP VIEW {}"
-#    if if_exists:
     sql_str = "DROP VIEW IF EXISTS {}"
     return sql_str.format(element.name)
+
 
 def view(name, metadata, selectable):
     t = sa.sql.table(name)
@@ -91,6 +100,7 @@ def view(name, metadata, selectable):
     CreateView(name, selectable).execute_at('after-create', metadata)
     DropView(name).execute_at('before-drop', metadata)
     return t
+
 
 # ---------------------------------------------------------------------------
 ### Helper Classes
@@ -105,6 +115,7 @@ class SqliteNumeric(sa.types.TypeDecorator):
     See http://stackoverflow.com/a/10386911/1354930
     """
     impl = sa.types.String
+
     def load_dialect_impl(self, dialect):
         return dialect.type_descriptor(sa.types.VARCHAR(30))
 
@@ -116,50 +127,83 @@ class SqliteNumeric(sa.types.TypeDecorator):
             return None
         return D(value)
 
-# ---------------------------------------------------------------------------
-### Functions
-# ---------------------------------------------------------------------------
-
-
-
-
-
-#############################################################################
-#############################################################################
-#
-# Now to do the same thing with the ORM...
-#
-#############################################################################
-#############################################################################
-print('\n\n=============== Start of ORM ===============')
-
 
 # ---------------------------------------------------------------------------
-### Classes
+### Event Handling
 # ---------------------------------------------------------------------------
-
-from sqlalchemy import event
-
 # I don't really need events if I'm going with what I was doing earlier:
 #   Decrypt the file to a temp one, do all actions on that, then periodically
 #   re-encrypt with the new data.
 def on_checkout(dbapi_conn, connection_rec, connection_proxy):
     print("handling on_checkout")
 
+
 def on_connect(dbapi_conn, connection_record):
     print('handling on_connect')
 
 
-engine = sa.create_engine('sqlite:///:memory:', echo=False)
-event.listen(engine, 'checkout', on_checkout)
-event.listen(engine, 'connect', on_connect)
+#event.listen(engine, 'checkout', on_checkout)
+#event.listen(engine, 'connect', on_connect)
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
 
-Base = declarative_base()
+# ---------------------------------------------------------------------------
+### Functions required by ORM classes
+# ---------------------------------------------------------------------------
+def create_ledger_view():
+    """ """
+    # TODO: do I want outer joins?
+    oj = sa.outerjoin(Transaction, Payee)
+    oj = sa.outerjoin(oj, Category,
+                      Category.category_id == Transaction.category_id)
+    oj = sa.outerjoin(oj, TransactionLabel,
+                      TransactionLabel.transaction_label_id == Transaction.transaction_label_id)
+    oj = sa.outerjoin(oj, DisplayName,
+                      DisplayName.display_name_id == Payee.display_name_id)
+    oj = sa.outerjoin(oj, Account,
+                      Account.account_id == Transaction.account_id)
+    oj = sa.outerjoin(oj, Memo,
+                      Memo.memo_id == Transaction.memo_id)
 
+    func = sa.sql.func
+
+    select = sa.select([Transaction.transaction_id,
+                        Transaction.date,
+                        Transaction.account_id,
+                        Account.name.label('AccountName'),
+                        Transaction.enter_date,
+                        Transaction.check_num,
+                        func.coalesce(DisplayName.name,
+                                      Payee.name).label('Payee'),
+                        Payee.name.label('DownloadedPayee'),
+                        TransactionLabel.name.label('TransactionLabel'),
+                        Category.name.label('Category'),
+                        Memo.text.label('Memo'),
+                        Transaction.amount.label('Amount'),
+                        ]
+                       )
+
+    selectable = select.select_from(oj)
+
+    engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
+
+    ledger_view = view('ledger_view',
+                       Base.metadata,
+                       selectable)
+
+    return ledger_view, selectable
+
+
+# ---------------------------------------------------------------------------
+### ORM Classes
+# ---------------------------------------------------------------------------
 class Account(Base):
+    """
+    Account
+
+    Contains the accound_id, account_num, user_name, institution_id,
+    and account_group_id.
+
+    """
     __tablename__ = 'account'
 
     account_id = sa.Column(sa.Integer, primary_key=True)
@@ -174,14 +218,34 @@ class Account(Base):
     institution = relationship('Institution')
     account_group = relationship('AccountGroup')
 
+    def __str__(self):
+        return "{}: {}".format(self.account_id, self.account_num)
+
+
 class AccountGroup(Base):
+    """
+    AccountGroup
+
+    not currently used.
+
+    """
     __tablename__ = 'account_group'
 
     account_group_id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String, nullable=False)
 
+    def __str__(self):
+        return "{}: {}".format(self.account_group_id, self.name)
 
 class Category(Base):
+    """
+    Category
+
+    Uses Adjacency List Model. See
+    http://mikehillyer.com/articles/managing-hierarchical-data-in-mysql/
+
+    Contains the category_id, name, and parent.
+    """
     __tablename__ = 'category'
 
     category_id = sa.Column(sa.Integer, primary_key=True)
@@ -190,15 +254,31 @@ class Category(Base):
 
     children = relationship("Category")
 
+    def __str__(self):
+        return "{}: {}".format(self.category_id, self.name)
 
 class DisplayName(Base):
+    """
+    DisplayName
+
+    Contains the display_name_id and name.
+
+    """
     __tablename__ = 'display_name'
 
     display_name_id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.Integer)
 
+    def __str__(self):
+        return "{}: {}".format(self.display_name_id, self.name)
 
 class Institution(Base):
+    """
+    Institution
+
+    Contains the institution_id, name, and ofx_id
+
+    """
     __tablename__ = 'institution'
 
     institution_id = sa.Column(sa.Integer, primary_key=True)
@@ -207,24 +287,51 @@ class Institution(Base):
 
     ofx = relationship('Ofx')
 
+    def __str__(self):
+        return "{}: {}".format(self.institution_id, self.name)
 
 class Memo(Base):
+    """
+    Memo
+
+    Contains the memo_id and text.
+
+    """
     __tablename__ = 'memo'
 
     memo_id = sa.Column(sa.Integer, primary_key=True)
     text = sa.Column(sa.String)
 
+#    def __repr__(self):
+#        return "{}: {}".format(self.memo_id, self.text)
+
+    def __str__(self):
+        return "{}: {}".format(self.memo_id, self.text)
 
 class Ofx(Base):
+    """
+    Ofx
+
+    Contains the ofx_id, name, url, and org.
+
+    """
     __tablename__ = 'ofx'
 
     ofx_id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String)
-    ofx_org = sa.Column(sa.String)
-    ofx_url = sa.Column(sa.String)
+    org = sa.Column(sa.String)
+    url = sa.Column(sa.String)
 
+    def __str__(self):
+        return "{}: {}".format(self.ofx_id, self.name)
 
 class Payee(Base):
+    """
+    Payee
+
+    Contains the payee_id, name, display_name_id, and category_id.
+
+    """
     __tablename__ = 'payee'
 
     payee_id = sa.Column(sa.Integer, primary_key=True)
@@ -239,7 +346,17 @@ class Payee(Base):
     display_name = relationship('DisplayName')
     category = relationship('Category')
 
+    def __str__(self):
+        return "{}: {}".format(self.payee_id, self.name)
+
 class Transaction(Base):
+    """
+    Transaction
+
+    Contains the transaction_id, account_id, date, enter_date, check_num,
+    amount, payee_id, category_id, transaction_label_id, memo_id, and fitid.
+
+    """
     __tablename__ = 'transaction'
 
     transaction_id = sa.Column(sa.Integer, primary_key=True)
@@ -259,123 +376,51 @@ class Transaction(Base):
     transaction_label = relationship('TransactionLabel')
     memo = relationship('Memo')
 
+    def __str__(self):
+        return "{}: {}".format(self.transaction_id, self.amount)
 
 class TransactionLabel(Base):
+    """
+    TransactionLabel
+
+    Contains the transaction_label_id and name.
+
+    """
     __tablename__ = 'transaction_label'
 
     transaction_label_id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String)
 
-
-def add_some_data(engine, session):
-    # Add some dummy data
-    import datetime
-    date = datetime.date.today()
-    trans = Transaction(transaction_id=1,
-                        account_id=1,
-                        date=date,
-                        enter_date=date,
-                        check_num=100,
-                        amount=10.34,
-                        payee_id=1,
-                        category_id=1,
-                        transaction_label_id=1,
-                        memo_id=1,
-                        fit_id=12345,
-                        )
-
-    display_name = DisplayName(display_name_id=1,
-                               name='B',
-                               )
-    payee = Payee(payee_id=1,
-                  name='aaa',
-                  display_name_id=1,
-                  category_id=1,
-                  )
-    trans_label = TransactionLabel(transaction_label_id=1,
-                                   name='class-based label',
-                                   )
-    cat = Category(category_id=1,
-                   name='category name',
-                   parent=None,
-                   )
-
-    account = Account(account_id=1,
-                      account_num='987654321',
-                      name='Class-based',
-                      institution_id=1,
-                      user_name='SomeUser',
-                      account_group_id=1,
-                      )
-
-    acct_group = AccountGroup(account_group_id=1,
-                              name='Some group',
-                              )
+    def __str__(self):
+        return "{}: {}".format(self.transaction_label_id, self.name)
 
 
-#    Session = sessionmaker(bind=engine)
-#    session = Session()
-    session.add_all([trans, display_name, payee, trans_label,
-                     cat, account, acct_group])
+class LedgerView(Base):
+    """
+    LedgerView
 
-    print("committing")
-    session.commit()
+    Stuff
+    """
+    __tablename = "ledger_view"
+    __table__, selectable = create_ledger_view()
+
+#    def __str__(self):
+#        return "{}: {}".format(self.category_id, self.name)
 
 
-#def print_some_data(session):
-#    print('select')
-#    result = engine.execute(sa.select([ledger_view])).fetchall()
-#    print(result)
+# ---------------------------------------------------------------------------
+### Functions
+# ---------------------------------------------------------------------------
+def create_database():
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    return engine, session
 
 
 
 
 if __name__ == "__main__":
-
-    # TODO: do I want outer joins?
-    oj = sa.outerjoin(Transaction, Payee)
-    oj = sa.outerjoin(oj, Category,
-                      Category.category_id==Transaction.category_id)
-    oj = sa.outerjoin(oj, TransactionLabel,
-                      TransactionLabel.transaction_label_id==Transaction.transaction_label_id)
-    oj = sa.outerjoin(oj, DisplayName,
-                      DisplayName.display_name_id==Payee.display_name_id)
-    oj = sa.outerjoin(oj, Account,
-                      Account.account_id==Transaction.account_id)
-    oj = sa.outerjoin(oj, Memo,
-                      Memo.memo_id==Transaction.memo_id)
-
-    func = sa.sql.func
-
-    ledger_view = view('ledger_view', Base.metadata,
-        sa.select([Transaction.date,
-                   Transaction.account_id,
-                   Account.name.label('AccountName'),
-                   Transaction.enter_date,
-                   Transaction.check_num,
-                   func.coalesce(DisplayName.name,
-                                 Payee.name).label('Payee'),
-                   Payee.name.label('DownloadedPayee'),
-                   TransactionLabel.name.label('TransactionLabel'),
-                   Category.name.label('Category'),
-                   Memo.text.label('Memo'),
-                   Transaction.amount.label('Amount')]).\
-        select_from(oj))
-
-    print('drop if exists')
-    engine.execute(sa.text("DROP VIEW IF EXISTS 'ledger_view'"))
-    #metadata.create_all()
-
-
-    #Session = sessionmaker(bind=engine)
-    #session = Session()
-
-    print('create all')
-    Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    # Add some dummy data
-    add_some_data(engine, session)
-
-    _SA_test.print_some_data(engine, session, [ledger_view])
+    create_database()

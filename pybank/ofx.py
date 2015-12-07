@@ -18,9 +18,7 @@ Options:
 # Standard Library
 import sys
 import os.path as osp
-import hashlib
 import uuid
-import codecs
 import http.client
 import urllib.parse
 import time
@@ -30,12 +28,12 @@ from os import urandom
 
 # Third-Party
 from docopt import docopt
-import keyring
 
 # Package / Application
 try:
     # Imports used by unit test runners
     from .parseofx import ParseOFX
+    from . import crypto
 #    from . import __init__ as __pybank_init
     from . import __version__
     logging.debug("Imports for UnitTests")
@@ -43,12 +41,14 @@ except SystemError:
     try:
         # Imports used by Spyder
         from parseofx import ParseOFX
+        import crypto
 #        import __init__ as __pybank_init
         from __init__ import __version__
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
         from parseofx import ParseOFX
+        from pybank import crypto
         from pybank import __version__
         logging.debug("Imports for Executable")
 
@@ -231,51 +231,10 @@ I think this means that I don't have to salt and hash passwords...
 
 Expected Contents:
 ------------------
-store_password :
-    generates a salt and hashes the password. Sends to sqlite for saving
-validate_password :
-    validates a given password. Access the sqlite database to retrieve the
-    salt.
 download_data :
     downloads transaction data
 
 """
-    pass
-
-
-def salt_and_hash(secret):
-    """
-    Salts and Hashes a string.
-
-    Parameters:
-    -----------
-    secret : string
-        The secret (username, password, whathaveyou) that you'd like to salt
-        and hash.
-
-    Returns:
-    --------
-    salt : string
-        The salt. Yum!
-
-    hashbrowns : string
-        The salted hash(brown)ed secret. Delicious.
-    """
-    salt = codecs.encode(urandom(128), 'hex')
-    hashbrowns = hashlib.sha512(salt + secret.encode('utf-8')).hexdigest()
-    return salt, hashbrowns
-
-
-def store_password():
-    """
-    Store a password.
-
-    1.  Generate Salt using os.urandom()
-    2.  Prepend salt to password. Salt can be generated from uuid.uuid4().hex
-    3.  Hash the salt+password with SHA256. Alternatively use passlib? But
-        then it seems like I can't store the salt.
-    4.  Save salt, has to database
-    """
     pass
 
 
@@ -285,6 +244,7 @@ def prompt_password():
     """
     return getpass.getpass()
 
+
 def prompt_user():
     """
     Prompts the user for his username.
@@ -292,39 +252,6 @@ def prompt_user():
     # TODO: Add error handling
     return input("Username: ")
 
-
-# XXX:  I won't actually be validating any passwords, will I?
-#       Unless I have a master password of sorts. Or somehow have a reversable
-#       salt and hash.
-def validate_password(secret, salt, hashed):
-    """
-    Validates a password.
-
-    1.  Retrieve salt and hash
-    2.  prepend salt to given password
-    3.  Hash salt+password with SHA256
-    4.  compare hash to #3
-
-    This function should be limited to 3 executions per second or something.
-
-    This function is actually part of the ofx module.
-
-    Parameters:
-    -----------
-    secret : string
-        The item to validate
-    salt : string
-        The salt taken from the SQLite database
-    hashed : string
-        The hash to validate against
-
-    Returns:
-    --------
-    valid : boolean
-        Returns True if the password is valid, false otherwise.
-    """
-    hashbrowns = hashlib.sha512(salt + secret.encode('utf-8')).hexdigest()
-    return hashbrowns == hashed
 
 def download_transactions():
     """
@@ -363,11 +290,11 @@ def list_accounts():
     ofx_client = Client()
 
     acct_str = LIST_ACCTS_STR.format(dtclient=now(),
-                               uname=prompt_user(),
-                               pw=prompt_password(),
-                               fileid=ofx_uid(),
-                               trnuid=ofx_uid(),
-                               )
+                                     uname=prompt_user(),
+                                     pw=prompt_password(),
+                                     fileid=ofx_uid(),
+                                     trnuid=ofx_uid(),
+                                     )
 
     b = ofx_client.post(acct_str)
 
@@ -391,7 +318,6 @@ def list_accounts():
     d.parse_accounts()
     logging.debug(d.descr)
 
-
     return b
 
 
@@ -401,12 +327,12 @@ def choose_institution():
     """
     pass
 
+
 def download_accounts():
     """
     Download the accounts at a given institution
     """
     pass
-
 
 
 # ---------------------------------------------------------------------------
@@ -425,8 +351,6 @@ def download_accounts():
 #   + Additional docstrings and comments
 #
 # ---------------------------------------------------------------------------
-
-
 def ofx_uid():
     return str(uuid.uuid4().hex)
 
@@ -558,14 +482,14 @@ class Client(object):
         parts = ["OFXHEADER:100",
                  "DATA:OFXSGML",
                  "VERSION:{}".format(int(self.ofx_version)),
-                "SECURITY:NONE",
-                "ENCODING:USASCII",
-                "CHARSET:1252",
-                "COMPRESSION:NONE",
-                "OLDFILEUID:NONE",
-                "NEWFILEUID:{}".format(ofx_uid()),
-                "",
-                ]
+                 "SECURITY:NONE",
+                 "ENCODING:USASCII",
+                 "CHARSET:1252",
+                 "COMPRESSION:NONE",
+                 "OLDFILEUID:NONE",
+                 "NEWFILEUID:{}".format(ofx_uid()),
+                 "",
+                 ]
         return str.join(LINE_ENDING, parts)
 
     def _signOn(self, username=None, password=None):
@@ -672,7 +596,6 @@ def _tag(tag, *contents):
 def now():
     return time.strftime("%Y%m%d%H%M%S", time.localtime())
 
-
 # ---------------------------------------------------------------------------
 ### End Re-implementing ofxclient
 # ---------------------------------------------------------------------------
@@ -696,9 +619,6 @@ def main():
     """
     docopt(__doc__, version=__version__)
 
-    salt, hashed = salt_and_hash("Secret")
-    print(validate_password("Secret", salt, hashed))
-    print()
     a = Client()
     b = a.post(LIST_ACCTS_STR.format(dtclient=now(),
                                      uname=prompt_user(),
@@ -720,6 +640,12 @@ def main():
     print(o.statement)
 
 
+from ofxtools import OFXClient
+import ofxtools
+from ofxtools import OFXTree
+
 if __name__ == "__main__":
-    main()
+#    main()
 #    list_accounts()
+
+
