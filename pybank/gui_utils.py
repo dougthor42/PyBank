@@ -171,7 +171,7 @@ class PasswordCreateDialog(wx.Dialog):
 # ---------------------------------------------------------------------------
 ### Functions
 # ---------------------------------------------------------------------------
-def _prompt_pw(prompt=None):
+def _prompt_pw(prompt="Please enter your password:"):
     """ Internals to `prompt_pw` """
     app = wx.App()
     dialog = PasswordPromptDialog(prompt=prompt)

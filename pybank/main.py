@@ -35,6 +35,8 @@ try:
     from . import gui_utils
     from . import crypto
     from . import utils
+    from . import sa_orm_base as base
+    from . import sa_orm_transactions
     from . import (__project_name__,
                    __version__,
                    )
@@ -47,6 +49,8 @@ except SystemError:
         import crypto
         import utils
         import gui_utils
+        import sa_orm_base as base
+        import sa_orm_transactions
         from __init__ import (__project_name__,
                               __version__,
                               )
@@ -58,6 +62,8 @@ except SystemError:
         from pybank import crypto
         from pybank import utils
         from pybank import gui_utils
+        from pybank import sa_orm_base as base
+        from pybank import sa_orm_transactions
         from pybank import (__project_name__,
                             __version__,
                             )
@@ -90,30 +96,30 @@ def create_new(db_file):
     """
     logging.debug('database file not found, an empty one will be created')
     logging.debug('Prompting user to make a password')
-    if not gui_utils.password_create():   # Use pw = 'pybank' for testing
+    if not gui_utils.create_pw():   # Use pw = 'pybank' for testing
         logging.debug('User canceled password creation; exiting')
         return    # this needs to return outside the if statement
 
     salt = crypto.get_salt()
-    pw = crypto.encode_and_pepper_pw(crypto.get_password())
-    key = crypto.create_key(pw, salt)
+    pw = crypto.get_password()
+    peppered_pw = crypto.encode_and_pepper_pw(pw)
+    key = crypto.create_key(peppered_pw, salt)
 
     crypto.create_password(pw)
     logging.debug('Creating database file')
     # 1. Create an unencrypted file based on the template
 #        db = pbsql.create_db_sa(":memory:")
-    db = pbsql.create_db(":memory:")
+#    db = pbsql.create_db(":memory:")
+#    engine, session = base.create_database()
     # 2. Dump it, encrypt the dump, and then save the encrypted dump.
     # Move to pbsql module
-    dump = "".join(line for line in db.iterdump())
+    dump = list(sa_orm_transactions.sqlite_iterdump(base.engine, base.session))
+    dump = "".join(line for line in dump)
     dump = dump.encode('utf-8')
+#    dump = "".join(line for line in db.iterdump())
+#    dump = dump.encode('utf-8')
     # 3. Encrypt the dump amd save it to a file
     crypto.encrypted_write(db_file, key, dump)
-
-
-def dump_to_memory():
-    """ """
-
 
 
 def main():
@@ -151,17 +157,24 @@ def main():
         logging.debug('creating key')
 
         salt = crypto.get_salt()
-        pw = crypto.encode_and_pepper_pw(crypto.get_password())
-        key = crypto.create_key(pw, salt)
+        pw = crypto.get_password()
+        peppered_pw = crypto.encode_and_pepper_pw(pw)
+        key = crypto.create_key(peppered_pw, salt)
 
         logging.debug('decrypting database')
         new_dump = crypto.encrypted_read(db_file, key)
-        print(new_dump)
-        new_dump = new_dump.decode('utf-8')
+        new_dump = new_dump.decode('utf-8').split(";")
+#        print(new_dump)
+#        print(type(new_dump))
+#        return
 
         logging.debug('copying db to memory')
-        db = pbsql.create_db(":memory:")
-        db.executescript(new_dump)
+#        db = pbsql.create_db(":memory:")
+        logging.debug('creating database structure')
+#        engine, session = base.create_database()
+        logging.debug('starting copy')
+        sa_orm_transactions.copy_to_sa(base.engine, base.session, new_dump)
+#        db.executescript(new_dump)
 
         # this db object needs to be sent around everywhere.
 

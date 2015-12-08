@@ -54,6 +54,7 @@ try:
     from . import utils
     from . import crypto
     from . import gui_utils
+    from . import sa_orm_transactions
 #    from . import __init__ as __pybank_init
     from . import (__project_name__,
                    __version__,
@@ -68,6 +69,7 @@ except SystemError:
         import utils
         import crypto
         import gui_utils
+        import sa_orm_transactions
 #        import __init__ as __pybank_init
         from __init__ import (__project_name__,
                               __version__,
@@ -81,6 +83,7 @@ except SystemError:
         from pybank import utils
         from pybank import crypto
         from pybank import gui_utils
+        from pybank import sa_orm_transactions
 #        from pybank import __init__ as __pybank_init
         from pybank import (__project_name__,
                             __version__,
@@ -1201,10 +1204,26 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         return (labels, types)
 
+#    def _update_data(self):
+#        # grab the table data from the database
+#        self.ledger_view = pbsql.LedgerView(DATABASE, 0)
+#        data = self.ledger_view.read_all()
+#
+#        # calculate the running balance and add it to the data
+#        starting_bal = decimal.Decimal(200)
+#        balance = starting_bal
+#        data = list([list(str(_x) for _x in row) for row in data])
+#        self.data = []
+#        for row in data:
+#            balance += decimal.Decimal(row[-1])
+#            row[-2] = str(row[-2])
+#            row.append(str(balance))
+#            self.data.append(row)
+
     def _update_data(self):
-        # grab the table data from the database
-        self.ledger_view = pbsql.LedgerView(DATABASE, 0)
-        data = self.ledger_view.read_all()
+        # grad the table data from the database
+        # need to somehow grab the session from... somewhere.
+        data = sa_orm_transactions.query_view()
 
         # calculate the running balance and add it to the data
         starting_bal = decimal.Decimal(200)

@@ -18,10 +18,12 @@ Options:
 # Standard Library
 import logging
 import sqlite3
+import datetime
+from decimal import Decimal
 
 # Third Party
-from sqlalchemy.schema import CreateTable, Table
-from sqlalchemy import select, sql
+from sqlalchemy.schema import CreateTable
+from sqlalchemy import text as saText
 
 # Package / Application
 try:
@@ -72,51 +74,160 @@ def query_all(table):
     return
 
 
+def query_view():
+    return base.session.query(base.LedgerView).all()
+
+
 def read_ledger(session):
     return list(session.query(base.Memo).order_by(base.Memo.memo_id))
 
 
-def copy_to_sa():
+def copy_to_sa(engine, session, dump):
     """
     We know that our SQLite database will have the same structure as
     the SQLAlchemy ORM. So we just have to iterate through everything, copying
     data over.
+
+    The engine and the session must already be created.
+
+    Parameters:
+    -----------
+    engine: SQLAlchemy.engine.Engine object
+        The engine to work on
+
+    session: SQLAlchemy.orm.session.Session object
+        The session to work on
+
+    dump : iterable
+        A list or generator object that contains strings for table creation
+        and data. Typically the result of `sqlite_iterdump()` or
+        `sqlite3.iterdump()`.
+
+    Returns:
+    --------
+    None?
     """
+    for sql in dump:
+        if sql.startswith("INSERT"):
+            # "None" is not recognized by SQLite when executing SQL, so we
+            # need to repalce it with NULL.
+            sql = sql.replace("None", "NULL")
+            engine.execute(saText(sql))
 
 
-def copy_from_sa(engine, session):
+def sqlite_iterdump(engine, session):
     """
-    Copy from SQLAlchemy to an SQLite in-memory database so that I can
-    iterdump that and encrypt the results
-    """
-    # 1st create the database and a cursor
-#    conn = sqlite3.connect(":memory:")
-    conn = sqlite3.connect("C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.db")
-    cursor = conn.cursor()
+    Mimmics SQLites' `iterdump()` function.
 
-    # Then copy over the tables and data
+    Returns an iterator to dump the database in an SQL text format.
+
+    The only (known) difference is that row data values have spaces
+    between columns while sqlite's `iterdump()` does not.
+
+    **NOTE: THIS FUNCTION IS SPECIALISED FOR PYBANK AND THE 1 VIEW THAT
+    IT CONTAINS. IT WILL MOST NOT WORK ON A GENERIC DATABASE.**
+
+    The SQLAlchemy declaritive base class `Base` must be imported already.
+
+    Parameters:
+    -----------
+    engine: SQLAlchemy.engine.Engine object
+        The engine to work on
+
+    session: SQLAlchemy.orm.session.Session object
+        The session to work on
+
+    Returns:
+    --------
+    sql : iterator
+        The dump of the SQL.
+    """
     tables = base.Base.metadata.tables
+    n = 0
 
-    for name, table in tables.items():
-        print("getting sql for {}".format(name))
-        cursor.execute(str(CreateTable(table).compile(engine)))
-        data = session.query(table).all()
-        for row in data:
-            cursor.execute("""INSERT INTO "{}" VALUES{}""".format(name, row))
+    # start off by yielding the begin trans statement.
+    if n == 0:
+        n = 1
+        yield "BEGIN TRANSACTION;"
 
-    # We know there is 1 view, so add that too
-    view = base.CreateView("ledger_view", base.LedgerView.selectable)   # hack
+    # then move to yielding the tables and their data, in order
+    # Note: sorting tables.items() removes the benefit of it being a
+    #       generator. However, I doubt many DBs will have > 10000 tables...
+    if n == 1:
+        for name, table in sorted(tables.items()):
+            yield str(CreateTable(table).compile(engine)).strip() + ";"
 
-    cursor.execute(str(view.compile(engine)))
+            data = session.query(table).all()
+            for row in data:
+                row = list(row)     # needs to be mutable
 
-    # Commit the table/view creation transactions
-    conn.commit()
+                row = [str(x) if isinstance(x, Decimal)
+                       else x.isoformat() if isinstance(x, datetime.date)
+#                       else "" if x is None
+                       else x for x in row]
 
-if __name__ == "__main__":
+                row = tuple(row)    # back to tuple because I use its parens
+                                    # instead of adding my own parentheses.
+                yield 'INSERT INTO "{}" VALUES{};'.format(name, row)
+        n = 2
+
+    # end by yielding the view and commit statements.
+    if n == 2:
+        n = 3
+        view = base.CreateView("ledger_view", base.LedgerView.selectable)
+        yield str(view.compile(engine)) + ";COMMIT;"
+
+
+def _test_iterdump_loop(dump_file):
+    """
+    Test the iterdump -> load -> iterdump loop.
+
+    An iterdump file must already exist. sa_orm_base must be set up to
+    be an in-memory database.
+    """
     engine, session = base.create_database()
 
-    add_temp_item(session)
-    add_temp_item(session)
-    add_temp_item(session)
+    with open(dump_file, 'r') as openf:
+        data = openf.read()
+        data = data.split(';')
+        copy_to_sa(engine, session, data)
 
-    copy_from_sa(engine, session)
+    dump = "".join(line for line in sqlite_iterdump(engine, session))
+    dump = dump.encode('utf-8')
+    with open("C:\\WinPython34\\projects\\github\\PyBank\\pybank\\tests\\data\\_TestDB_generated_dump.txt", 'wb') as openf:
+        openf.write(dump)
+
+    session.close()
+    engine.dispose()
+
+if __name__ == "__main__":
+    pass
+#    engine, session = base.create_database()
+
+#    add_temp_item(session)
+#    add_temp_item(session)
+#    add_temp_item(session)
+
+    # dump the database
+#    dump = sqlite_iterdump(engine, session)
+    # NOTE: *must* list() this generator or else, when copy_to_sa is called,
+    #       the generator will act on the new engine and session, which has
+    #       no data associated with it if they are closed or disposed.
+#    dump = list(dump)
+
+#    session.close()
+#    engine.dispose()
+#    input("waiting... (press enter)")
+
+    # remove the database file
+#    import os
+#    os.remove("C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.sqlite")
+
+    # create a new database file
+#    engine2, session2 = base.create_database()
+
+    # copy over the existing data from the dump
+#    copy_to_sa(engine2, session2, dump)
+
+#    _test_iterdump_loop("C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_generated_dump.txt")
+#    _test_iterdump_loop("C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.txt")
