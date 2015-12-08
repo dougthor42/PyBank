@@ -1,3 +1,5 @@
+Expense
+Income
 Expense:Auto
 Expense:Auto:Fees
 Expense:Auto:Gas
