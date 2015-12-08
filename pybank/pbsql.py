@@ -1043,9 +1043,10 @@ class LedgerView(SQLView):
 
 
 def generate_category_strings(cat_list,
+                              delimiter=".",
                               parent_item=None,
                               sent_str=None,
-                              retval=[],
+                              retval=None,
                               ):
     """
     Recursively concatenates categories together and returns a list of them.
@@ -1055,6 +1056,9 @@ def generate_category_strings(cat_list,
     cat_list : list of (id, name, parent) tuples
         The data to create strings from. This must be a list (or list-like)
         of (id, name, parent_id) tuples (or list-like).
+
+    delimiter: string
+        The string to put between each item.
 
     parent_item :
         Only used during recursion.
@@ -1080,6 +1084,9 @@ def generate_category_strings(cat_list,
     ['A', 'A.B', 'A.B.D', 'A.B.E', 'A.B.G', 'A.C', 'A.C.F', 'A.C.F.H']
 
     """
+    if retval is None:
+        retval = []
+
     if parent_item is None:
         parent_item = cat_list[0]
         retval.append(parent_item[1])
@@ -1095,15 +1102,19 @@ def generate_category_strings(cat_list,
 
     if len(children) == 0:
         # base case (no children), so we return the full path
-        return ["{}.{}".format(sent_str, parent_name)]
+        return ["{}{}{}".format(sent_str, delimiter, parent_name)]
     else:
         # children exist so we need to iterate through them.
         for child in children:
             # create an incomplete path string and add it to our return value
-            str_to_send = "{}.{}".format(sent_str, child[1])
+            str_to_send = "{}{}{}".format(sent_str, delimiter, child[1])
             retval.append(str_to_send)
             # recurse using the current child as the new parent
-            generate_category_strings(cat_list, child, str_to_send, retval)
+            generate_category_strings(cat_list,
+                                      delimiter,
+                                      child,
+                                      str_to_send,
+                                      retval)
         return retval
 
 
