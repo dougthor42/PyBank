@@ -28,10 +28,6 @@ from decimal import Decimal as D
 
 # Third-Party
 from docopt import docopt
-import sqlalchemy as sa
-from sqlalchemy.ext import compiler as sa_compiler
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
 
 # Package / Application
 # Package / Application
@@ -231,66 +227,6 @@ Joins everything together, yay!
 
 """
     pass
-
-
-# ---------------------------------------------------------------------------
-### Items needed to create a view in SQLAlchemy
-# ---------------------------------------------------------------------------
-class CreateView(sa.schema.DDLElement):
-    """ Create a new View """
-    def __init__(self, name, selectable):
-        self.name = name
-        self.selectable = selectable
-
-class DropView(sa.schema.DDLElement):
-    """ Drop a View """
-    def __init__(self, name):
-        self.name = name
-
-@sa_compiler.compiles(CreateView)
-def compile(element, compiler, **kw):
-    sql_str = "CREATE VIEW {} AS {}"
-    process_compiler = compiler.sql_compiler.process(element.selectable)
-    return sql_str.format(element.name, process_compiler)
-
-@sa_compiler.compiles(DropView)
-def compile(element, compiler, if_exists=False, **kw):
-    sql_str = "DROP VIEW IF EXISTS {}"
-    return sql_str.format(element.name)
-
-def view(name, metadata, selectable):
-    t = sa.sql.table(name)
-
-    for c in selectable.c:
-        c._make_proxy(t)
-
-    CreateView(name, selectable).execute_at('after-create', metadata)
-    DropView(name).execute_at('before-drop', metadata)
-    return t
-
-# ---------------------------------------------------------------------------
-### SQLAlchemy Helper Classes
-# ---------------------------------------------------------------------------
-class SqliteNumeric(sa.types.TypeDecorator):
-    """
-    Custom-made Numeric type specifically for SQLite.
-
-    Converts a Decimal to a string when writing to the database, and converts
-    it back to a Decimal when reading.
-
-    See http://stackoverflow.com/a/10386911/1354930
-    """
-    impl = sa.types.String
-    def load_dialect_impl(self, dialect):
-        return dialect.type_descriptor(sa.types.VARCHAR(30))
-
-    def process_bind_param(self, value, dialect):
-        return str(value)
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return None
-        return D(value)
 
 
 # ---------------------------------------------------------------------------
@@ -547,42 +483,6 @@ def create_db(filename=DATABASE):
     create_ledger_view(filename, 0)
 
     return conn
-
-
-def create_db_sa(filename=DATABASE):
-    """
-    Creates the SQLite database using SQLAlchemy. If the database file
-    doesn't exist, it is created (only applies to SQLite though, I think).
-
-    Parameters:
-    -----------
-    filename : string, optional
-        The filename to save the database as. Defaults to DATABASE.
-
-    Returns:
-    --------
-    engine : SQLAlchemy.Engine
-
-    """
-    logging.info("Creating empty database")
-
-    # TODO: refactor, account for absolute, relative, and memory DBs,
-    #       and also driver
-    # dialect+driver://username:password@host:port/database
-    # http://docs.sqlalchemy.org/en/rel_1_1/core/engines.html
-    if filename == ':memory:':
-        url = 'sqlite:///:memory:'
-    else:
-        # assume absolute path
-        url = 'sqlite:///' + utils.find_data_file(filename)
-    logging.debug("database url: `{}`".format(url))
-
-    engine = sa.create_engine(url, echo=False)
-    Base.metadata.create_all(engine)
-    logging.info("Database created at: `{}`".format(engine.url))
-
-    return engine
-
 
 
 # ---------------------------------------------------------------------------

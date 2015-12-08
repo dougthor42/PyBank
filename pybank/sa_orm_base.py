@@ -58,7 +58,7 @@ except SystemError:
 # ---------------------------------------------------------------------------
 Base = declarative_base()
 engine = sa.create_engine('sqlite:///:memory:', echo=False)
-#engine = sa.create_engine("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\pybank\\temp.sqlite", echo=False)
+#engine = sa.create_engine("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\blank_db.sqlite", echo=False)
 
 
 # ---------------------------------------------------------------------------
@@ -412,6 +412,8 @@ class LedgerView(Base):
 ### Functions
 # ---------------------------------------------------------------------------
 def create_database():
+
+#    engine = sa.create_engine(engine_str, echo=False)
     Base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)
@@ -420,7 +422,11 @@ def create_database():
     return engine, session
 
 
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
+session = Session()
 
 
 if __name__ == "__main__":
+#    create_database("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.sqlite")
     create_database()
