@@ -31,7 +31,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 # Package / Application
 try:
     # Imports used by unit test runners
-#    from . import utils
+    from . import utils
 #    from . import (__project_name__,
 #                   __version__,
 #                   )
@@ -39,14 +39,14 @@ try:
 except SystemError:
     try:
         # Imports used by Spyder
-#        import utils
+        import utils
 #        from __init__ import (__project_name__,
 #                              __version__,
 #                              )
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-#        from pybank import utils
+        from pybank import utils
 #        from pybank import (__project_name__,
 #                            __version__,
 #                            )
@@ -249,7 +249,7 @@ class Category(Base):
     __tablename__ = 'category'
 
     category_id = sa.Column(sa.Integer, primary_key=True)
-    name = sa.Column(sa.String)
+    name = sa.Column(sa.String, nullable=False)
     parent = sa.Column(sa.Integer, sa.ForeignKey('category.category_id'))
 
     children = relationship("Category")
@@ -411,6 +411,7 @@ class LedgerView(Base):
 # ---------------------------------------------------------------------------
 ### Functions
 # ---------------------------------------------------------------------------
+utils.logged
 def create_database():
 
 #    engine = sa.create_engine(engine_str, echo=False)

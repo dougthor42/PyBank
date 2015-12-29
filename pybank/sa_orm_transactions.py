@@ -29,7 +29,7 @@ from sqlalchemy import text as saText
 try:
     # Imports used by unit test runners
     from . import sa_orm_base as base
-#    from . import utils
+    from . import utils
 #    from . import (__project_name__,
 #                   __version__,
 #                   )
@@ -38,7 +38,7 @@ except SystemError:
     try:
         # Imports used by Spyder
         import sa_orm_base as base
-#        import utils
+        import utils
 #        from __init__ import (__project_name__,
 #                              __version__,
 #                              )
@@ -46,7 +46,7 @@ except SystemError:
     except ImportError:
         # Imports used by cx_freeze
         from pybank import sa_orm_base as base
-#        from pybank import utils
+        from pybank import utils
 #        from pybank import (__project_name__,
 #                            __version__,
 #                            )
@@ -82,6 +82,7 @@ def read_ledger(session):
     return list(session.query(base.Memo).order_by(base.Memo.memo_id))
 
 
+utils.logged
 def copy_to_sa(engine, session, dump):
     """
     We know that our SQLite database will have the same structure as
