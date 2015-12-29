@@ -66,7 +66,7 @@ def sort_categories(categories):
 
 
 def write_to_db(items, delim):
-    conn = sqlite3.connect("../../blank_db_test.sqlite")
+    conn = sqlite3.connect("../../pybank/test_database.db")
     cursor = conn.cursor()
 
     for item in items:
