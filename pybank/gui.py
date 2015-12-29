@@ -105,7 +105,7 @@ class MainApp(object):
     def __init__(self):
         self.app = wx.App()
 
-        self.frame = MainFrame(TITLE_TEXT, (1200, 700))
+        self.frame = MainFrame(TITLE_TEXT, (1250, 700))
 
         self.frame.Show()
         self.app.MainLoop()
@@ -115,6 +115,16 @@ class MainFrame(wx.Frame):
     """ Main Window of the PyBank program """
     def __init__(self, title, size):
         wx.Frame.__init__(self, None, wx.ID_ANY, title=title, size=size)
+
+        # Set up some timers for backup and write-to-db
+        self.write_db_timer = wx.Timer(self)
+        self.write_db_timer.Start(1000)
+        logging.debug("Write-to-database timer started")
+
+        self.encryption_timer = wx.Timer(self)
+        self.encryption_timer.Start(5000)
+        logging.debug("Encryption timer started")
+
         self._init_ui()
 
     def _init_ui(self):
@@ -323,6 +333,10 @@ class MainFrame(wx.Frame):
 
         # Help Menu
 
+        # Timers
+        self.Bind(wx.EVT_TIMER, self._on_encryption_timer, self.encryption_timer)
+        self.Bind(wx.EVT_TIMER, self._on_write_db_timer , self.write_db_timer)
+
     def _on_quit(self, event):
         """ Execute quit actions """
         logging.debug("on quit")
@@ -395,6 +409,11 @@ class MainFrame(wx.Frame):
         new_val = event.IsChecked()
         self.panel.panel2.ledger_page.ledger.SetColumnShown(col_num, new_val)
 
+    def _on_encryption_timer(self, event):
+        logging.debug("Encryption Timer event!")
+
+    def _on_write_db_timer(self, event):
+        logging.debug("Write_db_timer event!")
 
 
 class MainPanel(wx.Panel):
@@ -402,6 +421,8 @@ class MainPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self.parent = parent
+
+
 
         self._init_ui()
 
@@ -663,82 +684,49 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
     # (ledger column name, associated database view column name,
     #  ledger column type, ledger column width)
 
-    col_tid = (
-        "tid",
-        "transaction_id",
-        wx.grid.GRID_VALUE_STRING,
-        30,
-        )
+    col_tid = ("tid", "transaction_id",
+               wx.grid.GRID_VALUE_STRING, 30,
+               )
 
-    col_date = (
-        "Date",
-        "date",
-        wx.grid.GRID_VALUE_TEXT,
-        100,
-        )
+    col_date = ("Date", "date",
+                wx.grid.GRID_VALUE_TEXT, 100,
+                )
 
-    col_enter_date = (
-        "Date Entered",
-        "enter_date",
-        wx.grid.GRID_VALUE_TEXT,
-        100,
-        )
+    col_enter_date = ("Date Entered", "enter_date",
+                      wx.grid.GRID_VALUE_TEXT, 100,
+                      )
 
-    col_checknum = (
-        "CheckNum",
-        "check_num",
-        wx.grid.GRID_VALUE_TEXT,
-        80,
-        )
+    col_checknum = ("CheckNum", "check_num",
+                    wx.grid.GRID_VALUE_TEXT, 80,
+                    )
 
-    col_payee = (
-        "Payee",
-        "Payee",
-        wx.grid.GRID_VALUE_TEXT,
-        120,
-        )
+    col_payee = ("Payee", "Payee",
+                 wx.grid.GRID_VALUE_TEXT, 120,
+                 )
 
-    col_dl_payee = (
-        "Downloaded Payee",
-        "DownloadedPayee",
-        wx.grid.GRID_VALUE_TEXT,
-        120,
-        )
+    col_dl_payee = ("Downloaded Payee", "DownloadedPayee",
+                    wx.grid.GRID_VALUE_TEXT, 120,
+                    )
 
-    col_memo = (
-        "Memo",
-        "Memo",
-        wx.grid.GRID_VALUE_TEXT,
-        150,
-        )
+    col_memo = ("Memo", "Memo",
+                wx.grid.GRID_VALUE_TEXT, 150,
+                )
 
-    col_category = (
-        "Category",
-        "Category",
-        wx.grid.GRID_VALUE_TEXT,
-        180,
-        )
+    col_category = ("Category", "Category",
+                    wx.grid.GRID_VALUE_TEXT, 180,
+                    )
 
-    col_label = (
-        "Label",
-        "TransactionLabel",
-        wx.grid.GRID_VALUE_TEXT,
-        160,
-        )
+    col_label = ("Label", "TransactionLabel",
+                 wx.grid.GRID_VALUE_TEXT, 160,
+                 )
 
-    col_amount = (
-        "Amount",
-        "Amount",
-        wx.grid.GRID_VALUE_TEXT,
-        80,
-        )
+    col_amount = ("Amount", "Amount",
+                  wx.grid.GRID_VALUE_TEXT, 80,
+                  )
 
-    col_balance = (
-        "Balance",
-        None,
-        wx.grid.GRID_VALUE_TEXT,
-        80,
-        )
+    col_balance = ("Balance", None,
+                   wx.grid.GRID_VALUE_TEXT, 80,
+                   )
 
     columns = (col_tid,
                col_date,
@@ -760,7 +748,11 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         wx.grid.GridTableBase.__init__(self)
         self.parent = parent
         self.column_labels, self.col_types = self._set_columns()
-        self.data = [[]]
+        self.data = []
+            # TODO: move amount and balance to numpy arrays?
+
+        # flag for when the data has been changed with respect to the database
+        self.data_is_modified = False
 
         self._update_data()
 
@@ -785,7 +777,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         except IndexError:
             return True
 
-    def GetValue(self, row, column):
+    def GetValue(self, row, col):
         """
         Get the cell value from the data or database.
 
@@ -796,13 +788,66 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
 #        logging.debug("Getting value of r{}c{}".format(row, column))
         try:
-            value = self.data[row][column]
+            value = self.data[row][col]
             if value is None or value == 'None':
                 return ''
             else:
                 return value
         except IndexError:
             return ''
+#        return self._get_value(row, col)
+
+    def _get_value(self, row, col):
+        """
+        Private logic for the GetValue() override method.
+
+        ~~The goal here is that we never copy data from the database to a
+        python object, we just look directly at the database (and DB view)
+        for the value.~~
+
+        Nope, just kidding. I think it's actually better to copy to a python
+        object. Why? Because then we aren't actively acting on the database
+        which means
+            1) fewer transactions
+            2) easier to revert changes
+            3) don't have to worry about invalid data until we
+               try and write to DB
+
+
+
+        What this means is that I have to know the mapping of column number
+        to column name to associated table column name. This logic will
+        also handle things such as translating the category to a nested list
+        (like "Expense:Food:Fast Food") and having null values show up as
+        blanks.
+
+        For now, I'm just going to brute-force this thing.
+        """
+
+        # TODO: come up with a better way. Brute-force is not extensible.
+        row_data = sa_orm_transactions.query_view()[row]
+        if col == 0:                # transaction_id
+            return row_data.transaction_id
+        elif col == 1:              # Date
+            return row_data.date
+        elif col == 2:              # Date Entered
+            return row_data.enter_date
+        elif col == 3:              # CheckNum
+            return row_data.check_num
+        elif col == 4:
+            return row_data.Payee
+        elif col == 5:
+            return row_data.DownloadedPayee
+        elif col == 6:
+            return row_data.Memo
+        elif col == 7:
+            return row_data.Category
+        elif col == 8:
+            return row_data.TransactionLabel
+        elif col == 9:
+            return row_data.Amount
+        elif col == 10:
+            return 0
 
     def SetValue(self, row, col, value):
         """
@@ -812,43 +857,84 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
         self._set_value(row, col, value)
 
+    # for sqlite backend
+#    def _set_value(self, row, col, value):
+#        """
+#        Updates the database with the value of the cell.
+#
+#        # TODO: If updating an existing payee name, then we
+#        #       add to the display_name table.
+#        #       If adding a new payee name, check it against the payee table
+#        #       Add if needed, otherwise...?
+#        """
+#        logging.debug("Setting r{}c{} to `{}`".format(row, col, value))
+#        try:
+#            # update database entry
+#            # gotta get the tid and send *that* to the update method
+#            # to account for deleted entries.
+#            tid = self.data[row][0]
+#            self.ledger_view.update_transaction(tid, col, value)
+#        except IndexError:
+#            # add a new row
+#            logging.debug("Adding a new row")
+#            self.ledger_view.insert_row()
+#            self._update_data()         # Must come before _set_value()
+#            self._set_value(row, col, value)
+#
+#            # tell grid we've added a row
+#            action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
+#            msg = wx.grid.GridTableMessage(self, action, 1)
+#            self.GetView().ProcessTableMessage(msg)
+#            self.parent._format_table()
+#        else:
+#            # run this if no errors
+#            self._update_data()
+#            # _update_data() does not update the balance for all rows. hmm...
+#            # Update values
+#            action = wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES
+#            msg = wx.grid.GridTableMessage(self, action)
+#            self.GetView().ProcessTableMessage(msg)
+#            self.parent._format_table()
+
+    # for SQLAlchemy backend
     def _set_value(self, row, col, value):
         """
-        Updates the database with the value of the cell.
+        Updates the data value for a given cell.
 
-        # TODO: If updating an existing payee name, then we
-        #       add to the display_name table.
-        #       If adding a new payee name, check it against the payee table
-        #       Add if needed, otherwise...?
+        Does not attempt to update the database
         """
         logging.debug("Setting r{}c{} to `{}`".format(row, col, value))
         try:
-            # update database entry
-            # gotta get the tid and send *that* to the update method
-            # to account for deleted entries.
-            tid = self.data[row][0]
-            self.ledger_view.update_transaction(tid, col, value)
+            logging.debug("trying to update row")
+            logging.debug("Previous: {}".format(self.data[row]))
+            self.data[row][col] = value
         except IndexError:
             # add a new row
-            logging.debug("Adding a new row")
-            self.ledger_view.insert_row()
-            self._update_data()         # Must come before _set_value()
-            self._set_value(row, col, value)
+            logging.debug("Update failed. Adding new row")
+            self.data.append([None] * self.GetNumberCols())
+            self.data[row][0] = str(int(self.data[row - 1][0]) + 1)
+            self.data[row][col] = value
 
-            # tell grid we've added a row
+            # tell the grid that we've added a row
+            logging.debug("GRIDTABLE_NOTIFY_ROWS_APPENDED")
             action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
             msg = wx.grid.GridTableMessage(self, action, 1)
-            self.GetView().ProcessTableMessage(msg)
-            self.parent._format_table()
-        else:
-            # run this if no errors
-            self._update_data()
-            # _update_data() does not update the balance for all rows. hmm...
-            # Update values
+#            self.GetView().ProcessTableMessage(msg)
+#            self.parent._format_table()
+        else:       # run only if no *unhandled* errors
+            # tell the grid to display the new values
+            logging.debug("GRIDTABLE_REQUEST_VIEW_GET_VALUES")
             action = wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES
             msg = wx.grid.GridTableMessage(self, action)
-            self.GetView().ProcessTableMessage(msg)
-            self.parent._format_table()
+#            self.GetView().ProcessTableMessage(msg)
+#            self.parent._format_table()
+        finally:    # always runs
+            pass
+
+        self.GetView().ProcessTableMessage(msg)
+        self.parent._format_table()
+
+        self.data_is_modified = True
 
     def GetColLabelValue(self, column):
         return self.column_labels[column]
@@ -881,7 +967,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         return (labels, types)
 
     def _update_data(self):
-        # grad the table data from the database
+        # grab the table data from the database
         self.data = []
 
         # convert the query results to something usable by the grid
