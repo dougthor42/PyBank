@@ -117,12 +117,12 @@ class MainFrame(wx.Frame):
         wx.Frame.__init__(self, None, wx.ID_ANY, title=title, size=size)
 
         # Set up some timers for backup and write-to-db
-        self.write_db_timer = wx.Timer(self)
-        self.write_db_timer.Start(1000)
-        logging.debug("Write-to-database timer started")
+#        self.write_db_timer = wx.Timer(self)
+#        self.write_db_timer.Start(1000)
+#        logging.debug("Write-to-database timer started")
 
         self.encryption_timer = wx.Timer(self)
-        self.encryption_timer.Start(5000)
+        self.encryption_timer.Start(5 * 60 * 1000)      # Every 5 minutes
         logging.debug("Encryption timer started")
 
         self._init_ui()
@@ -335,7 +335,7 @@ class MainFrame(wx.Frame):
 
         # Timers
         self.Bind(wx.EVT_TIMER, self._on_encryption_timer, self.encryption_timer)
-        self.Bind(wx.EVT_TIMER, self._on_write_db_timer , self.write_db_timer)
+#        self.Bind(wx.EVT_TIMER, self._on_write_db_timer , self.write_db_timer)
 
     def _on_quit(self, event):
         """ Execute quit actions """
@@ -410,7 +410,13 @@ class MainFrame(wx.Frame):
         self.panel.panel2.ledger_page.ledger.SetColumnShown(col_num, new_val)
 
     def _on_encryption_timer(self, event):
-        logging.debug("Encryption Timer event!")
+        logging.debug("Encryption Timer event start")
+
+        # XXX: temporary solution (will become permanent because I'm lazy)
+        import encrypt_pybank_file
+        encrypt_pybank_file.main()
+
+
 
     def _on_write_db_timer(self, event):
         logging.debug("Write_db_timer event!")
