@@ -31,21 +31,11 @@ import wx
 import wx.grid
 import wx.lib.plot as wxplot
 import numpy as np
-#import wxmplot
-#import wx.gizmos
-import wx.lib.mixins.listctrl as listmix
-#from wx.lib.splitter import MultiSplitterWindow
+
 try:
     from agw import foldpanelbar as fpb
-    from agw import ultimatelistctrl as ulc
 except ImportError:
     import wx.lib.agw.foldpanelbar as fpb
-    from wx.lib.agw import ultimatelistctrl as ulc
-# Do I want to use wx? That's what I'm used to but it's not that well
-# supported for python3...
-# PyQt has more followers; Tkinter comes with python...
-# Well, at the very least, I'll start off with wxPython since it's what I
-# like the most and it's what I know the best.
 
 # Package / Application
 try:
@@ -174,6 +164,11 @@ class MainFrame(wx.Frame):
                                    "Open a PyBank file")
         self.mf_close = wx.MenuItem(self.mfile, 104, "&Close\tCtrl+W",
                                     "Close the current PyBank file.")
+
+        self.mf_open_ofx = wx.MenuItem(self.mfile, 105, "Open OFX File",
+            "Open an existing OFX and append to the current ledger")
+
+
         self.mf_exit = wx.MenuItem(self.mfile, 103, "&Exit\tCtrl+Q",
                                    "Exit the application")
 
@@ -181,6 +176,8 @@ class MainFrame(wx.Frame):
         self.mfile.Append(self.mf_new)
         self.mfile.Append(self.mf_open)
         self.mfile.Append(self.mf_close)
+        self.mfile.AppendSeparator()
+        self.mfile.Append(self.mf_open_ofx)
         self.mfile.AppendSeparator()
         self.mfile.Append(self.mf_exit)
         self.menu_bar.Append(self.mfile, "&File")
@@ -311,6 +308,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self._on_open, id=102)
         self.Bind(wx.EVT_MENU, self._on_close, id=104)
         self.Bind(wx.EVT_MENU, self._on_quit, id=103)
+        self.Bind(wx.EVT_MENU, self._on_open_ofx, id=105)
 
         # Edit Menu
 #        self.Bind(wx.EVT_MENU, self._on_edit_menu1)
@@ -352,6 +350,25 @@ class MainFrame(wx.Frame):
         self.ledger._setup()
         self.ledger.table._update_data()
         self.ledger._format_table()
+
+    def _on_open_ofx(self, event):
+        logging.debug("on open ofx")
+
+        dialog = wx.FileDialog(self,
+                               "Choose a OFX file to open",
+                               ".",
+                               "",
+                               "OFX files (*.ofx)|*.ofx",
+                               wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+                               )
+
+        if dialog.ShowModal() == wx.ID_CANCEL:
+            return
+
+        path = dialog.GetPath()
+
+        logging.info("Opening OFX file: `{}`".format(path))
+
 
     def _on_new(self, event):
         """ Create a new file """
