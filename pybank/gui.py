@@ -24,6 +24,7 @@ import decimal
 #import os.path as osp
 from enum import Enum
 #import random
+import datetime
 
 # Third Party
 import wx
@@ -1065,6 +1066,108 @@ class LedgerVirtual(wx.ListCtrl,
 class LedgerGridBaseTable(wx.grid.GridTableBase):
     """
     """
+    # -----------------------------------------------------------------------
+    ### Class Constants
+    # -----------------------------------------------------------------------
+    # Define the columns ledger columns and how they map to the ledger view
+    # in the database
+
+    # (ledger column name, associated database view column name,
+    #  ledger column type, ledger column width)
+
+    col_tid = (
+        "tid",
+        "transaction_id",
+        wx.grid.GRID_VALUE_STRING,
+        30,
+        )
+
+    col_date = (
+        "Date",
+        "date",
+        wx.grid.GRID_VALUE_TEXT,
+        100,
+        )
+
+    col_enter_date = (
+        "Date Entered",
+        "enter_date",
+        wx.grid.GRID_VALUE_TEXT,
+        100,
+        )
+
+    col_checknum = (
+        "CheckNum",
+        "check_num",
+        wx.grid.GRID_VALUE_TEXT,
+        80,
+        )
+
+    col_payee = (
+        "Payee",
+        "Payee",
+        wx.grid.GRID_VALUE_TEXT,
+        120,
+        )
+
+    col_dl_payee = (
+        "Downloaded Payee",
+        "DownloadedPayee",
+        wx.grid.GRID_VALUE_TEXT,
+        120,
+        )
+
+    col_memo = (
+        "Memo",
+        "Memo",
+        wx.grid.GRID_VALUE_TEXT,
+        150,
+        )
+
+    col_category = (
+        "Category",
+        "Category",
+        wx.grid.GRID_VALUE_TEXT,
+        180,
+        )
+
+    col_label = (
+        "Label",
+        "TransactionLabel",
+        wx.grid.GRID_VALUE_TEXT,
+        160,
+        )
+
+    col_amount = (
+        "Amount",
+        "Amount",
+        wx.grid.GRID_VALUE_TEXT,
+        80,
+        )
+
+    col_balance = (
+        "Balance",
+        None,
+        wx.grid.GRID_VALUE_TEXT,
+        80,
+        )
+
+    columns = (col_tid,
+               col_date,
+               col_enter_date,
+               col_checknum,
+               col_payee,
+               col_dl_payee,
+               col_memo,
+               col_category,
+               col_label,
+               col_amount,
+               col_balance,
+               )
+
+    # -----------------------------------------------------------------------
+    ### Magic Methods
+    # -----------------------------------------------------------------------
     def __init__(self, parent):
         wx.grid.GridTableBase.__init__(self)
         self.parent = parent
@@ -1180,61 +1283,47 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
         Sets the columns for the ledger.
         """
-        # (title, type, width)
         # TODO: make column order depend only on the DB view
-        cols = [
-                ("tid",                 wx.grid.GRID_VALUE_STRING, 30),
-                ("Date",                wx.grid.GRID_VALUE_TEXT, 100),
-                ("Date Entered",        wx.grid.GRID_VALUE_TEXT, 100),
-                ("CheckNum",            wx.grid.GRID_VALUE_TEXT, 80),
-                ("Payee",               wx.grid.GRID_VALUE_TEXT, 120),
-                ("Downloaded Payee",    wx.grid.GRID_VALUE_TEXT, 120),
-                ("Memo",                wx.grid.GRID_VALUE_TEXT, 150),
-                ("Category",            wx.grid.GRID_VALUE_TEXT, 180),
-                ("Label",               wx.grid.GRID_VALUE_TEXT, 160),
-                ("Amount",              wx.grid.GRID_VALUE_TEXT, 80),
-                ("Balance",             wx.grid.GRID_VALUE_TEXT, 80),
-                ]
-
-        labels = [_i[0] for _i in cols]
-        types = [_i[1] for _i in cols]
+        labels = [_i[0] for _i in self.columns]
+        types = [_i[2] for _i in self.columns]
 
         for _i, title in enumerate(labels):
             self.SetColLabelValue(_i, title)
 
         return (labels, types)
 
-#    def _update_data(self):
-#        # grab the table data from the database
-#        self.ledger_view = pbsql.LedgerView(DATABASE, 0)
-#        data = self.ledger_view.read_all()
-#
-#        # calculate the running balance and add it to the data
-#        starting_bal = decimal.Decimal(200)
-#        balance = starting_bal
-#        data = list([list(str(_x) for _x in row) for row in data])
-#        self.data = []
-#        for row in data:
-#            balance += decimal.Decimal(row[-1])
-#            row[-2] = str(row[-2])
-#            row.append(str(balance))
-#            self.data.append(row)
-
     def _update_data(self):
         # grad the table data from the database
-        # need to somehow grab the session from... somewhere.
-        data = sa_orm_transactions.query_view()
+        self.data = []
 
-        # calculate the running balance and add it to the data
+        # convert the query results to something usable by the grid
+        # Also calculate the running balancefor the view.
+        # TODO: I hate this - come up with an alternate solution
         starting_bal = decimal.Decimal(200)
         balance = starting_bal
-        data = list([list(str(_x) for _x in row) for row in data])
-        self.data = []
-        for row in data:
-            balance += decimal.Decimal(row[-1])
-            row[-2] = str(row[-2])
-            row.append(str(balance))
-            self.data.append(row)
+        for row_num, row_data in enumerate(sa_orm_transactions.query_view()):
+            data_dict = row_data.__dict__
+            row_values = []
+            for col_num, (_, name, _, _) in enumerate(self.columns):
+                if name is None:
+                    continue
+
+                if isinstance(data_dict[name], datetime.date):
+                    row_values.append(str(data_dict[name]))
+                elif col_num == 0 or col_num == 3:
+                    row_values.append(str(data_dict[name]))
+                else:
+                    row_values.append(data_dict[name])
+
+            balance += decimal.Decimal(row_values[-1])
+            row_values[-1] = str(row_values[-1])
+            row_values.append(str(balance))
+            self.data.append(row_values)
+
+#        print(list(x for x, _, _, _ in self.columns))
+#        for row in data:
+#            print(row)
+
 
 class LedgerGrid(wx.grid.Grid):
     """
@@ -1301,7 +1390,7 @@ class LedgerGrid(wx.grid.Grid):
         num_cols = self.GetNumberCols()
         for column in range(num_cols):
             attr = wx.grid.GridCellAttr()
-            if column in (2, 8, 9):
+            if column in (3, 9, 10):
                 attr.SetAlignment(wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
             else:
                 attr.SetAlignment(wx.ALIGN_LEFT, wx.ALIGN_CENTER)
@@ -1312,7 +1401,7 @@ class LedgerGrid(wx.grid.Grid):
         logging.debug("Coloring negative balances")
         num_rows = self.GetNumberRows() - 1
         for row in range(num_rows):
-            for col in (8, 9):
+            for col in (9, 10):
                 try:
                     val = float(self.GetCellValue(row, col))
                 except ValueError:
