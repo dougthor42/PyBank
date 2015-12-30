@@ -64,10 +64,12 @@ def get_double_click_time():
         Linux: ???
         Mac: ???
     """
-
-    from ctypes import windll
-    a = windll.user32.GetDoubleClickTime()
-    return int(a)
+    try:
+        from ctypes import windll
+        a = windll.user32.GetDoubleClickTime()
+        return int(a)
+    except ImportError:
+        return 750
 
 # ---------------------------------------------------------------------------
 ### Module Constants

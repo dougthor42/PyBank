@@ -14,6 +14,8 @@ from pyxdameraulevenshtein import damerau_levenshtein_distance as lev2
 import pandas as pd
 import random
 import string
+import jellyfish as jelly
+import ast
 
 
 
@@ -23,6 +25,20 @@ REPEAT = 10
 a = "qwertyuiop"
 b = "qwertyuiop"
 
+
+FUZZ_CMD = "fuzz.ratio('{}', '{}')"
+FUZZ_SETUP = "from fuzzywuzzy import fuzz"
+
+LEV1_CMD = "lev1.distance('{}', '{}')"
+LEV1_SETUP = "from Levenshtein import _levenshtein as lev1"
+
+LEV2_CMD = "lev2('{}', '{}')"
+LEV2_SETUP = "from pyxdameraulevenshtein import damerau_levenshtein_distance as lev2"
+
+JELLY_CMD = "jelly.damerau_levenshtein_distance('{}', '{}')"
+JELLY_SETUP = "import jellyfish as jelly"
+
+
 def run(cmd, setup, name, result):
     name = name + ":"
     c = timeit.repeat(cmd, setup, number=COUNT, repeat=REPEAT)
@@ -30,6 +46,14 @@ def run(cmd, setup, name, result):
     time_ms = c.mean() * 1000
     print("  {: <21s}  {: <6.8F}ms  {}".format(name, time_ms, result))
 #    print(c.describe())
+
+
+def run_list(items, test_name, a, b):
+    for (cmd, setup, algorithm_name) in items:
+        cmd = cmd.format(a, b)
+        result = eval(cmd)      # Evil! but oh well.
+        run(cmd, setup, algorithm_name, result)
+
 
 def main(name, a, b):
     """
@@ -43,24 +67,13 @@ def main(name, a, b):
     print("  {: <21s}  Avg / repeat  Result".format("Name"))
     print("  {: <21s}  ------------  ------".format("----"))
 
-    # FuzzyWuzzy
-    fuzz_cmd = "fuzz.ratio('{}', '{}')".format(a, b)
-    fuzz_setup = "from fuzzywuzzy import fuzz"
-    result = fuzz.ratio(a, b)
-    run(fuzz_cmd, fuzz_setup, "FuzzyWuzzy", result)
+    items = [(FUZZ_CMD, FUZZ_SETUP, "FuzzyWuzzy (% same)"),
+             (LEV1_CMD, LEV1_SETUP, "Levenshtein"),
+             (LEV2_CMD, LEV2_SETUP, "Damerau-Levenshtein"),
+             (JELLY_CMD, JELLY_SETUP, "Jellyfish D-L"),
+             ]
 
-    # Levenshtein
-    lev1_cmd = "lev1.distance('{}', '{}')".format(a, b)
-    lev1_setup = "from Levenshtein import _levenshtein as lev1"
-    result = lev1.distance(a, b)
-    run(lev1_cmd, lev1_setup, "Levenshtein", result)
-
-    # Damerau-Levenshtein
-    lev2_cmd = "lev2('{}', '{}')".format(a, b)
-    lev2_setup = "from pyxdameraulevenshtein import damerau_levenshtein_distance as lev2"
-    result = lev2(a, b)
-    run(lev2_cmd, lev2_setup, "Damerau-Levenshtein", result)
-
+    run_list(items, name, a, b)
 
 
 if __name__ == "__main__":
@@ -75,22 +88,32 @@ if __name__ == "__main__":
              ("Off by 1", "abcdefghijklmnopqrstuvwxyz", "abcdefghijklmnopqrstuvwxya"),
              ("25 random", rand1, rand2),
              ("transpose", "qwerty", "qwrety"),
-             ("Diff lengths", "short string", "a very long long long string"),
+             ("Diff lengths", "a short string", "a very long long long string"),
              ]
 
     for name, a, b in tests:
         main(name, a, b)
 
-    for l in [1, 2, 3, 5, 10, 15, 50, 100, 500, 1000, 10000]:
-        rand1 = "".join(random.choice(string.ascii_letters) for _ in range(l))
-        rand2 = "".join(random.choice(string.ascii_letters) for _ in range(l))
-        cmd = "lev2('{}', '{}')".format(rand1, rand2)
-        setup = "from pyxdameraulevenshtein import damerau_levenshtein_distance as lev2"
-        if l > 100:
-            num = 30
-        elif l > 1000:
-            num = 3
-        else:
+    items = [(FUZZ_CMD, FUZZ_SETUP, "FuzzyWuzzy (% same)"),
+             (LEV1_CMD, LEV1_SETUP, "Levenshtein"),
+             (LEV2_CMD, LEV2_SETUP, "Damerau-Levenshtein"),
+             (JELLY_CMD, JELLY_SETUP, "Jellyfish D-L"),
+             ]
+
+    for (cmd, setup, algorithm_name) in items:
+        print()
+        print(algorithm_name)
+        print(cmd)
+        for l in [1, 2, 3, 5, 10, 15, 50, 100, 500, 1000, 10000]:
+            rand1 = "".join(random.choice(string.ascii_letters) for _ in range(l))
+            rand2 = "".join(random.choice(string.ascii_letters) for _ in range(l))
             num = 1000
-        a = timeit.timeit(cmd, setup, number=num)
-        print("{},{}".format(l, a))
+
+            # Adjust number samples for the ones that take a long time.
+            if l >= 100:
+                num = 50
+            elif l >= 1000:
+                num = 5
+
+            a = timeit.timeit(cmd.format(rand1, rand2), setup, number=num)
+            print("StringLength: {}   Time (s): {}".format(l, a))
