@@ -53,6 +53,9 @@
       + If there are 500 instances of "Kelly" and then 1 instance of "Kely",
         then perhaps that's just a typo...
       + That's what levenshtein_comparison.py is for.
+      + Jellyfish? https://github.com/jamesturk/jellyfish
+      + Could also just use the built-in `difflib.SequenceMatcher.ratio()` but
+        it won't count transposition like D-L would.
 + [ ] Get category display working correctly
       + It should look like: "Expense:Entertainment:Bars" rather than just
         "Bars".
