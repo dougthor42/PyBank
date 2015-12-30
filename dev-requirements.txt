@@ -16,3 +16,4 @@ coverage
 cx_freeze
 sqlalchemy
 jellyfish
+cryptography
