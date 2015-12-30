@@ -798,7 +798,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             if value is None or value == 'None':
                 return ''
             else:
-                return value
+                return str(value)
         except IndexError:
             return ''
 #        return self._get_value(row, col)
@@ -988,12 +988,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
                 if name is None:
                     continue
 
-                if isinstance(data_dict[name], datetime.date):
-                    row_values.append(str(data_dict[name]))
-                elif col_num == 0 or col_num == 3:
-                    row_values.append(str(data_dict[name]))
-                else:
-                    row_values.append(data_dict[name])
+                row_values.append(data_dict[name])
 
             balance += decimal.Decimal(row_values[-1])
             row_values[-1] = str(row_values[-1])
