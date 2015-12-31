@@ -39,6 +39,7 @@ try:
     from . import sa_orm_transactions
     from . import (__project_name__,
                    __version__,
+                   __released__,
                    )
     logging.debug("Imports for UnitTests")
 except SystemError:
@@ -53,6 +54,7 @@ except SystemError:
         import sa_orm_transactions
         from __init__ import (__project_name__,
                               __version__,
+                              __released__,
                               )
         logging.debug("Imports for Spyder IDE")
     except ImportError:
@@ -66,6 +68,7 @@ except SystemError:
         from pybank import sa_orm_transactions
         from pybank import (__project_name__,
                             __version__,
+                            __released__,
                             )
         logging.debug("imports for Executable")
 
@@ -186,5 +189,7 @@ def main():
 
 
 if __name__ == "__main__":
+    msg = "Starting %s v%s, released %s"
+    logging.info(msg, __project_name__, __version__, __released__)
     main()
 

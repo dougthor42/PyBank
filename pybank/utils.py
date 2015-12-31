@@ -21,9 +21,11 @@ import functools
 import time
 import sys
 import os.path
+from enum import Enum, unique
 
 # Third-Party
 from docopt import docopt
+import wx.grid
 
 # Package / Application
 try:
@@ -47,6 +49,8 @@ except SystemError:
 ### Module Constants
 # ---------------------------------------------------------------------------
 DEFAULT_LOG_LEVEL = logging.INFO
+TEXT = wx.grid.GRID_VALUE_TEXT
+STRING = wx.grid.GRID_VALUE_STRING
 
 # ---------------------------------------------------------------------------
 ### Classes
@@ -64,6 +68,34 @@ class LocalLogHandler(logging.StreamHandler):
         self.target.WriteText(msg + "\n")
         self.target.ShowPosition(self.target.GetLastPosition())
         self.flush()
+
+
+@unique
+class LedgerCols(Enum):
+    """
+    Ledger Column Definitions
+
+    (index, name, view col name, type, width)
+    """
+    tid = (0, "tid", "transaction_id", STRING, 30)
+    date = (1, "Date", "date", TEXT, 100)
+    enter_date = (2, "Date Entered", "enter_date", TEXT, 100)
+    check_num = (3, "CheckNum", "check_num", TEXT, 80)
+    payee = (4, "Payee", "Payee", TEXT, 120)
+    dl_payee = (5, "Downloaded Payee", "DownloadedPayee", TEXT, 120)
+    memo = (6, "Memo", "Memo", TEXT, 150)
+    category = (7, "Category", "Category", TEXT, 180)
+    label = (8,"Label", "TransactionLabel", TEXT, 160)
+    amount = (9, "Amount", "Amount", TEXT, 80)
+    balance = (10, "Balance", None, TEXT, 80)
+
+    def __init__(self, index, col_name, view_name, col_type, width):
+        self.index = index
+        self.col_name = col_name
+        self.view_name = view_name
+        self.col_type = col_type
+        self.width = width
+
 
 # ---------------------------------------------------------------------------
 ### Functions
@@ -145,3 +177,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    for item in LedgerCols:
+        print(item)
+        print(item.index)

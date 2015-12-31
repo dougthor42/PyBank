@@ -58,22 +58,15 @@ except SystemError:
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-### Functions
+### Query Functions
 # ---------------------------------------------------------------------------
-
-
-#def add_temp_item(session):
-#    temp_memo = base.Memo(text="this is a memo")
-#    session.add(temp_memo)
-#    print(session.new)
-#    session.commit()
-
-
 def query_ledger_view():
     logging.debug("Quering Ledger View")
     return base.session.query(base.LedgerView).all()
 
-
+# ---------------------------------------------------------------------------
+### Insert Functions
+# ---------------------------------------------------------------------------
 def insert_account_group(name):
     logging.debug("inserting '{}' to AccountGroup".format(name))
     acct_group = base.AccountGroup(name=name)
@@ -175,6 +168,19 @@ def insert_transaction_label(value):
     base.session.add(trans_label)
 
 
+def insert_ledger(*args, **kwargs):
+    """
+    Handles inserting items into the ledger
+
+    Every string needs to be matched to its ID in its table. If any new
+    values are found, those need to 1st be added to the respective table.
+    """
+    pass
+
+
+# ---------------------------------------------------------------------------
+### Other Functions
+# ---------------------------------------------------------------------------
 utils.logged
 def copy_to_sa(engine, session, dump):
     """
