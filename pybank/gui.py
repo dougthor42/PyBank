@@ -111,7 +111,14 @@ class MainApp(object):
         self.frame = MainFrame(TITLE_TEXT, (1250, 700))
 
         self.frame.Show()
-        self.app.MainLoop()
+
+        # Having the GridCellChoiceEditor seems to cause a wxAssertionError
+        # but doens't appear to do anything bad, so I'm just handling it here
+        # because it's annoying.
+        try:
+            self.app.MainLoop()
+        except wx.wxAssertionError:
+            pass
 
 
 class MainFrame(wx.Frame):
@@ -793,7 +800,6 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         self._update_data()
 
-
     # -----------------------------------------------------------------------
     ### Override Methods
     # -----------------------------------------------------------------------
@@ -1049,6 +1055,11 @@ class LedgerGrid(wx.grid.Grid):
 
         self._setup()
 
+        choiceList = ["a", "B", "C"]
+        choiceEditor = wx.grid.GridCellChoiceEditor(choiceList, allowOthers=True)
+
+        for row in range(self.GetNumberRows()):
+            self.SetCellEditor(row, 7, choiceEditor)
 
     def _setup(self):
         logging.debug("Running LedgerGrid._setup()")

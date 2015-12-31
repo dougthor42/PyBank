@@ -82,6 +82,7 @@
 + [ ] gotta write to the encrypted database on program exit. I can't believe
       that I forgot that...
 + [ ] Add a backup option.
++ [ ] Undo-Redo.
 
 
 ## Security:
