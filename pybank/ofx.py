@@ -640,9 +640,9 @@ def main():
     print(o.statement)
 
 
-from ofxtools import OFXClient
-import ofxtools
-from ofxtools import OFXTree
+#from ofxtools import OFXClient
+#import ofxtools
+#from ofxtools import OFXTree
 
 if __name__ == "__main__":
 #    main()
