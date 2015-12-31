@@ -104,13 +104,13 @@ after_test:
   - ps: ls
   - ps: ls ..
   - "%CMD_IN_ENV% python setup.py bdist_wheel"
-  - "%CMD_IN_ENV% python build_executables.py build"
+  #- "%CMD_IN_ENV% python build_executables.py build"
 
   # Create a .zip of the build
   - ps: ls
-  - ps: ls "build"
-  - ps: ls "dist"
-  - "7z a PyBank.zip .\\build\\exe.win32-3.4\\"
+  #- ps: ls "build"
+  #- ps: ls "dist"
+  #- "7z a PyBank.zip .\\build\\exe.win32-3.4\\"
 
 artifacts:
   # Upload the wheel and EXE to AppVeyor
@@ -118,6 +118,6 @@ artifacts:
     name: PyBank-0.0.1-py3-none-any.whl
     type: whl
 
-  - path: PyBank.zip
-    name: PyBank
-    type: zip
+  #- path: PyBank.zip
+  #  name: PyBank
+  #  type: zip
