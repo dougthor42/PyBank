@@ -450,11 +450,16 @@ class MainFrame(wx.Frame):
     def _on_encryption_timer(self, event):
         logging.debug("Encryption Timer event start")
 
-        # XXX: temporary solution (will become permanent because I'm lazy)
-        import encrypt_pybank_file
-        encrypt_pybank_file.main()
+        # Get the required encryption stuff
+        key = crypto.get_key()
 
+        # dump the memory database directly to an encrypted file.
+        dump = orm_trans.sqlite_iterdump(orm_base.engine, orm_base.session)
+        dump = "".join(line for line in dump)
+        dump = dump.encode('utf-8')
 
+        new_file = "test_database.pybank"
+        crypto.encrypted_write(new_file, key, dump)
 
     def _on_write_db_timer(self, event):
         logging.debug("Write_db_timer event!")
@@ -725,65 +730,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
     # Define the columns ledger columns and how they map to the ledger view
     # in the database
 
-    # (ledger column name, associated database view column name,
-    #  ledger column type, ledger column width)
-
-    col_tid = ("tid", "transaction_id",
-               wx.grid.GRID_VALUE_STRING, 30,
-               )
-
-    col_date = ("Date", "date",
-                wx.grid.GRID_VALUE_TEXT, 100,
-                )
-
-    col_enter_date = ("Date Entered", "enter_date",
-                      wx.grid.GRID_VALUE_TEXT, 100,
-                      )
-
-    col_checknum = ("CheckNum", "check_num",
-                    wx.grid.GRID_VALUE_TEXT, 80,
-                    )
-
-    col_payee = ("Payee", "Payee",
-                 wx.grid.GRID_VALUE_TEXT, 120,
-                 )
-
-    col_dl_payee = ("Downloaded Payee", "DownloadedPayee",
-                    wx.grid.GRID_VALUE_TEXT, 120,
-                    )
-
-    col_memo = ("Memo", "Memo",
-                wx.grid.GRID_VALUE_TEXT, 150,
-                )
-
-    col_category = ("Category", "Category",
-                    wx.grid.GRID_VALUE_TEXT, 180,
-                    )
-
-    col_label = ("Label", "TransactionLabel",
-                 wx.grid.GRID_VALUE_TEXT, 160,
-                 )
-
-    col_amount = ("Amount", "Amount",
-                  wx.grid.GRID_VALUE_TEXT, 80,
-                  )
-
-    col_balance = ("Balance", None,
-                   wx.grid.GRID_VALUE_TEXT, 80,
-                   )
-
-    columns = (col_tid,
-               col_date,
-               col_enter_date,
-               col_checknum,
-               col_payee,
-               col_dl_payee,
-               col_memo,
-               col_category,
-               col_label,
-               col_amount,
-               col_balance,
-               )
+    columns = utils.LedgerCols
 
     # -----------------------------------------------------------------------
     ### Magic Methods
@@ -869,27 +816,27 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         # TODO: come up with a better way. Brute-force is not extensible.
         row_data = orm_trans.query_ledger_view()[row]
-        if col == 0:                # transaction_id
+        if col == self.columns.tid.value:
             return row_data.transaction_id
-        elif col == 1:              # Date
+        elif col == self.columns.date.value:
             return row_data.date
-        elif col == 2:              # Date Entered
+        elif col == self.columns.enter_date.value:
             return row_data.enter_date
-        elif col == 3:              # CheckNum
+        elif col == self.columns.check_num.value:
             return row_data.check_num
-        elif col == 4:
+        elif col == self.columns.payee.value:
             return row_data.Payee
-        elif col == 5:
+        elif col == self.columns.dl_payee.value:
             return row_data.DownloadedPayee
-        elif col == 6:
+        elif col == self.columns.memo.value:
             return row_data.Memo
-        elif col == 7:
+        elif col == self.columns.category.value:
             return row_data.Category
-        elif col == 8:
+        elif col == self.columns.label.value:
             return row_data.TransactionLabel
-        elif col == 9:
+        elif col == self.columns.amount.value:
             return row_data.Amount
-        elif col == 10:
+        elif col == self.columns.balance.value:
             return 0
 
     def SetValue(self, row, col, value):
@@ -1001,8 +948,8 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         Sets the columns for the ledger.
         """
         # TODO: make column order depend only on the DB view
-        labels = [_i[0] for _i in self.columns]
-        types = [_i[2] for _i in self.columns]
+        labels = [_i.col_name for _i in self.columns]
+        types = [_i.col_type for _i in self.columns]
 
         for _i, title in enumerate(labels):
             self.SetColLabelValue(_i, title)
@@ -1030,11 +977,11 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         for row_num, row_data in enumerate(orm_trans.query_ledger_view()):
             data_dict = row_data.__dict__
             row_values = []
-            for col_num, (_, name, _, _) in enumerate(self.columns):
-                if name is None:
+            for item in self.columns:
+                if item.view_name is None:
                     continue
 
-                row_values.append(data_dict[name])
+                row_values.append(data_dict[item.view_name])
 
             balance += decimal.Decimal(row_values[-1])
             row_values[-1] = str(row_values[-1])
@@ -1187,17 +1134,17 @@ class LedgerGrid(wx.grid.Grid):
             # TODO: Fill this out
             try:
                 logging.info("Attempting to write data to database")
-                orm_trans.insert_transaction(account_id=1,
-                                             date="2015-11-30",
-                                             enter_date=None,
-                                             check_num=None,
-                                             amount='9999.99',
-                                             payee_id=2,
-                                             category_id=37,
-                                             transaction_label_id=None,
-                                             memo_id=None,
-                                             fitid=-1,
-                                             )
+                orm_trans.insert_ledger(acct=1,
+                                        date=None,
+                                        enter_date=None,
+                                        check_num=None,
+                                        amount=None,
+                                        payee=None,
+                                        category=None,
+                                        label=None,
+                                        memo=None,
+                                        fitid=-1,
+                                        )
             except Exception as err:
                 logging.debug("Error in writing to database!")
                 logging.error(err, sys_info=True)
