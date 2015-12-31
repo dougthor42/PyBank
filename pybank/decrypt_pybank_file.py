@@ -34,6 +34,12 @@ dump = crypto.encrypted_read(file, key)
 with closing(sqlite3.connect(new_file)) as conn:
     with closing(conn.cursor()) as cursor:
         for cmd in dump.decode('utf-8').split(';')[:-2]:
+
+            # Replace any None values with NULL
+            # TODO: Make this much more robust... For example, if I have
+            #       name that's "None of your business". It will then become
+            #       "NULL of your business".
+            cmd = cmd.replace("None", "NULL")
             print(cmd)
             cursor.execute(cmd)
             conn.commit()

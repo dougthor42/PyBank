@@ -78,6 +78,10 @@
       from the OFX.
 + [ ] If a line cannot be added to the database (because of a foreign key
       error, perhaps), then let's highlight that line red to inform the user.
++ [ ] Replace column integers with an enum
++ [ ] gotta write to the encrypted database on program exit. I can't believe
+      that I forgot that...
++ [ ] Add a backup option.
 
 
 ## Security:

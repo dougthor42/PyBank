@@ -40,12 +40,13 @@ except ImportError:
 # Package / Application
 try:
     # Imports used by unit test runners
-    from . import pbsql
+#    from . import pbsql
     from . import plots
     from . import utils
     from . import crypto
     from . import gui_utils
-    from . import sa_orm_transactions
+    from . import sa_orm_transactions as orm_trans
+    from . import sa_orm_base as orm_base
 #    from . import __init__ as __pybank_init
     from . import (__project_name__,
                    __version__,
@@ -55,12 +56,13 @@ try:
 except SystemError:
     try:
         # Imports used by Spyder
-        import pbsql
+#        import pbsql
         import plots
         import utils
         import crypto
         import gui_utils
-        import sa_orm_transactions
+        import sa_orm_transactions as orm_trans
+        import sa_orm_base as orm_base
 #        import __init__ as __pybank_init
         from __init__ import (__project_name__,
                               __version__,
@@ -69,12 +71,13 @@ except SystemError:
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import pbsql
+#        from pybank import pbsql
         from pybank import plots
         from pybank import utils
         from pybank import crypto
         from pybank import gui_utils
-        from pybank import sa_orm_transactions
+        from pybank import sa_orm_transactions as orm_trans
+        from pybank import sa_orm_base as orm_base
 #        from pybank import __init__ as __pybank_init
         from pybank import (__project_name__,
                             __version__,
@@ -337,10 +340,38 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_TIMER, self._on_encryption_timer, self.encryption_timer)
 #        self.Bind(wx.EVT_TIMER, self._on_write_db_timer , self.write_db_timer)
 
+        # Other
+        self.Bind(wx.EVT_CLOSE, self._on_close_event, self)
+
+    def _on_close_event(self, event):
+        """
+        Catch all of the close events, including those from the window
+        manager (such as the upper-right "X" button and Alt-F4) as well
+        as the close events that my program sends like from self._on_quit().
+
+        This will handle things like saving any remaining changes, backing
+        up data, and confirming close.
+        """
+        logging.debug("close event fired!")
+
+
+        # Get the required encryption stuff
+        key = crypto.get_key()
+
+        # dump the memory database directly to an encrypted file.
+        dump = orm_trans.sqlite_iterdump(orm_base.engine, orm_base.session)
+        dump = "".join(line for line in dump)
+        dump = dump.encode('utf-8')
+
+        new_file = "test_database.pybank"
+        crypto.encrypted_write(new_file, key, dump)
+
+        self.Destroy()
+
     def _on_quit(self, event):
         """ Execute quit actions """
         logging.debug("on quit")
-        self.Close(True)
+        self.Close(force=True)
 
     def _on_open(self, event):
         """ Open a file """
@@ -831,7 +862,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
 
         # TODO: come up with a better way. Brute-force is not extensible.
-        row_data = sa_orm_transactions.query_view()[row]
+        row_data = orm_trans.query_ledger_view()[row]
         if col == 0:                # transaction_id
             return row_data.transaction_id
         elif col == 1:              # Date
@@ -972,6 +1003,15 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         return (labels, types)
 
+#    def _calc_balance(self):
+#        balance = decimal.Decimal('200')        # Starting balance
+#
+#
+#        for row in self.data:
+#            balance += decimal.Decimal(row[-2])
+#            row[-1
+
+
     def _update_data(self):
         # grab the table data from the database
         self.data = []
@@ -981,7 +1021,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         # TODO: I hate this - come up with an alternate solution
         starting_bal = decimal.Decimal(200)
         balance = starting_bal
-        for row_num, row_data in enumerate(sa_orm_transactions.query_view()):
+        for row_num, row_data in enumerate(orm_trans.query_ledger_view()):
             data_dict = row_data.__dict__
             row_values = []
             for col_num, (_, name, _, _) in enumerate(self.columns):
@@ -1009,19 +1049,6 @@ class LedgerGrid(wx.grid.Grid):
 
         self._setup()
 
-#        self.table = LedgerGridBaseTable(self)
-#
-#        self.SetTable(self.table, True)
-#
-#        self.SetRowLabelSize(30)
-#        self.SetMargins(0, 0)
-#        self.AutoSizeColumns(True)
-#
-#        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK,
-#                  self._on_left_dclick,
-#                  self)
-#
-#        self._format_table()
 
     def _setup(self):
         logging.debug("Running LedgerGrid._setup()")
@@ -1149,11 +1176,25 @@ class LedgerGrid(wx.grid.Grid):
             # TODO: Fill this out
             try:
                 logging.info("Attempting to write data to database")
-                raise Exception
-            except Exception:
+                orm_trans.insert_transaction(account_id=1,
+                                             date="2015-11-30",
+                                             enter_date=None,
+                                             check_num=None,
+                                             amount='9999.99',
+                                             payee_id=2,
+                                             category_id=37,
+                                             transaction_label_id=None,
+                                             memo_id=None,
+                                             fitid=-1,
+                                             )
+            except Exception as err:
                 logging.debug("Error in writing to database!")
+                logging.error(err, sys_info=True)
             else:
                 logging.debug("DB write successful.")
+                logging.debug(orm_base.session.new)
+                logging.debug(orm_base.session.dirty)
+                orm_base.session.commit()
                 self.table.data_is_modified = False
 
 
@@ -1166,6 +1207,26 @@ class LedgerGrid(wx.grid.Grid):
         """ Fires before a cell's data is changed. Can be vetoed. """
         logging.debug("grid cell about to change")
         logging.debug("{}".format(event))
+
+        if event.GetCol() == 3:         # CheckNum column
+            try:
+                int(event.GetString())
+            except ValueError:
+                log_msg = "Unable to cast '{}' to int. Reverting."
+                logging.warning(log_msg.format(event.GetString()))
+                event.Veto()
+        elif event.GetCol() == 10:      # Blanace Column
+            logging.warning("Can't change the 'Balance' column")
+            event.Veto()
+        elif event.GetCol() == 9:       # Amount Column
+            try:
+                decimal.Decimal(event.GetString())
+            except decimal.InvalidOperation:
+                log_msg = "Unable to cast '{}' to type `Decimal`. Reverting."
+                logging.warning(log_msg.format(event.GetString()))
+                event.Veto()
+        else:
+            pass
 
 
 # TODO: Add some way to highlight which account is active. A button, mayhaps?

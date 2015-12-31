@@ -30,7 +30,7 @@ from docopt import docopt
 # Package / Application
 try:
     # Imports used by unit test runners
-    from . import pbsql
+#    from . import pbsql
     from . import gui
     from . import gui_utils
     from . import crypto
@@ -44,7 +44,7 @@ try:
 except SystemError:
     try:
         # Imports used by Spyder
-        import pbsql
+#        import pbsql
         import gui
         import crypto
         import utils
@@ -57,7 +57,7 @@ except SystemError:
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import pbsql
+#        from pybank import pbsql
         from pybank import gui
         from pybank import crypto
         from pybank import utils

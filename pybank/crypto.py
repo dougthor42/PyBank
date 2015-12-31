@@ -206,6 +206,16 @@ def create_key(password, salt):
     return key
 
 
+def get_key():
+    """ Creates and returns the encryption key. """
+    salt = get_salt()
+    pw = get_password()
+    peppered_pw = encode_and_pepper_pw(pw)
+    key = create_key(peppered_pw, salt)
+
+    return key
+
+
 def get_salt(file="salt.txt"):
     """ Reads the salt file if it exists. Otherwise, creates it. """
     logging.debug("getting salt...")

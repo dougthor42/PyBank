@@ -62,24 +62,117 @@ except SystemError:
 # ---------------------------------------------------------------------------
 
 
-def add_temp_item(session):
-    temp_memo = base.Memo(text="this is a memo")
-    session.add(temp_memo)
-    print(session.new)
-    session.commit()
+#def add_temp_item(session):
+#    temp_memo = base.Memo(text="this is a memo")
+#    session.add(temp_memo)
+#    print(session.new)
+#    session.commit()
 
 
-def query_all(table):
-    print("querying table!")
-    return
-
-
-def query_view():
+def query_ledger_view():
+    logging.debug("Quering Ledger View")
     return base.session.query(base.LedgerView).all()
 
 
-def read_ledger(session):
-    return list(session.query(base.Memo).order_by(base.Memo.memo_id))
+def insert_account_group(name):
+    logging.debug("inserting '{}' to AccountGroup".format(name))
+    acct_group = base.AccountGroup(name=name)
+    base.session.add(acct_group)
+
+
+def insert_account(name, acct_num, user, institution_id, acct_group=None):
+    logging.debug("inserting '{}' to Account".format(name))
+    acct = base.Account(account_num=acct_num,
+                        name=name,
+                        user_name=user,
+                        institution_id=institution_id,
+                        account_group_id=acct_group)
+    base.session.add(acct)
+
+
+def insert_category(name, parent):
+    logging.debug("inserting '{}' to Category".format(name))
+    cat = base.Category(name=name, parent=parent)
+    base.session.add(cat)
+
+
+def insert_display_name(name):
+    logging.debug("inserting '{}' to DisplayName".format(name))
+    display_name = base.DisplayName(name=name)
+    base.session.add(display_name)
+
+
+def insert_institution(name, fid=None, org=None, url=None, broker=None):
+    logging.debug("inserting '{}' to Institution".format(name))
+    institution = base.Institution(name=name,
+                                   fid=fid,
+                                   org=org,
+                                   url=url,
+                                   broker=broker)
+    base.session.add(institution)
+
+
+def insert_memo(text):
+    logging.debug("inserting '{}' to Memo".format(text))
+    memo = base.Memo(text)
+    base.session.add(memo)
+
+
+def insert_payee(name, display_name_id=None, category_id=None):
+    logging.debug("inserting '{}' to Payee".format(name))
+    payee = base.Payee(name,
+                       display_name_id=display_name_id,
+                       category_id=category_id)
+    base.session.add(payee)
+
+
+def insert_transaction(account_id=None,
+                       date=None,
+                       enter_date=None,
+                       check_num=None,
+                       amount=None,
+                       payee_id=None,
+                       category_id=None,
+                       transaction_label_id=None,
+                       memo_id=None,
+                       fitid=-1):
+    logging.debug("inserting item to Transaction")
+
+    date_fmt = '%Y-%m-%d'
+
+    try:
+        if date is None:
+            date = datetime.datetime.today().date()
+        else:
+            date = datetime.datetime.strptime(date, date_fmt).date()
+    except TypeError:
+        raise
+
+#    try:
+#        if enter_date is None:
+#            enter_date = datetime.datetime.today().date()
+#        else:
+#            enter_date = datetime.datetime.strptime(enter_date, date_fmt).date()
+#    except TypeError:
+#        raise
+
+    trans = base.Transaction(account_id=account_id,
+                             date=date,
+                             enter_date=enter_date,
+                             check_num=check_num,
+                             amount=amount,
+                             payee_id=payee_id,
+                             category_id=category_id,
+                             transaction_label_id=transaction_label_id,
+                             memo_id=memo_id,
+                             fitid=fitid)
+    base.session.add(trans)
+
+
+def insert_transaction_label(value):
+    logging.debug("inserting '{}' to AccountGroup".format(value))
+    trans_label = base.TransactionLabel(value=value)
+    base.session.add(trans_label)
 
 
 utils.logged
