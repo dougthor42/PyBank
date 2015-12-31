@@ -647,5 +647,6 @@ from ofxtools import OFXTree
 if __name__ == "__main__":
 #    main()
 #    list_accounts()
+    pass
 
 
