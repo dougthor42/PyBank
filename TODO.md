@@ -76,6 +76,8 @@
 + [ ] Manually entered transctions TID should be null or negative so that
       it never conflicts with the FITID (Financial Institution Transaction ID)
       from the OFX.
++ [ ] If a line cannot be added to the database (because of a foreign key
+      error, perhaps), then let's highlight that line red to inform the user.
 
 
 ## Security:
