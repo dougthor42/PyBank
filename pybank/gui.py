@@ -1024,6 +1024,7 @@ class LedgerGrid(wx.grid.Grid):
 #        self._format_table()
 
     def _setup(self):
+        logging.debug("Running LedgerGrid._setup()")
         self.table = LedgerGridBaseTable(self)
 
         self.SetTable(self.table, takeOwnership=True)
@@ -1032,11 +1033,31 @@ class LedgerGrid(wx.grid.Grid):
         self.SetMargins(0, 0)
         self.AutoSizeColumns(True)
 
+        self._bind_events()
+
+        self._format_table()
+
+    def _bind_events(self):
+        logging.debug("Binding events for LedgerGrid")
         self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK,
                   self._on_left_dclick,
                   self)
 
-        self._format_table()
+        self.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK,
+                  self._on_right_click,
+                  self)
+
+        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_CLICK,
+                  self._on_left_click,
+                  self)
+
+        self.Bind(wx.grid.EVT_GRID_CELL_CHANGED,
+                  self._on_grid_cell_changed,
+                  self)
+
+        self.Bind(wx.grid.EVT_GRID_CELL_CHANGING,
+                  self._on_grid_cell_changing,
+                  self)
 
     def _format_table(self):
         """ Formats all table properties """
@@ -1091,9 +1112,60 @@ class LedgerGrid(wx.grid.Grid):
 
     def _on_left_dclick(self, event):
         # TODO: get cell coord from event
-        logging.debug("double left click on cell {}".format(event))
+        rc = (event.GetRow(), event.GetCol())
+        logging.debug("double left click on cell {}".format(rc))
         if self.CanEnableCellControl():
             self.EnableCellEditControl()
+
+    def _on_right_click(self, event):
+        rc = (event.GetRow(), event.GetCol())
+        logging.debug("right-click detected on cell {}".format(rc))
+
+    def _on_left_click(self, event):
+        """
+        Fires when a left-click happens.
+
+        1.  Record the current cursor position
+        2.  Move the grid cursor to the new cell (default behavior of this
+            event)
+        3.  If there is modified data, attempt to add it to the database.
+
+        """
+        logging.debug("Left-click detected")
+        previous_rc = (self.GetGridCursorRow(), self.GetGridCursorCol())
+        new_rc = (event.GetRow(), event.GetCol())
+
+        # Don't do anything if we haven't moved grid location
+        if previous_rc == new_rc:
+            logging.debug("Cursor didn't move.")
+            return
+
+        self.SetGridCursor(*new_rc)
+
+        logging.debug("previous_rc = {}".format(previous_rc))
+        logging.debug("new_rc = {}".format(new_rc))
+
+        if self.table.data_is_modified and new_rc[0] != previous_rc[0]:
+            # TODO: Fill this out
+            try:
+                logging.info("Attempting to write data to database")
+                raise Exception
+            except Exception:
+                logging.debug("Error in writing to database!")
+            else:
+                logging.debug("DB write successful.")
+                self.table.data_is_modified = False
+
+
+    def _on_grid_cell_changed(self, event):
+        """ Fires after a cell's data has changed. """
+        logging.debug("grid cell changed")
+        logging.debug("{}".format(event))
+
+    def _on_grid_cell_changing(self, event):
+        """ Fires before a cell's data is changed. Can be vetoed. """
+        logging.debug("grid cell about to change")
+        logging.debug("{}".format(event))
 
 
 # TODO: Add some way to highlight which account is active. A button, mayhaps?
