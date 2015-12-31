@@ -35,6 +35,7 @@ except (SystemError, ImportError):
         raise
 
 
+@unittest.skip("Move to test_crypto.py")
 class TestSaltAndHash(unittest.TestCase):
     """
     Tests the ofx.salt_and_hash function
@@ -53,6 +54,7 @@ class TestSaltAndHash(unittest.TestCase):
             self.assertNotIn(value, hashbrowns[:-1])
 
 
+@unittest.skip("Move to test_crypto.py")
 class TestValidatePassword(unittest.TestCase):
     """
     Tests that salted and hashed passwords are correctly validated.
