@@ -104,7 +104,7 @@ if __name__ == "__main__":
         print()
         print(algorithm_name)
         print(cmd)
-        for l in [1, 2, 3, 5, 10, 15, 50, 100, 500, 1000, 10000]:
+        for l in [1, 2, 3, 5, 10, 15, 50, 100, 500, 1000]:#, 10000]:
             rand1 = "".join(random.choice(string.ascii_letters) for _ in range(l))
             rand2 = "".join(random.choice(string.ascii_letters) for _ in range(l))
             num = 1000

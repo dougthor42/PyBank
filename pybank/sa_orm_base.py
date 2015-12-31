@@ -175,7 +175,7 @@ def create_ledger_view():
                         func.coalesce(DisplayName.name,
                                       Payee.name).label('Payee'),
                         Payee.name.label('DownloadedPayee'),
-                        TransactionLabel.name.label('TransactionLabel'),
+                        TransactionLabel.value.label('TransactionLabel'),
                         Category.name.label('Category'),
                         Memo.text.label('Memo'),
                         Transaction.amount.label('Amount'),
@@ -283,9 +283,10 @@ class Institution(Base):
 
     institution_id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String)
-    ofx_id = sa.Column(sa.Integer, sa.ForeignKey('ofx.ofx_id'))
-
-    ofx = relationship('Ofx')
+    fid = sa.Column(sa.String)
+    org = sa.Column(sa.String)
+    url = sa.Column(sa.String)
+    broker = sa.Column(sa.String)
 
     def __str__(self):
         return "{}: {}".format(self.institution_id, self.name)
@@ -307,23 +308,6 @@ class Memo(Base):
 
     def __str__(self):
         return "{}: {}".format(self.memo_id, self.text)
-
-class Ofx(Base):
-    """
-    Ofx
-
-    Contains the ofx_id, name, url, and org.
-
-    """
-    __tablename__ = 'ofx'
-
-    ofx_id = sa.Column(sa.Integer, primary_key=True)
-    name = sa.Column(sa.String)
-    org = sa.Column(sa.String)
-    url = sa.Column(sa.String)
-
-    def __str__(self):
-        return "{}: {}".format(self.ofx_id, self.name)
 
 class Payee(Base):
     """
@@ -369,7 +353,7 @@ class Transaction(Base):
     category_id = sa.Column(sa.Integer, sa.ForeignKey('category.category_id'))
     transaction_label_id = sa.Column(sa.Integer, sa.ForeignKey('transaction_label.transaction_label_id'))
     memo_id = sa.Column(sa.Integer, sa.ForeignKey('memo.memo_id'))
-    fit_id = sa.Column(sa.Integer)
+    fitid = sa.Column(sa.Integer)
 
     payee = relationship('Payee')
     category = relationship('Category')
@@ -389,7 +373,7 @@ class TransactionLabel(Base):
     __tablename__ = 'transaction_label'
 
     transaction_label_id = sa.Column(sa.Integer, primary_key=True)
-    name = sa.Column(sa.String)
+    value = sa.Column(sa.String)
 
     def __str__(self):
         return "{}: {}".format(self.transaction_label_id, self.name)
