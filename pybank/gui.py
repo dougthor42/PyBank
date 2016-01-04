@@ -841,45 +841,6 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
         self._set_value(row, col, value)
 
-    # for sqlite backend
-#    def _set_value(self, row, col, value):
-#        """
-#        Updates the database with the value of the cell.
-#
-#        # TODO: If updating an existing payee name, then we
-#        #       add to the display_name table.
-#        #       If adding a new payee name, check it against the payee table
-#        #       Add if needed, otherwise...?
-#        """
-#        logging.debug("Setting r{}c{} to `{}`".format(row, col, value))
-#        try:
-#            # update database entry
-#            # gotta get the tid and send *that* to the update method
-#            # to account for deleted entries.
-#            tid = self.data[row][0]
-#            self.ledger_view.update_transaction(tid, col, value)
-#        except IndexError:
-#            # add a new row
-#            logging.debug("Adding a new row")
-#            self.ledger_view.insert_row()
-#            self._update_data()         # Must come before _set_value()
-#            self._set_value(row, col, value)
-#
-#            # tell grid we've added a row
-#            action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
-#            msg = wx.grid.GridTableMessage(self, action, 1)
-#            self.GetView().ProcessTableMessage(msg)
-#            self.parent._format_table()
-#        else:
-#            # run this if no errors
-#            self._update_data()
-#            # _update_data() does not update the balance for all rows. hmm...
-#            # Update values
-#            action = wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES
-#            msg = wx.grid.GridTableMessage(self, action)
-#            self.GetView().ProcessTableMessage(msg)
-#            self.parent._format_table()
-
     # for SQLAlchemy backend
     def _set_value(self, row, col, value):
         """
@@ -1080,6 +1041,7 @@ class LedgerGrid(wx.grid.Grid):
                 try:
                     val = float(self.GetCellValue(row, col))
                 except ValueError:
+                    logging.warning("Unable to convert r%sc%s to float. Assuming 0 for row coloring.", row, col)
                     val = 0
                 if val < 0:
                     self.SetCellTextColour(row, col,
@@ -1129,19 +1091,18 @@ class LedgerGrid(wx.grid.Grid):
             try:
                 logging.info("Attempting to write data to database")
                 orm.insert_ledger(acct=1,
-                                        date=None,
-                                        enter_date=None,
-                                        check_num=None,
-                                        amount=None,
-                                        payee=None,
-                                        category=None,
-                                        label=None,
-                                        memo=None,
-                                        fitid=-1,
-                                        )
-            except Exception as err:
-                logging.debug("Error in writing to database!")
-                logging.error(err, sys_info=True)
+                                  date=None,
+                                  enter_date=None,
+                                  check_num=None,
+                                  amount="123.4",
+                                  payee=None,
+                                  category=None,
+                                  label=None,
+                                  memo=None,
+                                  fitid=-1,
+                                  )
+            except TypeError:
+                logging.exception("Error writing to database!", stack_info=True)
             else:
                 logging.debug("DB write successful.")
                 logging.debug(orm.session.new)
