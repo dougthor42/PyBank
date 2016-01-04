@@ -164,6 +164,11 @@ def check_password_exists(service="Pybank", user="user"):
     return bool(keyring.get_password(service, user))
 
 
+def delete_password(service="Pybank", user="user"):
+    """ Delete a password from the keyring """
+    keyring.delete_password(service, user)
+
+
 def create_key(password, salt):
     """
     Create a Fernet key from a (peppered) password and salt.
@@ -206,10 +211,10 @@ def create_key(password, salt):
     return key
 
 
-def get_key():
+def get_key(service="Pybank", user="user"):
     """ Creates and returns the encryption key. """
     salt = get_salt()
-    pw = get_password()
+    pw = get_password(service, user)
     peppered_pw = encode_and_pepper_pw(pw)
     key = create_key(peppered_pw, salt)
 
@@ -232,12 +237,25 @@ def get_salt(file="salt.txt"):
     return salt
 
 
-def encode_and_pepper_pw(string):
+def encode_and_pepper_pw(string, pepper=None):
     """ Encodes a string as binary and adds a pepper """
     logging.debug("encoding and peppering string")
-    string = string.encode('utf-8')
-    string += b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
-    return string
+    if pepper is None:
+        pepper = b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
+
+    try:
+        string = string.encode('utf-8')
+    except AttributeError:
+        # string is already encoded
+        pass
+
+    try:
+        pepper = pepper.encode('utf-8')
+    except AttributeError:
+        # pepper is already encoded
+        pass
+
+    return string + pepper
 
 
 def main():
@@ -305,5 +323,6 @@ def main():
 
 if __name__ == "__main__":
 #    main()
-    check_password_exists()
+#    check_password_exists()
+    print(encode_and_pepper_pw(5, tuple))
 
