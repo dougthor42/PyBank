@@ -45,7 +45,7 @@ try:
     from . import utils
     from . import crypto
     from . import gui_utils
-    from . import sa_orm_transactions as orm_trans
+#    from . import sa_orm_transactions as orm_trans
     from . import sa_orm_base as orm_base
 #    from . import __init__ as __pybank_init
     from . import (__project_name__,
@@ -61,7 +61,7 @@ except SystemError:
         import utils
         import crypto
         import gui_utils
-        import sa_orm_transactions as orm_trans
+#        import sa_orm_transactions as orm_trans
         import sa_orm_base as orm_base
 #        import __init__ as __pybank_init
         from __init__ import (__project_name__,
@@ -76,7 +76,7 @@ except SystemError:
         from pybank import utils
         from pybank import crypto
         from pybank import gui_utils
-        from pybank import sa_orm_transactions as orm_trans
+#        from pybank import sa_orm_transactions as orm_trans
         from pybank import sa_orm_base as orm_base
 #        from pybank import __init__ as __pybank_init
         from pybank import (__project_name__,
@@ -366,7 +366,7 @@ class MainFrame(wx.Frame):
         key = crypto.get_key()
 
         # dump the memory database directly to an encrypted file.
-        dump = orm_trans.sqlite_iterdump(orm_base.engine, orm_base.session)
+        dump = orm_base.sqlite_iterdump(orm_base.engine, orm_base.session)
         dump = "".join(line for line in dump)
         dump = dump.encode('utf-8')
 
@@ -454,7 +454,7 @@ class MainFrame(wx.Frame):
         key = crypto.get_key()
 
         # dump the memory database directly to an encrypted file.
-        dump = orm_trans.sqlite_iterdump(orm_base.engine, orm_base.session)
+        dump = orm_base.sqlite_iterdump(orm_base.engine, orm_base.session)
         dump = "".join(line for line in dump)
         dump = dump.encode('utf-8')
 
@@ -815,7 +815,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
 
         # TODO: come up with a better way. Brute-force is not extensible.
-        row_data = orm_trans.query_ledger_view()[row]
+        row_data = orm_base.query_ledger_view()[row]
         if col == self.columns.tid.value:
             return row_data.transaction_id
         elif col == self.columns.date.value:
@@ -974,7 +974,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         # TODO: I hate this - come up with an alternate solution
         starting_bal = decimal.Decimal(200)
         balance = starting_bal
-        for row_num, row_data in enumerate(orm_trans.query_ledger_view()):
+        for row_num, row_data in enumerate(orm_base.query_ledger_view()):
             data_dict = row_data.__dict__
             row_values = []
             for item in self.columns:
@@ -1134,7 +1134,7 @@ class LedgerGrid(wx.grid.Grid):
             # TODO: Fill this out
             try:
                 logging.info("Attempting to write data to database")
-                orm_trans.insert_ledger(acct=1,
+                orm_base.insert_ledger(acct=1,
                                         date=None,
                                         enter_date=None,
                                         check_num=None,

@@ -19,7 +19,9 @@ Options:
 # ---------------------------------------------------------------------------
 # Standard Library
 import logging
-from decimal import Decimal as D
+#from decimal import Decimal as D
+from decimal import Decimal
+import datetime
 
 # Third Party
 import sqlalchemy as sa
@@ -27,6 +29,8 @@ from sqlalchemy import event
 from sqlalchemy.ext import compiler as sa_compiler
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.schema import CreateTable
+from sqlalchemy import text as saText
 
 # Package / Application
 try:
@@ -125,7 +129,7 @@ class SqliteNumeric(sa.types.TypeDecorator):
     def process_result_value(self, value, dialect):
         if value is None:
             return None
-        return D(value)
+        return Decimal(value)
 
 
 # ---------------------------------------------------------------------------
@@ -410,6 +414,261 @@ def create_database():
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
+
+
+
+#%%
+
+# ---------------------------------------------------------------------------
+### Query Functions
+# ---------------------------------------------------------------------------
+def query_ledger_view():
+    logging.debug("Quering Ledger View")
+    return session.query(LedgerView).all()
+
+# ---------------------------------------------------------------------------
+### Insert Functions
+# ---------------------------------------------------------------------------
+def insert_account_group(name):
+    logging.debug("inserting '{}' to AccountGroup".format(name))
+    acct_group = AccountGroup(name=name)
+    session.add(acct_group)
+
+
+def insert_account(name, acct_num, user, institution_id, acct_group=None):
+    logging.debug("inserting '{}' to Account".format(name))
+    acct = Account(account_num=acct_num,
+                        name=name,
+                        user_name=user,
+                        institution_id=institution_id,
+                        account_group_id=acct_group)
+    session.add(acct)
+
+
+def insert_category(name, parent):
+    logging.debug("inserting '{}' to Category".format(name))
+    cat = Category(name=name, parent=parent)
+    session.add(cat)
+
+
+def insert_display_name(name):
+    logging.debug("inserting '{}' to DisplayName".format(name))
+    display_name = DisplayName(name=name)
+    session.add(display_name)
+
+
+def insert_institution(name, fid=None, org=None, url=None, broker=None):
+    logging.debug("inserting '{}' to Institution".format(name))
+    institution = Institution(name=name,
+                                   fid=fid,
+                                   org=org,
+                                   url=url,
+                                   broker=broker)
+    session.add(institution)
+
+
+def insert_memo(text):
+    logging.debug("inserting '{}' to Memo".format(text))
+    memo = Memo(text)
+    session.add(memo)
+
+
+def insert_payee(name, display_name_id=None, category_id=None):
+    logging.debug("inserting '{}' to Payee".format(name))
+    payee = Payee(name,
+                       display_name_id=display_name_id,
+                       category_id=category_id)
+    session.add(payee)
+
+
+def insert_transaction(account_id=None,
+                       date=None,
+                       enter_date=None,
+                       check_num=None,
+                       amount=None,
+                       payee_id=None,
+                       category_id=None,
+                       transaction_label_id=None,
+                       memo_id=None,
+                       fitid=-1):
+    logging.debug("inserting item to Transaction")
+
+    date_fmt = '%Y-%m-%d'
+
+    try:
+        if date is None:
+            date = datetime.datetime.today().date()
+        else:
+            date = datetime.datetime.strptime(date, date_fmt).date()
+    except TypeError:
+        raise
+
+#    try:
+#        if enter_date is None:
+#            enter_date = datetime.datetime.today().date()
+#        else:
+#            enter_date = datetime.datetime.strptime(enter_date, date_fmt).date()
+#    except TypeError:
+#        raise
+
+    trans = Transaction(account_id=account_id,
+                             date=date,
+                             enter_date=enter_date,
+                             check_num=check_num,
+                             amount=amount,
+                             payee_id=payee_id,
+                             category_id=category_id,
+                             transaction_label_id=transaction_label_id,
+                             memo_id=memo_id,
+                             fitid=fitid)
+    session.add(trans)
+
+
+def insert_transaction_label(value):
+    logging.debug("inserting '{}' to AccountGroup".format(value))
+    trans_label = TransactionLabel(value=value)
+    session.add(trans_label)
+
+
+def insert_ledger(*args, **kwargs):
+    """
+    Handles inserting items into the ledger
+
+    Every string needs to be matched to its ID in its table. If any new
+    values are found, those need to 1st be added to the respective table.
+    """
+    pass
+
+
+# ---------------------------------------------------------------------------
+### Other Functions
+# ---------------------------------------------------------------------------
+utils.logged
+def copy_to_sa(engine, session, dump):
+    """
+    We know that our SQLite database will have the same structure as
+    the SQLAlchemy ORM. So we just have to iterate through everything, copying
+    data over.
+
+    The engine and the session must already be created.
+
+    Parameters:
+    -----------
+    engine: SQLAlchemy.engine.Engine object
+        The engine to work on
+
+    session: SQLAlchemy.orm.session.Session object
+        The session to work on
+
+    dump : iterable
+        A list or generator object that contains strings for table creation
+        and data. Typically the result of `sqlite_iterdump()` or
+        `sqlite3.iterdump()`.
+
+    Returns:
+    --------
+    None?
+    """
+    for sql in dump:
+        if sql.startswith("INSERT"):
+            # "None" is not recognized by SQLite when executing SQL, so we
+            # need to repalce it with NULL.
+            sql = sql.replace("None", "NULL")
+            engine.execute(saText(sql))
+
+
+def sqlite_iterdump(engine, session):
+    """
+    Mimmics SQLites' `iterdump()` function.
+
+    Returns an iterator to dump the database in an SQL text format.
+
+    The only (known) difference is that row data values have spaces
+    between columns while sqlite's `iterdump()` does not.
+
+    **NOTE: THIS FUNCTION IS SPECIALISED FOR PYBANK AND THE 1 VIEW THAT
+    IT CONTAINS. IT WILL MOST NOT WORK ON A GENERIC DATABASE.**
+
+    The SQLAlchemy declaritive base class `Base` must be imported already.
+
+    Parameters:
+    -----------
+    engine: SQLAlchemy.engine.Engine object
+        The engine to work on
+
+    session: SQLAlchemy.orm.session.Session object
+        The session to work on
+
+    Returns:
+    --------
+    sql : iterator
+        The dump of the SQL.
+    """
+    tables = Base.metadata.tables
+    n = 0
+
+    # start off by yielding the begin trans statement.
+    if n == 0:
+        n = 1
+        yield "BEGIN TRANSACTION;"
+
+    # then move to yielding the tables and their data, in order
+    # Note: sorting tables.items() removes the benefit of it being a
+    #       generator. However, I doubt many DBs will have > 10000 tables...
+    if n == 1:
+        for name, table in sorted(tables.items()):
+            yield str(CreateTable(table).compile(engine)).strip() + ";"
+
+            data = session.query(table).all()
+            for row in data:
+                row = list(row)     # needs to be mutable
+
+                row = [str(x) if isinstance(x, Decimal)
+                       else x.isoformat() if isinstance(x, datetime.date)
+#                       else "" if x is None
+                       else x for x in row]
+
+                row = tuple(row)    # back to tuple because I use its parens
+                                    # instead of adding my own parentheses.
+                yield 'INSERT INTO "{}" VALUES{};'.format(name, row)
+        n = 2
+
+    # end by yielding the view and commit statements.
+    if n == 2:
+        n = 3
+        view = CreateView("ledger_view", LedgerView.selectable)
+        yield str(view.compile(engine)) + ";COMMIT;"
+
+
+def _test_iterdump_loop(dump_file):
+    """
+    Test the iterdump -> load -> iterdump loop.
+
+    An iterdump file must already exist. sa_orm_base must be set up to
+    be an in-memory database.
+    """
+    engine, session = create_database()
+
+    with open(dump_file, 'r') as openf:
+        data = openf.read()
+        data = data.split(';')
+        copy_to_sa(engine, session, data)
+
+    dump = "".join(line for line in sqlite_iterdump(engine, session))
+    dump = dump.encode('utf-8')
+    with open("C:\\WinPython34\\projects\\github\\PyBank\\pybank\\tests\\data\\_TestDB_generated_dump.txt", 'wb') as openf:
+        openf.write(dump)
+
+    session.close()
+    engine.dispose()
+
+if __name__ == "__main__":
+    pass
+
+
+
+#%%
+
 
 
 if __name__ == "__main__":
