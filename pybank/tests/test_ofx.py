@@ -35,46 +35,6 @@ except (SystemError, ImportError):
         raise
 
 
-@unittest.skip("Move to test_crypto.py")
-class TestSaltAndHash(unittest.TestCase):
-    """
-    Tests the ofx.salt_and_hash function
-    """
-
-    def test_no_collisions(self):
-        """
-        Check for collisions by calling the salt_and_hash many times
-        """
-        secret = "SuperSecretPassword"
-        sah = ofx.salt_and_hash
-        hashbrowns = [sah(secret)[1]]
-        for _ in range(512):
-            value = sah(secret)[1]
-            hashbrowns.append(value)
-            self.assertNotIn(value, hashbrowns[:-1])
-
-
-@unittest.skip("Move to test_crypto.py")
-class TestValidatePassword(unittest.TestCase):
-    """
-    Tests that salted and hashed passwords are correctly validated.
-    """
-    def setUp(self):
-        self.secret = "This is my Secret"
-        self.wrong_secret = "This is my secret"
-        self.salt, self.hashed = ofx.salt_and_hash(self.secret)
-
-    def test_good_validation(self):
-        """ Check that a correct password validates True """
-        result = ofx.validate_password(self.secret, self.salt, self.hashed)
-        self.assertTrue(result)
-
-    def test_bad_validation(self):
-        """ Check that an incorrect password validates False """
-        result = ofx.validate_password(self.wrong_secret,
-                                       self.salt,
-                                       self.hashed)
-        self.assertFalse(result)
 
 
 def main():
