@@ -28,7 +28,7 @@ from sqlalchemy import text as saText
 # Package / Application
 try:
     # Imports used by unit test runners
-    from . import sa_orm_base as base
+    from . import sa_orm_base as orm
     from . import utils
 #    from . import (__project_name__,
 #                   __version__,
@@ -37,7 +37,7 @@ try:
 except SystemError:
     try:
         # Imports used by Spyder
-        import sa_orm_base as base
+        import sa_orm_base as orm
         import utils
 #        from __init__ import (__project_name__,
 #                              __version__,
@@ -45,7 +45,7 @@ except SystemError:
         logging.debug("Imports for Spyder IDE")
     except ImportError:
         # Imports used by cx_freeze
-        from pybank import sa_orm_base as base
+        from pybank import sa_orm_base as orm
         from pybank import utils
 #        from pybank import (__project_name__,
 #                            __version__,
@@ -62,61 +62,61 @@ except SystemError:
 # ---------------------------------------------------------------------------
 def query_ledger_view():
     logging.debug("Quering Ledger View")
-    return base.session.query(base.LedgerView).all()
+    return orm.session.query(orm.LedgerView).all()
 
 # ---------------------------------------------------------------------------
 ### Insert Functions
 # ---------------------------------------------------------------------------
 def insert_account_group(name):
     logging.debug("inserting '{}' to AccountGroup".format(name))
-    acct_group = base.AccountGroup(name=name)
-    base.session.add(acct_group)
+    acct_group = orm.AccountGroup(name=name)
+    orm.session.add(acct_group)
 
 
 def insert_account(name, acct_num, user, institution_id, acct_group=None):
     logging.debug("inserting '{}' to Account".format(name))
-    acct = base.Account(account_num=acct_num,
+    acct = orm.Account(account_num=acct_num,
                         name=name,
                         user_name=user,
                         institution_id=institution_id,
                         account_group_id=acct_group)
-    base.session.add(acct)
+    orm.session.add(acct)
 
 
 def insert_category(name, parent):
     logging.debug("inserting '{}' to Category".format(name))
-    cat = base.Category(name=name, parent=parent)
-    base.session.add(cat)
+    cat = orm.Category(name=name, parent=parent)
+    orm.session.add(cat)
 
 
 def insert_display_name(name):
     logging.debug("inserting '{}' to DisplayName".format(name))
-    display_name = base.DisplayName(name=name)
-    base.session.add(display_name)
+    display_name = orm.DisplayName(name=name)
+    orm.session.add(display_name)
 
 
 def insert_institution(name, fid=None, org=None, url=None, broker=None):
     logging.debug("inserting '{}' to Institution".format(name))
-    institution = base.Institution(name=name,
+    institution = orm.Institution(name=name,
                                    fid=fid,
                                    org=org,
                                    url=url,
                                    broker=broker)
-    base.session.add(institution)
+    orm.session.add(institution)
 
 
 def insert_memo(text):
     logging.debug("inserting '{}' to Memo".format(text))
-    memo = base.Memo(text)
-    base.session.add(memo)
+    memo = orm.Memo(text)
+    orm.session.add(memo)
 
 
 def insert_payee(name, display_name_id=None, category_id=None):
     logging.debug("inserting '{}' to Payee".format(name))
-    payee = base.Payee(name,
+    payee = orm.Payee(name,
                        display_name_id=display_name_id,
                        category_id=category_id)
-    base.session.add(payee)
+    orm.session.add(payee)
 
 
 def insert_transaction(account_id=None,
@@ -149,7 +149,7 @@ def insert_transaction(account_id=None,
 #    except TypeError:
 #        raise
 
-    trans = base.Transaction(account_id=account_id,
+    trans = orm.Transaction(account_id=account_id,
                              date=date,
                              enter_date=enter_date,
                              check_num=check_num,
@@ -159,13 +159,13 @@ def insert_transaction(account_id=None,
                              transaction_label_id=transaction_label_id,
                              memo_id=memo_id,
                              fitid=fitid)
-    base.session.add(trans)
+    orm.session.add(trans)
 
 
 def insert_transaction_label(value):
     logging.debug("inserting '{}' to AccountGroup".format(value))
-    trans_label = base.TransactionLabel(value=value)
-    base.session.add(trans_label)
+    trans_label = orm.TransactionLabel(value=value)
+    orm.session.add(trans_label)
 
 
 def insert_ledger(*args, **kwargs):
@@ -242,7 +242,7 @@ def sqlite_iterdump(engine, session):
     sql : iterator
         The dump of the SQL.
     """
-    tables = base.Base.metadata.tables
+    tables = orm.Base.metadata.tables
     n = 0
 
     # start off by yielding the begin trans statement.
@@ -274,7 +274,7 @@ def sqlite_iterdump(engine, session):
     # end by yielding the view and commit statements.
     if n == 2:
         n = 3
-        view = base.CreateView("ledger_view", base.LedgerView.selectable)
+        view = orm.CreateView("ledger_view", orm.LedgerView.selectable)
         yield str(view.compile(engine)) + ";COMMIT;"
 
 
@@ -285,7 +285,7 @@ def _test_iterdump_loop(dump_file):
     An iterdump file must already exist. sa_orm_base must be set up to
     be an in-memory database.
     """
-    engine, session = base.create_database()
+    engine, session = orm.create_database()
 
     with open(dump_file, 'r') as openf:
         data = openf.read()
@@ -302,7 +302,7 @@ def _test_iterdump_loop(dump_file):
 
 if __name__ == "__main__":
     pass
-#    engine, session = base.create_database()
+#    engine, session = orm.create_database()
 
 #    add_temp_item(session)
 #    add_temp_item(session)
@@ -324,7 +324,7 @@ if __name__ == "__main__":
 #    os.remove("C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.sqlite")
 
     # create a new database file
-#    engine2, session2 = base.create_database()
+#    engine2, session2 = orm.create_database()
 
     # copy over the existing data from the dump
 #    copy_to_sa(engine2, session2, dump)
