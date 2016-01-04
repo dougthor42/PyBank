@@ -33,7 +33,6 @@ from docopt import docopt
 try:
     # Imports used by unit test runners
     from .parseofx import ParseOFX
-    from . import crypto
 #    from . import __init__ as __pybank_init
     from . import __version__
     logging.debug("Imports for UnitTests")
@@ -41,14 +40,12 @@ except SystemError:
     try:
         # Imports used by Spyder
         from parseofx import ParseOFX
-        import crypto
 #        import __init__ as __pybank_init
         from __init__ import __version__
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
         from parseofx import ParseOFX
-        from pybank import crypto
         from pybank import __version__
         logging.debug("Imports for Executable")
 
