@@ -397,37 +397,22 @@ class LedgerView(Base):
 
 
 # ---------------------------------------------------------------------------
-### Functions
+### Create the metadata and Session
 # ---------------------------------------------------------------------------
-utils.logged
-def create_database():
-
-#    engine = sa.create_engine(engine_str, echo=False)
-    Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    return engine, session
-
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-
-
-#%%
-
 # ---------------------------------------------------------------------------
-### Query Functions
+### ORM Query Functions
 # ---------------------------------------------------------------------------
 def query_ledger_view():
     logging.debug("Quering Ledger View")
     return session.query(LedgerView).all()
 
 # ---------------------------------------------------------------------------
-### Insert Functions
+### ORM Insert Functions
 # ---------------------------------------------------------------------------
 def insert_account_group(name):
     logging.debug("inserting '{}' to AccountGroup".format(name))
@@ -438,10 +423,10 @@ def insert_account_group(name):
 def insert_account(name, acct_num, user, institution_id, acct_group=None):
     logging.debug("inserting '{}' to Account".format(name))
     acct = Account(account_num=acct_num,
-                        name=name,
-                        user_name=user,
-                        institution_id=institution_id,
-                        account_group_id=acct_group)
+                   name=name,
+                   user_name=user,
+                   institution_id=institution_id,
+                   account_group_id=acct_group)
     session.add(acct)
 
 
@@ -460,24 +445,24 @@ def insert_display_name(name):
 def insert_institution(name, fid=None, org=None, url=None, broker=None):
     logging.debug("inserting '{}' to Institution".format(name))
     institution = Institution(name=name,
-                                   fid=fid,
-                                   org=org,
-                                   url=url,
-                                   broker=broker)
+                              fid=fid,
+                              org=org,
+                              url=url,
+                              broker=broker)
     session.add(institution)
 
 
 def insert_memo(text):
     logging.debug("inserting '{}' to Memo".format(text))
-    memo = Memo(text)
+    memo = Memo(text=text)
     session.add(memo)
 
 
 def insert_payee(name, display_name_id=None, category_id=None):
     logging.debug("inserting '{}' to Payee".format(name))
-    payee = Payee(name,
-                       display_name_id=display_name_id,
-                       category_id=category_id)
+    payee = Payee(name=name,
+                  display_name_id=display_name_id,
+                  category_id=category_id)
     session.add(payee)
 
 
@@ -512,15 +497,15 @@ def insert_transaction(account_id=None,
 #        raise
 
     trans = Transaction(account_id=account_id,
-                             date=date,
-                             enter_date=enter_date,
-                             check_num=check_num,
-                             amount=amount,
-                             payee_id=payee_id,
-                             category_id=category_id,
-                             transaction_label_id=transaction_label_id,
-                             memo_id=memo_id,
-                             fitid=fitid)
+                        date=date,
+                        enter_date=enter_date,
+                        check_num=check_num,
+                        amount=amount,
+                        payee_id=payee_id,
+                        category_id=category_id,
+                        transaction_label_id=transaction_label_id,
+                        memo_id=memo_id,
+                        fitid=fitid)
     session.add(trans)
 
 
@@ -543,7 +528,18 @@ def insert_ledger(*args, **kwargs):
 # ---------------------------------------------------------------------------
 ### Other Functions
 # ---------------------------------------------------------------------------
-utils.logged
+@utils.logged
+def create_database():
+
+#    engine = sa.create_engine(engine_str, echo=False)
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    return engine, session
+
+@utils.logged
 def copy_to_sa(engine, session, dump):
     """
     We know that our SQLite database will have the same structure as
@@ -662,15 +658,9 @@ def _test_iterdump_loop(dump_file):
     session.close()
     engine.dispose()
 
-if __name__ == "__main__":
-    pass
-
-
-
-#%%
-
-
-
+# ---------------------------------------------------------------------------
+### Run as module
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
 #    create_database("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.sqlite")
     create_database()

@@ -11,7 +11,7 @@ Build Status
 +-----------+----------+-----------+------+
 | Travis-CI | AppVeyor | Coveralls | PyPI |
 +===========+==========+===========+======+
-||travis-ci|||appveyor|||coveralls|||PyPI||
+||travis-ci|||appveyor|||coveralls||      |
 +-----------+----------+-----------+------+
 
 +------------------------------------+

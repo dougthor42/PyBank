@@ -20,20 +20,21 @@ import unittest
 import unittest.mock as mock
 import os.path as osp
 import sqlite3
+from wx import Frame
 
 # Third-Party
 from docopt import docopt
 
 # Package / Application
 try:
-#    from .. import gui
+    from .. import gui
     pass
 except (SystemError, ImportError):
     if __name__ == "__main__":
         # Allow module to be run as script
         print("Running module as script")
         sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-#        import gui
+        import gui
     else:
         raise
 
@@ -41,7 +42,7 @@ except (SystemError, ImportError):
 class TestDummy(unittest.TestCase):
     """ dummy test here so that coverage grabs gui.py """
     def test_dummy(self):
-        self.assertTrue(True)
+        self.assertEqual(gui.LEDGER_COLOR_ROW_NEW, gui.LEDGER_COLOR_ROW_NEW)
 
 
 def main():
