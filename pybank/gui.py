@@ -45,9 +45,7 @@ try:
     from . import utils
     from . import crypto
     from . import gui_utils
-#    from . import sa_orm_transactions as orm_trans
     from . import orm
-#    from . import __init__ as __pybank_init
     from . import (__project_name__,
                    __version__,
                    )
@@ -61,9 +59,7 @@ except SystemError:
         import utils
         import crypto
         import gui_utils
-#        import sa_orm_transactions as orm_trans
         import orm
-#        import __init__ as __pybank_init
         from __init__ import (__project_name__,
                               __version__,
                               )
@@ -76,9 +72,7 @@ except SystemError:
         from pybank import utils
         from pybank import crypto
         from pybank import gui_utils
-#        from pybank import sa_orm_transactions as orm_trans
         from pybank import orm
-#        from pybank import __init__ as __pybank_init
         from pybank import (__project_name__,
                             __version__,
                             )

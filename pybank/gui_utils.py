@@ -30,11 +30,7 @@ import wx
 # Package / Application
 try:
     # Imports used by unit test runners
-    from . import pbsql
-    from . import plots
-    from . import utils
     from . import crypto
-#    from . import __init__ as __pybank_init
     from . import (__project_name__,
                    __version__,
                    )
@@ -43,11 +39,7 @@ try:
 except SystemError:
     try:
         # Imports used by Spyder
-        import pbsql
-        import plots
-        import utils
         import crypto
-#        import __init__ as __pybank_init
         from __init__ import (__project_name__,
                               __version__,
                               )
@@ -55,11 +47,7 @@ except SystemError:
         logging.debug("Imports for Spyder IDE")
     except ImportError:
         # Imports used by cx_freeze
-        from pybank import pbsql
-        from pybank import plots
-        from pybank import utils
         from pybank import crypto
-#        from pybank import __init__ as __pybank_init
         from pybank import (__project_name__,
                             __version__,
                             )

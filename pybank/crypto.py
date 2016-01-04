@@ -35,7 +35,7 @@ from cryptography.exceptions import InvalidKey
 # Package / Application
 try:
     # Imports used for unittests
-    from . import pbsql
+#    from . import pbsql
 #    from . import plots
 #    from . import utils
 #    from . import (__project_name__,
@@ -45,7 +45,7 @@ try:
 except SystemError:
     try:
         # Imports used by Spyder
-        import pbsql
+#        import pbsql
 #        import plots
 #        import utils
 #        from __init__ import (__project_name__,
@@ -54,7 +54,7 @@ except SystemError:
         logging.debug("Imports for Spyder IDE")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import pbsql
+#        from pybank import pbsql
 #        from pybank import plots
 #        from pybank import utils
 #        from pybank import (__project_name__,
