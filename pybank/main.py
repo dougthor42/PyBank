@@ -35,8 +35,8 @@ try:
     from . import gui_utils
     from . import crypto
     from . import utils
-    from . import sa_orm_base as base
-    from . import sa_orm_transactions
+    from . import orm
+#    from . import sa_orm_transactions
     from . import (__project_name__,
                    __version__,
                    __released__,
@@ -50,8 +50,8 @@ except SystemError:
         import crypto
         import utils
         import gui_utils
-        import sa_orm_base as base
-        import sa_orm_transactions
+        import orm
+#        import sa_orm_transactions
         from __init__ import (__project_name__,
                               __version__,
                               __released__,
@@ -64,8 +64,8 @@ except SystemError:
         from pybank import crypto
         from pybank import utils
         from pybank import gui_utils
-        from pybank import sa_orm_base as base
-        from pybank import sa_orm_transactions
+        from pybank import orm
+#        from pybank import sa_orm_transactions
         from pybank import (__project_name__,
                             __version__,
                             __released__,
@@ -116,7 +116,7 @@ def create_new(db_file):
 #    engine, session = base.create_database()
     # 2. Dump it, encrypt the dump, and then save the encrypted dump.
     # Move to pbsql module
-    dump = list(sa_orm_transactions.sqlite_iterdump(base.engine, base.session))
+    dump = list(orm.sqlite_iterdump(orm.engine, orm.session))
     dump = "".join(line for line in dump)
     dump = dump.encode('utf-8')
 #    dump = "".join(line for line in db.iterdump())
@@ -176,7 +176,7 @@ def main():
         logging.debug('creating database structure')
 #        engine, session = base.create_database()
         logging.debug('starting copy')
-        sa_orm_transactions.copy_to_sa(base.engine, base.session, new_dump)
+        orm.copy_to_sa(orm.engine, orm.session, new_dump)
 #        db.executescript(new_dump)
 
         # this db object needs to be sent around everywhere.
