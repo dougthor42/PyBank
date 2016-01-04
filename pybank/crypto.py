@@ -12,6 +12,33 @@ Options:
     --version           # Show version.
 
 """
+    # Add a pepper. Not really useful since this is open-source, but /shrug.
+    # TODO: look into alternate pepper solution
+    #       - perhaps unique to the computer it's running on?
+    #         - But what if the user wants to change computers...
+    #       - secondary password?
+
+    # =======================================================================
+    # Instead of decrypting to a temp file, let's save the SQLite dump string.
+    # I can encrypt and decrypt that before saving anywhere, and this database
+    # should stay relatively small (< 50k lines) so it should be quick...
+    #
+    # First-order benchmarks
+    #              Database          Times           File Size
+    # Rows      Dump   write    Encrypt  Decrypt   DB       Encrypted Text
+    # 10        3.8ms  3ms      550us    312us     36kB     13kB
+    # 10k       57ms   16ms     29ms     25.5ms    529kB    1206kB
+    # 50k       295ms  788ms    72ms     65ms      5.3MB    6MB
+    # =======================================================================
+
+    # NOTE: Secure delete using Gutmann method? (if needed)
+    #       https://en.wikipedia.org/wiki/Gutmann_method
+    #       Not needed because I'm no longer deleting anything and most
+    #       hard drives are starting to become solid state anyway... this
+    #       method is for magnetic platter storage
+
+    # TODO: Get security review by someone else.
+
 # ---------------------------------------------------------------------------
 ### Imports
 # ---------------------------------------------------------------------------
@@ -19,9 +46,8 @@ Options:
 import os
 import logging
 import base64
-import io
-import sqlite3
 import time
+import os.path
 
 # Third Party
 import keyring
@@ -69,6 +95,8 @@ except SystemError:
 # ---------------------------------------------------------------------------
 ### Module Constants
 # ---------------------------------------------------------------------------
+SERVICE = "Pybank"
+USER = "user"
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +122,7 @@ def encrypted_read(file, key):
     try:
         d = f.decrypt(data)
     except InvalidToken:
-        logging.critical("Key Mismatch with file! Unable to decrypt!")
+        logging.exception("Key Mismatch with file! Unable to decrypt!")
         raise
 
     logging.debug("decryption complete")
@@ -126,45 +154,53 @@ def encrypt_file(file, key, copy=False):
     with open(file, 'rb') as openf:
         decrypted_data = openf.read()
 
-    encrypted_write("crypto_" + file, key, decrypted_data)
+    if copy:
+        fn = os.path.splitext(file)[0]
+        fn += ".crypto"
+        encrypted_write(fn, key, decrypted_data)
+    else:
+        encrypted_write(file, key, decrypted_data)
 
     return
 
 
 def decrypt_file(file, key, new_file=None):
-    """ Decrypts a given file, saving it as a new, unencrypted file. """
+    """
+    Decrypts a given file, overwriting the original unless
+    new_file is given.
+    """
     if new_file is None:
-        new_file = "decrypted_" + file
+        new_file = file
 
     with open(new_file, 'wb') as openf:
         openf.write(encrypted_read(file, key))
 
-    return new_file
+    return
 
 
-def get_password(service="Pybank", user="user"):
+def get_password(service=SERVICE, user=USER):
     return keyring.get_password(service, user)
 
 
-def check_password(password, service="Pybank", user="user"):
+def check_password(password, service=SERVICE, user=USER):
     """ Checks a password against the keyring """
     password = password.encode('utf-8')
     pw = get_password(service, user).encode('utf-8')
     return password == pw
 
 
-def create_password(password, service="Pybank", user="user"):
+def create_password(password, service=SERVICE, user=USER):
     """ Creates a new password for PyBank in the keyring """
     keyring.set_password(service, user, password)
     return
 
 
-def check_password_exists(service="Pybank", user="user"):
+def check_password_exists(service=SERVICE, user=USER):
     """ Verify that a password for PyBank exists in the keyring """
     return bool(keyring.get_password(service, user))
 
 
-def delete_password(service="Pybank", user="user"):
+def delete_password(service=SERVICE, user=USER):
     """ Delete a password from the keyring """
     keyring.delete_password(service, user)
 
@@ -211,7 +247,7 @@ def create_key(password, salt):
     return key
 
 
-def get_key(service="Pybank", user="user"):
+def get_key(service=SERVICE, user=USER):
     """ Creates and returns the encryption key. """
     salt = get_salt()
     pw = get_password(service, user)
@@ -259,70 +295,8 @@ def encode_and_pepper_pw(string, pepper=None):
 
 
 def main():
-#    # Read or create salt file.         # XXX: Put in config file?
-    salt = get_salt()
-#    print("Salt is:\n{}".format(salt))
-
-#    # Add a pepper. Not really useful since this is open-source, but /shrug.
-#    # TODO: look into alternate pepper solution
-#    #       - perhaps unique to the computer it's running on?
-#    #         - But what if the user wants to change computers...
-#    #       - secondary password?
-    password = encode_and_pepper_pw('pybank')
-    key = create_key(password, salt)
-
-    # 1.  decrypt the DB once to a temporary file
-    # 2.  copy it to a memory db (http://stackoverflow.com/a/4019182/1354930)
-    # 3.  Remove temporary file.
-    # This will minimize the amount of time that the file is not encrypted.
-
-    # =======================================================================
-    # Instead of decrypting to a temp file, let's save the SQLite dump string.
-    # I can encrypt and decrypt that before saving anywhere, and this database
-    # should stay relatively small (< 50k lines) so it should be quick...
-    #
-    # First-order benchmarks
-    #              Database          Times           File Size
-    # Lines     Dump   write    Encrypt  Decrypt   DB       Encrypted Text
-    # 10        3.8ms  3ms      550us    312us     36kB     13kB
-    # 10k       57ms   16ms     29ms     25.5ms    529kB    1206kB
-    # 50k       295ms  788ms    72ms     65ms      5.3MB    6MB
-    # =======================================================================
-
-    # NOTE: Secure delete using Gutmann method? (if needed)
-    #       https://en.wikipedia.org/wiki/Gutmann_method
-    #       Not needed because I'm no longer deleting anything and most
-    #       hard drives are starting to become solid state anyway... this
-    #       method is for magnetic platter storage
-
-    # TODO: Get security review by someone else.
-
-    file_db = sqlite3.connect("test_database.db")
-    dump = "".join(line for line in file_db.iterdump())
-    dump = dump.encode('utf-8')
-    encrypted_write("test_database.pybank", key, dump)
-#    with open("test_database_dump.txt", "w") as openf:
-#        openf.write(dump)
-
-    new_dump = encrypted_read("test_database.pybank", key)
-    new_dump = new_dump.decode('utf-8')
-
-    # copy to an im-memory database
-    main_db = sqlite3.connect(":memory:")
-    main_db.executescript(new_dump)
-
-    # check that it worked.
-    cursor = main_db.cursor()
-    cursor.execute("SELECT * FROM sqlite_sequence")
-    data = cursor.fetchall()
-    print()
-    print()
-    time.sleep(0.2)
-    print(data)
-
+    pass
 
 if __name__ == "__main__":
-#    main()
-#    check_password_exists()
-    print(encode_and_pepper_pw(5, tuple))
+    main()
 
