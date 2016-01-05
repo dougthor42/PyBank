@@ -75,23 +75,17 @@ from bs4 import BeautifulSoup
 # Package / Application
 try:
     # Imports used by unit test runners
-#    from . import sibling_module
-#    from . import pbsql
     from . import __version__
-    logging.debug("Imports for UnitTests")
+    logging.debug("Imports for parseofx.py complete (Method: UnitTest)")
 except SystemError:
     try:
         # Imports used by Spyder
-#        import sibling_module
-#        import pbsql
         from __init__ import __version__
-        logging.debug("Imports for Spyder IDE")
+        logging.debug("Imports for parseofx.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
-#        from package import sibling_module
-#        from pybank import pbsql
         from pybank import __version__
-        logging.debug("imports for Executable")
+        logging.debug("Imports for parseofx.py complete (Method: Executable)")
 
 
 # ---------------------------------------------------------------------------
