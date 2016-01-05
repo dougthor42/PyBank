@@ -130,6 +130,20 @@ LOG_LEVEL_CONSOLE = LOG_LEVEL_BASE
 LOG_LEVEL_GUI = LOG_LEVEL_BASE
 
 
+class CustomLoggingFormatter(logging.Formatter):
+    """
+    Custom logging formatter. Overrides funcName and module if a value
+    for name_override or module_override exists.
+    """
+    def format(self, record):
+        if hasattr(record, 'name_override'):
+            record.funcName = record.name_override
+        if hasattr(record, 'module_override'):
+            record.module = record.module_override
+
+        return super(CustomLoggingFormatter, self).format(record)
+
+
 def _setup_logging():
     """
     Set up logging for the entire package.
@@ -207,7 +221,8 @@ def _setup_logging():
     ### Console Handler #####################################################
     handler = logging.StreamHandler()
     handler.setLevel(LOG_LEVEL_CONSOLE)
-    formatter = logging.Formatter(logfmt, datefmt)
+#    formatter = logging.Formatter(logfmt, datefmt)
+    formatter = CustomLoggingFormatter(logfmt, datefmt)
     handler.setFormatter(formatter)
     handler.set_name("Console Handler")
     logger.addHandler(handler)
@@ -249,7 +264,8 @@ def _setup_logging():
                          #delay=True,
                          )
     handler.setLevel(LOG_LEVEL_FILE)
-    formatter = logging.Formatter(logfmt, datefmt)
+#    formatter = logging.Formatter(logfmt, datefmt)
+    formatter = CustomLoggingFormatter(logfmt, datefmt)
     handler.setFormatter(formatter)
     handler.set_name("File Handler")
     logger.addHandler(handler)
