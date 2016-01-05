@@ -82,6 +82,21 @@ class DropView(sa.schema.DDLElement):
         self.name = name
 
 
+# SQLite ####################################################################
+@sa_compiler.compiles(CreateView, 'sqlite')
+def compile(element, compiler, **kw):
+    sql_str = "CREATE VIEW IF NOT EXISTS {} AS {}"
+    process_compiler = compiler.sql_compiler.process(element.selectable)
+    return sql_str.format(element.name, process_compiler)
+
+
+@sa_compiler.compiles(DropView, 'sqlite')
+def compile(element, compiler, if_exists=False, **kw):
+    sql_str = "DROP VIEW IF EXISTS {}"
+    return sql_str.format(element.name)
+
+
+# Other Databases ###########################################################
 @sa_compiler.compiles(CreateView)
 def compile(element, compiler, **kw):
     sql_str = "CREATE VIEW {} AS {}"
@@ -91,7 +106,7 @@ def compile(element, compiler, **kw):
 
 @sa_compiler.compiles(DropView)
 def compile(element, compiler, if_exists=False, **kw):
-    sql_str = "DROP VIEW IF EXISTS {}"
+    sql_str = "DROP VIEW {}"
     return sql_str.format(element.name)
 
 
