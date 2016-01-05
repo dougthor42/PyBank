@@ -528,7 +528,7 @@ def insert_ledger(*args, **kwargs):
 # ---------------------------------------------------------------------------
 ### Other Functions
 # ---------------------------------------------------------------------------
-@utils.logged
+#@utils.logged
 def create_database():
 
 #    engine = sa.create_engine(engine_str, echo=False)
@@ -539,7 +539,7 @@ def create_database():
 
     return engine, session
 
-@utils.logged
+#@utils.logged
 def copy_to_sa(engine, session, dump):
     """
     We know that our SQLite database will have the same structure as
@@ -663,4 +663,9 @@ def _test_iterdump_loop(dump_file):
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
 #    create_database("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.sqlite")
-    create_database()
+    dump = list(sqlite_iterdump(engine, session))
+    dump = "".join(line for line in dump)
+    dump = dump.encode('utf-8')
+
+    with open("temp_dump_file.txt", 'wb') as openf:
+        openf.write(dump)
