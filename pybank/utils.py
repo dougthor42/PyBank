@@ -127,6 +127,23 @@ def logged(func):
     return wrapper
 
 
+#def log_entire_class(cls):
+#    """
+#    Decorator that logs the entry and exit points for each method in
+#    a class.
+#
+#    From David Beazley's "Python 3 Metaprogramming" Talk
+#        http://www.dabeaz.com/py3meta/
+#        PyCon'13 (2014-03-14, Santa Clara, CA)
+#
+#    TODO: Actually get working...
+#    """
+#    for name, val in vars(cls).items():
+#        if callable(val):
+#            setattr(cls, name, logged(val))
+#        return cls
+
+
 def _init_logging(target, level=DEFAULT_LOG_LEVEL):
     """
     Initialize logging to the on-screen gui log text control

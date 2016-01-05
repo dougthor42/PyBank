@@ -78,16 +78,7 @@ except SystemError:
 # ---------------------------------------------------------------------------
 ### Functions
 # ---------------------------------------------------------------------------
-def nothing():
-    """
-    what if, instead of trying to encrypt and decrypt the sqlite file itself,
-    I encrypt and decrypt the SQLite dump string... Then I could intercept
-    and encrypt the string before it gets written to disk...
-    +
-    """
-    pass
-
-
+@utils.logged
 def create_new(db_file):
     """
     """
@@ -119,6 +110,7 @@ def create_new(db_file):
     crypto.encrypted_write(db_file, key, dump)
 
 
+@utils.logged
 def main():
     """
     Main entry point
@@ -137,17 +129,17 @@ def main():
 
     """
     docopt(__doc__, version=__version__)
-    logging.debug("Running pybank.py")
 
     db_file = 'test_database.pybank'
 
     # Check if the database file exists
     database_file = utils.find_data_file(db_file)
-    logging.debug('Checking for existing database: {}'.format(db_file))
+    logging.info('Checking for existing database: {}'.format(db_file))
     if not os.path.isfile(database_file):
+        logging.warning("database file not found. Creating.")
         create_new(db_file)
     else:
-        logging.debug('database file found')
+        logging.info('database file found')
         if not gui_utils.prompt_pw():
             logging.debug('User canceled password prompt; exiting')
             return
@@ -179,11 +171,12 @@ def main():
     logging.debug('starting gui')
     gui.MainApp()
 
-    logging.debug("End")
+    logging.info("End")
 
 
 if __name__ == "__main__":
     msg = "Starting %s v%s, released %s"
     logging.info(msg, __project_name__, __version__, __released__)
     main()
+    logging.info("End of %s program.", __project_name__)
 

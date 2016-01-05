@@ -126,7 +126,7 @@ __long_descr__ = """/
 
 LOG_LEVEL_BASE = logging.DEBUG
 LOG_LEVEL_FILE = LOG_LEVEL_BASE
-LOG_LEVEL_CONSOLE = LOG_LEVEL_BASE
+LOG_LEVEL_CONSOLE = logging.INFO
 LOG_LEVEL_GUI = LOG_LEVEL_BASE
 
 
@@ -216,7 +216,7 @@ def _setup_logging():
 
     # Create the logger
     logger = logging.getLogger()
-    logger.setLevel(LOG_LEVEL_CONSOLE)
+    logger.setLevel(LOG_LEVEL_BASE)
 
     ### Console Handler #####################################################
     handler = logging.StreamHandler()

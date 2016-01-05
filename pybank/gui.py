@@ -414,7 +414,7 @@ class MainFrame(wx.Frame):
         """ Create a new file """
         logging.debug("on new")
         logging.info("Creating new file")
-        logging.info("(Not yet implemented)")
+        logging.error("(Not yet implemented)")
 
     def _on_close(self, event):
         """ Create a new file """
