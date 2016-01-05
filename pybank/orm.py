@@ -539,6 +539,7 @@ def insert_transaction_label(value):
     session.add(trans_label)
 
 
+@utils.logged
 def insert_ledger(*args, **kwargs):
     """
     Handles inserting items into the ledger
@@ -546,13 +547,14 @@ def insert_ledger(*args, **kwargs):
     Every string needs to be matched to its ID in its table. If any new
     values are found, those need to 1st be added to the respective table.
     """
+    logging.info("Inserting values into ledger")
     pass
 
 
 # ---------------------------------------------------------------------------
 ### Other Functions
 # ---------------------------------------------------------------------------
-#@utils.logged
+@utils.logged
 def create_database():
 
 #    engine = sa.create_engine(engine_str, echo=False)
@@ -563,7 +565,8 @@ def create_database():
 
     return engine, session
 
-#@utils.logged
+
+@utils.logged
 def copy_to_sa(engine, session, dump):
     """
     We know that our SQLite database will have the same structure as
@@ -597,6 +600,7 @@ def copy_to_sa(engine, session, dump):
             engine.execute(saText(sql))
 
 
+@utils.logged
 def sqlite_iterdump(engine, session):
     """
     Mimmics SQLites' `iterdump()` function.

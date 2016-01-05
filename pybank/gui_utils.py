@@ -34,6 +34,7 @@ try:
                    __version__,
                    )
     from . import crypto
+    from . import utils
     logging.debug("Imports for gui_utils.py complete (Method: UnitTest)")
 except SystemError:
     try:
@@ -42,6 +43,7 @@ except SystemError:
                               __version__,
                               )
         import crypto
+        import utils
         logging.debug("Imports for gui_utils.py complete (Method: Spyder IDE)")
     except ImportError:
         # Imports used by cx_freeze
@@ -49,6 +51,7 @@ except SystemError:
                             __version__,
                             )
         from pybank import crypto
+        from pybank import utils
         logging.debug("Imports for gui.py complete (Method: Executable)")
 
 # ---------------------------------------------------------------------------
@@ -171,6 +174,7 @@ def _prompt_pw(prompt="Please enter your password:"):
     return retval
 
 
+@utils.logged
 def prompt_pw():
     """
     Prompt the user for a password.
@@ -184,22 +188,23 @@ def prompt_pw():
 
     prompt = "Please enter your password:"
 
-    logging.debug('Starting password prompt loop')
+    logging.info('Starting password prompt loop')
     while True:
         password = _prompt_pw(prompt)
         if password is None:
-            logging.debug('User canceled password prompt; exiting')
+            logging.info('User canceled password prompt; exiting')
             return False
         elif crypto.check_password(password):
             logging.debug('Password OK')
             return True
         else:
-            logging.debug('Invalid password')
+            logging.warning('Invalid password')
             prompt = "Invalid password.\nPlease enter your password:"
             time.sleep(0.5)     # slow down brute-force attempts
             continue
 
 
+@utils.logged
 def create_pw():
     """
     Have the user create a password.
@@ -218,13 +223,14 @@ def create_pw():
         crypto.create_password(dialog.pw1.GetValue())
         retval = True
     else:
-        logging.debug("Canceled")
+        logging.info("Canceled")
         retval = False
     dialog.Destroy()
     app.MainLoop()
     return retval
 
 
+@utils.logged
 def change_pw():
     """
     Prompt the user to change the password.

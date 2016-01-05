@@ -122,14 +122,15 @@ def encrypted_read(file, key):
     logging.debug("decrypting...")
     try:
         d = f.decrypt(data)
+        logging.debug("decryption complete")
     except InvalidToken:
         logging.exception("Key Mismatch with file! Unable to decrypt!")
         raise
 
-    logging.debug("decryption complete")
     return d
 
 
+@utils.logged
 def encrypted_write(file, key, data):
     """ Writes to an encrypted file """
     logging.info("writing encrypted file `{}`".format(file))
@@ -145,6 +146,7 @@ def encrypted_write(file, key, data):
     return
 
 
+@utils.logged
 def encrypt_file(file, key, copy=False):
     """
     Encrypts a given file.
@@ -165,6 +167,7 @@ def encrypt_file(file, key, copy=False):
     return
 
 
+@utils.logged
 def decrypt_file(file, key, new_file=None):
     """
     Decrypts a given file, overwriting the original unless
@@ -179,10 +182,12 @@ def decrypt_file(file, key, new_file=None):
     return
 
 
+@utils.logged
 def get_password(service=SERVICE, user=USER):
     return keyring.get_password(service, user)
 
 
+@utils.logged
 def check_password(password, service=SERVICE, user=USER):
     """ Checks a password against the keyring """
     password = password.encode('utf-8')
@@ -190,22 +195,26 @@ def check_password(password, service=SERVICE, user=USER):
     return password == pw
 
 
+@utils.logged
 def create_password(password, service=SERVICE, user=USER):
     """ Creates a new password for PyBank in the keyring """
     keyring.set_password(service, user, password)
     return
 
 
+@utils.logged
 def check_password_exists(service=SERVICE, user=USER):
     """ Verify that a password for PyBank exists in the keyring """
     return bool(keyring.get_password(service, user))
 
 
+@utils.logged
 def delete_password(service=SERVICE, user=USER):
     """ Delete a password from the keyring """
     keyring.delete_password(service, user)
 
 
+@utils.logged
 def create_key(password, salt):
     """
     Create a Fernet key from a (peppered) password and salt.
@@ -237,7 +246,7 @@ def create_key(password, salt):
       Message Authentication Code
 
     """
-    logging.debug("creating key")
+    logging.info("Creating encryption key")
     kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
                      length=32,
                      salt=salt,
@@ -248,6 +257,7 @@ def create_key(password, salt):
     return key
 
 
+@utils.logged
 def get_key(service=SERVICE, user=USER):
     """ Creates and returns the encryption key. """
     salt = get_salt()
@@ -258,36 +268,39 @@ def get_key(service=SERVICE, user=USER):
     return key
 
 
+@utils.logged
 def get_salt(file="salt.txt"):
     """ Reads the salt file if it exists. Otherwise, creates it. """
-    logging.info("getting salt...")
+    logging.info("Getting or creating salt string.")
     if not os.path.exists(file):
-        logging.debug("salt file DNE - creating")
+        logging.warning("salt file DNE - creating")
         with open(file, 'wb') as openf:
             salt = os.urandom(32)
             openf.write(salt)
     else:
-        logging.debug("salt file found")
         with open(file, 'rb') as openf:
             salt = openf.read()
 
     return salt
 
 
+@utils.logged
 def encode_and_pepper_pw(string, pepper=None):
     """ Encodes a string as binary and adds a pepper """
-    logging.info("encoding and peppering string")
+    logging.info("Encoding and peppering string")
     if pepper is None:
         pepper = b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
 
     try:
         string = string.encode('utf-8')
+        logging.warning("Password string was not encoded as utf-8")
     except AttributeError:
         # string is already encoded
         pass
 
     try:
         pepper = pepper.encode('utf-8')
+        logging.warning("Pepper string was not encoded as utf-8")
     except AttributeError:
         # pepper is already encoded
         pass
