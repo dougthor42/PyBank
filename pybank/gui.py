@@ -40,44 +40,38 @@ except ImportError:
 # Package / Application
 try:
     # Imports used by unit test runners
-#    from . import pbsql
-    from . import plots
+    from . import (__project_name__,
+                   __version__,
+                   )
+#    from . import plots
     from . import utils
     from . import crypto
     from . import gui_utils
     from . import orm
-    from . import (__project_name__,
-                   __version__,
-                   )
-
-    logging.debug("Imports for UnitTests")
+    logging.debug("Imports for gui.py complete (Method: UnitTest)")
 except SystemError:
     try:
         # Imports used by Spyder
-#        import pbsql
-        import plots
+        from __init__ import (__project_name__,
+                              __version__,
+                              )
+#        import plots
         import utils
         import crypto
         import gui_utils
         import orm
-        from __init__ import (__project_name__,
-                              __version__,
-                              )
-
-        logging.debug("Imports for Spyder IDE")
+        logging.debug("Imports for gui.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
-#        from pybank import pbsql
-        from pybank import plots
+        from pybank import (__project_name__,
+                            __version__,
+                            )
+#        from pybank import plots
         from pybank import utils
         from pybank import crypto
         from pybank import gui_utils
         from pybank import orm
-        from pybank import (__project_name__,
-                            __version__,
-                            )
-
-        logging.debug("imports for Executable")
+        logging.debug("Imports for gui.py complete (Method: Executable)")
 
 
 # ---------------------------------------------------------------------------

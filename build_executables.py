@@ -85,17 +85,17 @@ excludes = [
             "zmq",
             ]
 
-mplBackendsPath = os.path.join(os.path.split(sys.executable)[0],
-                               "Lib\\site-packages\\matplotlib\\backends\\backend_*")
-
-fileList = glob.glob(mplBackendsPath)
-
-moduleList = []
-
-for mod in fileList:
-    module = os.path.splitext(os.path.basename(mod))[0]
-    if not module in ("backend_wxagg", "backend_wx", "backend_agg"):
-        moduleList.append("matplotlib.backends." + module)
+#mplBackendsPath = os.path.join(os.path.split(sys.executable)[0],
+#                               "Lib\\site-packages\\matplotlib\\backends\\backend_*")
+#
+#fileList = glob.glob(mplBackendsPath)
+#
+#moduleList = []
+#
+#for mod in fileList:
+#    module = os.path.splitext(os.path.basename(mod))[0]
+#    if not module in ("backend_wxagg", "backend_wx", "backend_agg"):
+#        moduleList.append("matplotlib.backends." + module)
 
 #excludes += moduleList
 

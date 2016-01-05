@@ -34,20 +34,20 @@ import numpy as np
 # Package / Application
 try:
     # Imports used by unit test runners
-    from . import utils
     from . import __version__
-    logging.debug("Imports for UnitTests")
+    from . import utils
+    logging.debug("Imports for plots.py complete (Method: UnitTest)")
 except SystemError:
     try:
         # Imports used by Spyder
-        import utils
         from __init__ import __version__
-        logging.debug("Imports for Spyder IDE")
+        import utils
+        logging.debug("Imports for plots.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import utils
         from pybank import __version__
-        logging.debug("imports for Executable")
+        from pybank import utils
+        logging.debug("Imports for plots.py complete (Method: Executable)")
 
 # ---------------------------------------------------------------------------
 ### Functions required for Module Constants
