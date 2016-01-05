@@ -121,7 +121,7 @@ class MainFrame(wx.Frame):
 
         self.encryption_timer = wx.Timer(self)
         self.encryption_timer.Start(5 * 60 * 1000)      # Every 5 minutes
-        logging.debug("Encryption timer started")
+        logging.info("Encryption timer started")
 
         self._init_ui()
 
@@ -436,7 +436,7 @@ class MainFrame(wx.Frame):
         self.panel.panel2.ledger_page.ledger.SetColumnShown(col_num, new_val)
 
     def _on_encryption_timer(self, event):
-        logging.debug("Encryption Timer event start")
+        logging.info("Encryption Timer event start")
 
         # Get the required encryption stuff
         key = crypto.get_key()
@@ -842,7 +842,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         Does not attempt to update the database
         """
-        logging.debug("Setting r{}c{} to `{}`".format(row, col, value))
+        logging.info("Setting r{}c{} to `{}`".format(row, col, value))
         try:
             logging.debug("trying to update row")
             logging.debug("Previous: {}".format(self.data[row]))
@@ -914,6 +914,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 #            row[-1
 
 
+    @utils.logged
     def _update_data(self):
         # grab the table data from the database
         self.data = []
@@ -946,7 +947,7 @@ class LedgerGrid(wx.grid.Grid):
     """
     """
     def __init__(self, parent):
-        logging.debug("Initializing LedgerGrid")
+        logging.info("Initializing LedgerGrid")
         wx.grid.Grid.__init__(self, parent, wx.ID_ANY)
 
         self._setup()
@@ -957,8 +958,9 @@ class LedgerGrid(wx.grid.Grid):
         for row in range(self.GetNumberRows()):
             self.SetCellEditor(row, 7, choiceEditor)
 
+    @utils.logged
     def _setup(self):
-        logging.debug("Running LedgerGrid._setup()")
+        logging.info("Running LedgerGrid._setup()")
         self.table = LedgerGridBaseTable(self)
 
         self.SetTable(self.table, takeOwnership=True)
@@ -971,8 +973,9 @@ class LedgerGrid(wx.grid.Grid):
 
         self._format_table()
 
+    @utils.logged
     def _bind_events(self):
-        logging.debug("Binding events for LedgerGrid")
+        logging.info("Binding events for LedgerGrid")
         self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK,
                   self._on_left_dclick,
                   self)
@@ -993,16 +996,18 @@ class LedgerGrid(wx.grid.Grid):
                   self._on_grid_cell_changing,
                   self)
 
+    @utils.logged
     def _format_table(self):
         """ Formats all table properties """
-        logging.debug("Formatting table")
+        logging.info("Formatting table")
         self._color_rows()
         self._align_columns()
         self._color_dollars()
 
+    @utils.logged
     def _color_rows(self):
         """ Color alternating rows and color the last row light grey """
-        logging.debug("Coloring rows")
+        logging.info("Coloring rows")
         num_rows = self.GetNumberRows()
         for row in range(num_rows):
             attr = wx.grid.GridCellAttr()
@@ -1016,7 +1021,7 @@ class LedgerGrid(wx.grid.Grid):
 
     def _align_columns(self):
         """ Sets the alignment for each column """
-        logging.debug("Setting column alignment")
+        logging.info("Setting column alignment")
         num_cols = self.GetNumberCols()
         for column in range(num_cols):
             attr = wx.grid.GridCellAttr()
@@ -1028,7 +1033,7 @@ class LedgerGrid(wx.grid.Grid):
 
     def _color_dollars(self):
         """ Colors negative amounts and balances as red """
-        logging.debug("Coloring negative balances")
+        logging.info("Coloring negative balances")
         num_rows = self.GetNumberRows() - 1
         for row in range(num_rows):
             for col in (9, 10):
@@ -1098,7 +1103,7 @@ class LedgerGrid(wx.grid.Grid):
             except TypeError:
                 logging.exception("Error writing to database!", stack_info=True)
             else:
-                logging.debug("DB write successful.")
+                logging.info("DB write successful.")
                 logging.debug(orm.session.new)
                 logging.debug(orm.session.dirty)
                 orm.session.commit()
