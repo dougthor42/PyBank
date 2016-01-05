@@ -97,6 +97,8 @@ build: off  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Run the project tests
+  - ps ls
+  - ps ls ..
   - "%CMD_IN_ENV% green pybank -vv"
 
 after_test:

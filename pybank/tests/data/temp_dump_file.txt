@@ -1,0 +1,68 @@
+BEGIN TRANSACTION;CREATE TABLE account (
+	account_id INTEGER NOT NULL, 
+	account_num VARCHAR NOT NULL, 
+	name VARCHAR NOT NULL, 
+	user_name VARCHAR NOT NULL, 
+	institution_id INTEGER, 
+	account_group_id INTEGER, 
+	PRIMARY KEY (account_id), 
+	FOREIGN KEY(institution_id) REFERENCES institution (institution_id), 
+	FOREIGN KEY(account_group_id) REFERENCES account_group (account_group_id)
+);CREATE TABLE account_group (
+	account_group_id INTEGER NOT NULL, 
+	name VARCHAR NOT NULL, 
+	PRIMARY KEY (account_group_id)
+);CREATE TABLE category (
+	category_id INTEGER NOT NULL, 
+	name VARCHAR NOT NULL, 
+	parent INTEGER, 
+	PRIMARY KEY (category_id), 
+	FOREIGN KEY(parent) REFERENCES category (category_id)
+);CREATE TABLE display_name (
+	display_name_id INTEGER NOT NULL, 
+	name INTEGER, 
+	PRIMARY KEY (display_name_id)
+);CREATE TABLE institution (
+	institution_id INTEGER NOT NULL, 
+	name VARCHAR, 
+	fid VARCHAR, 
+	org VARCHAR, 
+	url VARCHAR, 
+	broker VARCHAR, 
+	PRIMARY KEY (institution_id)
+);CREATE TABLE memo (
+	memo_id INTEGER NOT NULL, 
+	text VARCHAR, 
+	PRIMARY KEY (memo_id)
+);CREATE TABLE payee (
+	payee_id INTEGER NOT NULL, 
+	name VARCHAR, 
+	display_name_id INTEGER, 
+	category_id INTEGER, 
+	PRIMARY KEY (payee_id), 
+	FOREIGN KEY(display_name_id) REFERENCES display_name (display_name_id), 
+	FOREIGN KEY(category_id) REFERENCES category (category_id)
+);CREATE TABLE "transaction" (
+	transaction_id INTEGER NOT NULL, 
+	account_id INTEGER, 
+	date DATE, 
+	enter_date DATE, 
+	check_num INTEGER, 
+	amount VARCHAR(30), 
+	payee_id INTEGER, 
+	category_id INTEGER, 
+	transaction_label_id INTEGER, 
+	memo_id INTEGER, 
+	fitid INTEGER, 
+	PRIMARY KEY (transaction_id), 
+	FOREIGN KEY(account_id) REFERENCES account (account_id), 
+	FOREIGN KEY(payee_id) REFERENCES payee (payee_id), 
+	FOREIGN KEY(category_id) REFERENCES category (category_id), 
+	FOREIGN KEY(transaction_label_id) REFERENCES transaction_label (transaction_label_id), 
+	FOREIGN KEY(memo_id) REFERENCES memo (memo_id)
+);CREATE TABLE transaction_label (
+	transaction_label_id INTEGER NOT NULL, 
+	value VARCHAR, 
+	PRIMARY KEY (transaction_label_id)
+);CREATE VIEW ledger_view AS SELECT "transaction".transaction_id, "transaction".date, "transaction".account_id, account.name AS "AccountName", "transaction".enter_date, "transaction".check_num, coalesce(display_name.name, payee.name) AS "Payee", payee.name AS "DownloadedPayee", transaction_label.value AS "TransactionLabel", category.name AS "Category", memo.text AS "Memo", "transaction".amount AS "Amount" 
+FROM "transaction" LEFT OUTER JOIN payee ON payee.payee_id = "transaction".payee_id LEFT OUTER JOIN category ON category.category_id = "transaction".category_id LEFT OUTER JOIN transaction_label ON transaction_label.transaction_label_id = "transaction".transaction_label_id LEFT OUTER JOIN display_name ON display_name.display_name_id = payee.display_name_id LEFT OUTER JOIN account ON account.account_id = "transaction".account_id LEFT OUTER JOIN memo ON memo.memo_id = "transaction".memo_id;COMMIT;

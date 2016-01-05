@@ -34,11 +34,14 @@ except (SystemError, ImportError):
         raise
 
 
+THIS_DIR = osp.dirname(osp.abspath(__file__))
+
+
 class TestCopyToSA(unittest.TestCase):
     """ """
     engine = orm.engine
     session = orm.session
-    dump_file = "./_TestDB_comparison_dump.txt"
+    dump_file = osp.join(THIS_DIR, "data", "temp_dump_file.txt")
 
     @classmethod
     def setUpClass(cls):
@@ -51,6 +54,7 @@ class TestCopyToSA(unittest.TestCase):
     def test_copy_to_sa(self):
         with open(self.dump_file, 'rb') as openf:
             dump = openf.read()
+        dump = dump.decode('utf-8').split(";")
         try:
             orm.copy_to_sa(self.engine, self.session, dump)
         except Exception as err:
@@ -61,7 +65,7 @@ class TestIterDump(unittest.TestCase):
     """ """
     engine = orm.engine
     session = orm.session
-    dump_file = "./_TestDB_comparison_dump.txt"
+    dump_file = osp.join(THIS_DIR, "data", "temp_dump_file.txt")
 
     @classmethod
     def setUpClass(cls):
@@ -71,14 +75,18 @@ class TestIterDump(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
-    @unittest.skip("not ready yet")
-    def test_sqlite_iterdump_loop(self):
+#    @unittest.skip("not ready yet")
+    def test_sqlite_iterdump(self):
         with open(self.dump_file, 'rb') as openf:
             dump = openf.read()
-        orm.copy_to_sa(self.engine, self.session, dump)
-        new_dump = orm.sqlite_iterdump(self.engine, self.session)
-        new_dump = "".join(line for line in new_dump)
-        new_dump = new_dump.encode('utf-8')
+        dump = dump.decode('utf-8').split(";")
+        try:
+            orm.copy_to_sa(self.engine, self.session, dump)
+        except Exception as err:
+            self.fail("sqlite_iterdump raised exception: {}".format(err))
+#        new_dump = list(orm.sqlite_iterdump(self.engine, self.session))
+#        new_dump = "".join(line for line in new_dump)
+#        new_dump = new_dump.encode('utf-8')
 
 
 class TestInsertFunctions(unittest.TestCase):
