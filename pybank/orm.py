@@ -22,6 +22,8 @@ import logging
 #from decimal import Decimal as D
 from decimal import Decimal
 import datetime
+import contextlib
+import warnings
 
 # Third Party
 import sqlalchemy as sa
@@ -116,8 +118,15 @@ def view(name, metadata, selectable):
     for c in selectable.c:
         c._make_proxy(t)
 
+    # TODO: convert to event.listen
+    warnings.simplefilter('ignore', DeprecationWarning)
     CreateView(name, selectable).execute_at('after-create', metadata)
     DropView(name).execute_at('before-drop', metadata)
+    warnings.resetwarnings()
+
+#    event.listen(metadata, 'after-create', CreateView(name, selectable))
+#    event.listen(metadata, 'before-drop', DropView(name))
+
     return t
 
 
@@ -153,12 +162,12 @@ class SqliteNumeric(sa.types.TypeDecorator):
 # I don't really need events if I'm going with what I was doing earlier:
 #   Decrypt the file to a temp one, do all actions on that, then periodically
 #   re-encrypt with the new data.
-def on_checkout(dbapi_conn, connection_rec, connection_proxy):
-    print("handling on_checkout")
-
-
-def on_connect(dbapi_conn, connection_record):
-    print('handling on_connect')
+#def on_checkout(dbapi_conn, connection_rec, connection_proxy):
+#    print("handling on_checkout")
+#
+#
+#def on_connect(dbapi_conn, connection_record):
+#    print('handling on_connect')
 
 
 #event.listen(engine, 'checkout', on_checkout)
@@ -414,10 +423,10 @@ class LedgerView(Base):
 # ---------------------------------------------------------------------------
 ### Create the metadata and Session
 # ---------------------------------------------------------------------------
-
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
+
 
 # ---------------------------------------------------------------------------
 ### ORM Query Functions
