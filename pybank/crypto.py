@@ -66,7 +66,7 @@ try:
 #                   )
 #    from . import pbsql
 #    from . import plots
-#    from . import utils
+    from . import utils
     logging.debug("Imports for crypto.py complete (Method: UnitTest)")
 except SystemError:
     try:
@@ -76,7 +76,7 @@ except SystemError:
 #                              )
 #        import pbsql
 #        import plots
-#        import utils
+        import utils
         logging.debug("Imports for crypto.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
@@ -85,7 +85,7 @@ except SystemError:
 #                            )
 #        from pybank import pbsql
 #        from pybank import plots
-#        from pybank import utils
+        from pybank import utils
         logging.debug("Imports for crypto.py complete (Method: Executable)")
 
 
@@ -107,9 +107,10 @@ USER = "user"
 # ---------------------------------------------------------------------------
 ### Functions
 # ---------------------------------------------------------------------------
+@utils.logged
 def encrypted_read(file, key):
     """ Reads an encrypted file """
-    logging.debug("opening encrypted file `{}`".format(file))
+    logging.info("opening encrypted file `{}`".format(file))
     with open(file, 'rb') as openf:
         data = openf.read()
 
@@ -131,7 +132,7 @@ def encrypted_read(file, key):
 
 def encrypted_write(file, key, data):
     """ Writes to an encrypted file """
-    logging.debug("writing encrypted file `{}`".format(file))
+    logging.info("writing encrypted file `{}`".format(file))
     f = Fernet(key)
     logging.debug("encrypting...")
     encrypted_data = f.encrypt(data)
@@ -259,7 +260,7 @@ def get_key(service=SERVICE, user=USER):
 
 def get_salt(file="salt.txt"):
     """ Reads the salt file if it exists. Otherwise, creates it. """
-    logging.debug("getting salt...")
+    logging.info("getting salt...")
     if not os.path.exists(file):
         logging.debug("salt file DNE - creating")
         with open(file, 'wb') as openf:
@@ -275,7 +276,7 @@ def get_salt(file="salt.txt"):
 
 def encode_and_pepper_pw(string, pepper=None):
     """ Encodes a string as binary and adds a pepper """
-    logging.debug("encoding and peppering string")
+    logging.info("encoding and peppering string")
     if pepper is None:
         pepper = b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
 

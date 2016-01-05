@@ -107,11 +107,11 @@ def logged(func):
 
     """
     # Customize these messages
-    entry_msg = '+Entering  {}'
-    exit_msg = '-Exiting   {}. Exec took {:.6}ms'
+    entry_msg = '+Entering  `{}`'
+    exit_msg = '-Exiting   `{}`. Exec took {:.6}ms'
     logger = logging.getLogger()
 
-    overrides = {'name_override': func.__name__,
+    overrides = {'name_override': func.__qualname__,
                  'module_override': func.__module__,
                  }
 
