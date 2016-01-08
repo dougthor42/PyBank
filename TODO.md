@@ -35,7 +35,7 @@
       + https://github.com/greggles/mcc-codes is a good source. Would also
         like to auto-update that...
       + See my fork of greggles's mcc-codes.
-+ [ ] Organize logging
++ [x] Organize logging
       + Right now almost everything is set to log at the debug level. I need
         to choose what level various events are logged at.
 
@@ -53,19 +53,19 @@
       for some reason... /shrug.
 + [ ] In general, get the plots working
 + [ ] Move ledger balance and amount to numpy arrays?
-+ [ ] Make it so that data is only written to the in-memory database when
++ [x] Make it so that data is only written to the in-memory database when
       the user moves their cursor to a different line.
       + Alternatively add a save button somewhere...
-      + Alternatively have a cron task that periodically writes to the db.
+      + ~~Alternatively have a cron task that periodically writes to the db.~~
         + Though I did shoot this idea down earlier.
 + [ ] Refactor gui.LedgerGridBaseTable._get_value(). I hate it.
 + [ ] Refactor gui.LedgerGridBaseTable._update_data()
 + [ ] Add options to change plot range
 + [ ] Highlight the active account.
-+ [ ] Ledger summary bar providing:
++ [x] Ledger summary bar providing:
       + # of transactions
-      + Online Balance
-      + Available Balance
+      + [ ] Online Balance      # req's internet conn
+      + [ ] Available Balance   # req's internet conn
       + Current Ledger Balance
 + [ ] Refactor gui.MainFrame._on_encryption_timer() method
 + [ ] Get category display working correctly

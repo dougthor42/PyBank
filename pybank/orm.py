@@ -548,6 +548,7 @@ def insert_ledger(*args, **kwargs):
     values are found, those need to 1st be added to the respective table.
     """
     logging.info("Inserting values into ledger")
+    logging.info("(not really because the function is not implemented yet)")
     pass
 
 

@@ -21,6 +21,7 @@ import functools
 import time
 import sys
 import os.path
+import decimal
 from enum import Enum, unique
 
 # Third-Party
@@ -31,18 +32,18 @@ import wx.grid
 try:
     # Imports used by unit test runners
     from . import __version__
-#    from . import pbsql
+    from . import constants
     logging.debug("Imports for utils.py complete (Method: UnitTest)")
 except SystemError:
     try:
         # Imports used by Spyder
         from __init__ import __version__
-#        import pbsql
+        import constants
         logging.debug("Imports for utils.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
         from pybank import __version__
-#        from pybank import pbsql
+        from pybank import constants
         logging.debug("Imports for utils.py complete (Method: Executable)")
 
 # ---------------------------------------------------------------------------
@@ -176,6 +177,68 @@ def find_data_file(filename):
 
     return os.path.join(datadir, filename)
 
+
+def moneyfmt(value, places=2,
+             curr=constants.CURRENCY_SYM,
+             sep=constants.THOUSANDS_SEP,
+             dp=constants.DECIMAL_MARK,
+             pos='', neg='-', trailneg='',
+             trailcur=constants.TRAILING_CURRENCY_SYM):
+    """Convert Decimal to a money formatted string.
+
+    places:  required number of places after the decimal point
+    curr:    optional currency symbol before the sign (may be blank)
+    sep:     optional grouping separator (comma, period, space, or blank)
+    dp:      decimal point indicator (comma or period)
+             only specify as blank when places is zero
+    pos:     optional sign for positive numbers: '+', space or blank
+    neg:     optional sign for negative numbers: '-', '(', space or blank
+    trailneg:optional trailing minus indicator:  '-', ')', space or blank
+    trailcur:optional trailing currency symbol
+
+    >>> d = Decimal('-1234567.8901')
+    >>> moneyfmt(d, curr='$')
+    '-$1,234,567.89'
+    >>> moneyfmt(d, places=0, sep='.', dp='', neg='', trailneg='-')
+    '1.234.568-'
+    >>> moneyfmt(d, curr='$', neg='(', trailneg=')')
+    '($1,234,567.89)'
+    >>> moneyfmt(Decimal(123456789), sep=' ')
+    '123 456 789.00'
+    >>> moneyfmt(Decimal('-0.02'), neg='<', trailneg='>')
+    '<0.02>'
+
+    # taken from the Python Docs on 2016-01-08
+    # https://docs.python.org/3/library/decimal.html#recipes
+    # and modified to allow for the currency symbol as a suffix.
+    """
+    q = decimal.Decimal(10) ** -places      # 2 places --> '0.01'
+    sign, digits, exp = value.quantize(q).as_tuple()
+    result = []
+    digits = list(map(str, digits))
+    build, next = result.append, digits.pop
+    if trailcur:
+        build(trailcur)
+    if sign:
+        build(trailneg)
+    for i in range(places):
+        build(next() if digits else '0')
+    if places:
+        build(dp)
+    if not digits:
+        build('0')
+    i = 0
+    while digits:
+        build(next())
+        i += 1
+        if i == 3 and digits:
+            i = 0
+            build(sep)
+    build(curr)
+    build(neg if sign else pos)
+    return ''.join(reversed(result))
+
+
 def main():
     """
     Main entry point
@@ -197,8 +260,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
-    for item in LedgerCols:
-        print(item)
-        print(item.index)
+#    main()
+#
+#    for item in LedgerCols:
+#        print(item)
+#        print(item.index)
+    d = decimal.Decimal("1123213.232032")
+    print(moneyfmt(d, curr='>'))
