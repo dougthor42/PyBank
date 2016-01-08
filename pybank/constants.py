@@ -11,3 +11,8 @@ from wx import Colour
 
 LEDGER_COLOR_1 = Colour(255, 255, 255, 255)
 LEDGER_COLOR_2 = Colour(255, 255, 204, 255)
+
+DECIMAL_MARK = "."
+THOUSANDS_SEP = ","
+CURRENCY_SYM = "$"
+TRAILING_CURRENCY_SYM = ""

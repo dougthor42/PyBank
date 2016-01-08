@@ -701,6 +701,7 @@ class LedgerPanel(wx.Panel):
         self.header_bar = LedgerHeaderBar(self)
         self.ledger = LedgerGrid(self)
         self.summary_bar = LedgerSummaryBar(self)
+        self.summary_bar._update()
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         self.vbox.Add(self.header_bar, 0, wx.EXPAND)
@@ -942,6 +943,15 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 #        for row in data:
 #            print(row)
 
+        # update the summary bar. Need to go to the grandparent.
+        try:
+            self.parent.parent.summary_bar._update()
+        except AttributeError:
+            # on initialization, the summary_bar object hasn't been created
+            # yet so we just ignore the error. LedgerPanel._init_ui() takes
+            # care of updating the summary_bar
+            pass
+
 
 class LedgerGrid(wx.grid.Grid):
     """
@@ -950,6 +960,7 @@ class LedgerGrid(wx.grid.Grid):
         logging.info("Initializing LedgerGrid")
         wx.grid.Grid.__init__(self, parent, wx.ID_ANY)
 
+        self.parent = parent
         self._setup()
 
         choiceList = ["a", "B", "C"]
@@ -1107,6 +1118,7 @@ class LedgerGrid(wx.grid.Grid):
                 logging.debug(orm.session.new)
                 logging.debug(orm.session.dirty)
                 orm.session.commit()
+                self.parent.summary_bar._update()
                 self.table.data_is_modified = False
 
 
@@ -1279,22 +1291,24 @@ class LedgerSummaryBar(wx.Panel):
         self.parent = parent
 
         # TODO: Use decimal.Decimal types for balances
-        self._online_bal = 0.0          # online balance
-        self._avail_bal = 0.0           # online available balance
-        self._curr_bal = 0.0            # current balance
-        self._num_trans = 0             # number of transactions
+        self._online_bal = decimal.Decimal("0.00")  # online balance
+        self._avail_bal = decimal.Decimal("0.00")   # online available balance
+        self._curr_bal = decimal.Decimal("0.00")    # current balance
+        self._num_trans = 0                         # number of transactions
 
+            # can't fill with spaces because the text isn't fixed width and
+            # I haven't set the wx.StaticText object to be fixed width.
         self._trans_fmt = "{:0>6} Transactions"
         self._trans_text = self._trans_fmt.format(self._num_trans)
 
-        self._online_fmt = "Online Balance: ${:<8.2f}"
-        self._online_text = self._online_fmt.format(self._online_bal)
+        self._online_fmt = "Online Balance: {:<16s}"
+        self._online_text = self._online_fmt.format(utils.moneyfmt(self._online_bal))
 
-        self._avail_fmt = "Avilable Balance: ${:<8.2f}"
-        self._avail_text = self._avail_fmt.format(self._avail_bal)
+        self._avail_fmt = "Avilable Balance: {:<16s}"
+        self._avail_text = self._avail_fmt.format(utils.moneyfmt(self._avail_bal))
 
-        self._curr_fmt = "Current Balance: ${:<8.2f}"
-        self._curr_text = self._curr_fmt.format(self._curr_bal)
+        self._curr_fmt = "Current Balance: {:<16s}"
+        self._curr_text = self._curr_fmt.format(utils.moneyfmt(self._curr_bal))
 
         self._init_ui()
 
@@ -1334,11 +1348,17 @@ class LedgerSummaryBar(wx.Panel):
 
         self.SetSizer(self.hbox)
 
-
+    @utils.logged
     def _update(self):
         """ Updates the ledger summary """
-        # query the database and calculate each
-        pass
+        logging.info("updating summary bar")
+        data = self.parent.ledger.table.data    # Should I not do this because
+                                                # of memory usage?
+
+        self.online_balance = decimal.Decimal('0.00')
+        self.num_transactions = len(data)
+        self.available_balance = decimal.Decimal('0.00')
+        self.current_balance = decimal.Decimal(data[-1][-1])
 
     @property
     def online_balance(self):
@@ -1349,6 +1369,8 @@ class LedgerSummaryBar(wx.Panel):
     def online_balance(self, value):
         """ Sets the online balance """
         self._online_bal = value
+        self._online_text = self._online_fmt.format(utils.moneyfmt(value))
+        self._online_display.SetLabel(self._online_text)
 
     @property
     def num_transactions(self):
@@ -1359,6 +1381,8 @@ class LedgerSummaryBar(wx.Panel):
     def num_transactions(self, value):
         """ Sets the number of transactions """
         self._num_trans = value
+        self._trans_text = self._trans_fmt.format(value)
+        self._num_trans_display.SetLabel(self._trans_text)
 
     @property
     def available_balance(self):
@@ -1369,6 +1393,8 @@ class LedgerSummaryBar(wx.Panel):
     def available_balance(self, value):
         """ Sets the online available balance """
         self._avail_bal = value
+        self._avail_text = self._avail_fmt.format(utils.moneyfmt(value))
+        self._avail_display.SetLabel(self._avail_text)
 
     @property
     def current_balance(self):
@@ -1379,6 +1405,8 @@ class LedgerSummaryBar(wx.Panel):
     def current_balance(self, value):
         """ Sets the current balance """
         self._curr_bal = value
+        self._curr_text = self._curr_fmt.format(utils.moneyfmt(value))
+        self._curr_display.SetLabel(self._curr_text)
 
 
 class LedgerHeaderBar(wx.Panel):
