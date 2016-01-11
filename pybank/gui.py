@@ -713,12 +713,6 @@ class LedgerPanel(wx.Panel):
 class LedgerGridBaseTable(wx.grid.GridTableBase):
     """
     """
-    # -----------------------------------------------------------------------
-    ### Class Constants
-    # -----------------------------------------------------------------------
-    # Define the columns ledger columns and how they map to the ledger view
-    # in the database
-
     columns = utils.LedgerCols
 
     # -----------------------------------------------------------------------
