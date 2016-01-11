@@ -26,7 +26,7 @@
 + [x] Organize the TODO list...
 + [ ] Renaming Rules
 + [ ] General code cleanup and commenting
-+ [ ] logging wrapper for functions
++ [x] logging wrapper for functions
       + need to make sure the saved function name is correct
       + see douglib.utils and douglib.decorators I think...
       + See TPEdit's main.logged function.
@@ -64,8 +64,8 @@
 + [ ] Highlight the active account.
 + [x] Ledger summary bar providing:
       + # of transactions
-      + [ ] Online Balance      # req's internet conn
-      + [ ] Available Balance   # req's internet conn
+      + [ ] Online Balance      # req's OFX
+      + [ ] Available Balance   # req's OFX
       + Current Ledger Balance
 + [ ] Refactor gui.MainFrame._on_encryption_timer() method
 + [ ] Get category display working correctly
@@ -105,7 +105,7 @@
 
 
 ## Database:
-+ [ ] Remove as much of the direct SQL as possible - I should be using
++ [x] Remove as much of the direct SQL as possible - I should be using
       SQLAlchemy for the entire backend.
 + [ ] Add option to export data as csv.
 + [ ] Remove the ledger's database View?
