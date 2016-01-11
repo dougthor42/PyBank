@@ -309,10 +309,10 @@ def build_category_strings(cat_list,
             retval.append(str_to_send)
             # recurse using the current child as the new parent
             build_category_strings(cat_list,
-                                      delimiter,
-                                      child,
-                                      str_to_send,
-                                      retval)
+                                   delimiter,
+                                   child,
+                                   str_to_send,
+                                   retval)
         return retval
 
 
@@ -395,6 +395,14 @@ def build_category_string(item, data, delimiter=":", max_nest=10):
     return delimiter.join(reversed(values))
 
 
+# TODO: speedtest this vs original recursive algorithm
+def build_category_strings2(data, delimiter=":", max_nest=10):
+    """
+    """
+    return list(build_category_string(item[0], data, delimiter, max_nest)
+                for item in data)
+
+
 def main():
     """
     Main entry point
@@ -427,7 +435,7 @@ if __name__ == "__main__":
 
     data = [(1, "Expense", 1),
             (2, "Income", 2),
-            (3, "Auto", 2),
+            (3, "Auto", 1),
             (4, "Fees", 3),
             (5, "Gas", 3),
             (6, "Insurance", 3),
@@ -442,3 +450,4 @@ if __name__ == "__main__":
     print(build_category_string(10, data))
     print(build_category_string(7, data, "."))
     print(build_category_string(5, data, ":"))
+    print(build_category_strings2(data))
