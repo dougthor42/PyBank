@@ -728,6 +728,14 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         # flag for when the data has been changed with respect to the database
         self.data_is_modified = False
 
+        self.cat_data = [(row.category_id, row.name, row.parent)
+                          for row in orm.query_category()]
+        choiceList = []
+        for row in self.cat_data:
+            pk = row[0]
+            choiceList.append(utils.build_category_string(pk, self.cat_data))
+        self.choiceList = choiceList
+
         self._update_data()
 
     # -----------------------------------------------------------------------
@@ -759,68 +767,28 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         Is called on every cell at init and then again when cells are
         clicked.
         """
-#        logging.debug("Getting value of r{}c{}".format(row, column))
-        try:
-            value = self.data[row][col]
-            if value is None or value == 'None':
-                return ''
-            else:
-                return str(value)
-        except IndexError:
-            return ''
-#        return self._get_value(row, col)
+        return str(self._get_value(row, col))
 
     def _get_value(self, row, col):
         """
         Private logic for the GetValue() override method.
-
-        ~~The goal here is that we never copy data from the database to a
-        python object, we just look directly at the database (and DB view)
-        for the value.~~
-
-        Nope, just kidding. I think it's actually better to copy to a python
-        object. Why? Because then we aren't actively acting on the database
-        which means
-            1) fewer transactions
-            2) easier to revert changes
-            3) don't have to worry about invalid data until we
-               try and write to DB
-
-
-
-        What this means is that I have to know the mapping of column number
-        to column name to associated table column name. This logic will
-        also handle things such as translating the category to a nested list
-        (like "Expense:Food:Fast Food") and having null values show up as
-        blanks.
-
-        For now, I'm just going to brute-force this thing.
         """
+#        logging.debug("Getting value of r{}c{}".format(row, column))
+        try:
+            value = self.data[row][col]
+        except IndexError:
+            return ''
 
-        # TODO: come up with a better way. Brute-force is not extensible.
-        row_data = orm.query_ledger_view()[row]
-        if col == self.columns.tid.value:
-            return row_data.transaction_id
-        elif col == self.columns.date.value:
-            return row_data.date
-        elif col == self.columns.enter_date.value:
-            return row_data.enter_date
-        elif col == self.columns.check_num.value:
-            return row_data.check_num
-        elif col == self.columns.payee.value:
-            return row_data.Payee
-        elif col == self.columns.dl_payee.value:
-            return row_data.DownloadedPayee
-        elif col == self.columns.memo.value:
-            return row_data.Memo
-        elif col == self.columns.category.value:
-            return row_data.Category
-        elif col == self.columns.label.value:
-            return row_data.TransactionLabel
-        elif col == self.columns.amount.value:
-            return row_data.Amount
-        elif col == self.columns.balance.value:
-            return 0
+        if col == self.columns.category.index:
+            try:
+                return utils.build_category_string(value, self.cat_data)
+            except TypeError:
+                return ''
+
+        if value is None or value == 'None':
+            return ''
+        else:
+            return str(value)
 
     def SetValue(self, row, col, value):
         """
@@ -957,8 +925,8 @@ class LedgerGrid(wx.grid.Grid):
         self.parent = parent
         self._setup()
 
-        choiceList = ["a", "B", "C"]
-        choiceEditor = wx.grid.GridCellChoiceEditor(choiceList, allowOthers=True)
+        choiceEditor = wx.grid.GridCellChoiceEditor(self.table.choiceList,
+                                                    allowOthers=True)
 
         for row in range(self.GetNumberRows()):
             self.SetCellEditor(row, 7, choiceEditor)

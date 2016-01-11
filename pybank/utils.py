@@ -85,7 +85,7 @@ class LedgerCols(Enum):
     payee = (4, "Payee", "Payee", TEXT, 120)
     dl_payee = (5, "Downloaded Payee", "DownloadedPayee", TEXT, 120)
     memo = (6, "Memo", "Memo", TEXT, 150)
-    category = (7, "Category", "Category", TEXT, 180)
+    category = (7, "Category", "Category", TEXT, 240)
     label = (8,"Label", "TransactionLabel", TEXT, 160)
     amount = (9, "Amount", "Amount", TEXT, 80)
     balance = (10, "Balance", None, TEXT, 80)
@@ -320,6 +320,13 @@ def build_category_string(item, data, delimiter=":", max_nest=10):
     """
     Builds a single category string from an Adjacency List structure.
 
+    This function assumes that the adjacency list primary key starts at 1.
+
+    If item == 0, then an empty string '' is returned.
+
+    If ``item`` is not found (for example, ``len(data) == 5`` and
+    ``item == 7``), then ``'!! None !!'`` is returned.
+
     Parameters:
     -----------
     item : int
@@ -354,6 +361,11 @@ def build_category_string(item, data, delimiter=":", max_nest=10):
     """
     parent = None
     values = []
+
+    # If None, empty string, or 0, return empty string.
+    if not item:
+        return ''
+
     while True:
         try:
             # I don't just use a `data[item - 1]` because... ?
