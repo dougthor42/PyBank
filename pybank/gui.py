@@ -728,13 +728,11 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         # flag for when the data has been changed with respect to the database
         self.data_is_modified = False
 
+        # pull the category strings and create the choicelist.
         self.cat_data = [(row.category_id, row.name, row.parent)
                           for row in orm.query_category()]
-        choiceList = []
-        for row in self.cat_data:
-            pk = row[0]
-            choiceList.append(utils.build_category_string(pk, self.cat_data))
-        self.choiceList = choiceList
+
+        self.choicelist = utils.build_cat_strings(self.cat_data)
 
         self._update_data()
 
@@ -742,11 +740,11 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
     ### Override Methods
     # -----------------------------------------------------------------------
     def GetNumberRows(self):
-        rows = len(self.data)
+        # TODO: Change to database query?
 #        rows = pbsql.db_query_single(DATABASE,
 #                                     "SELECT COUNT(*) FROM v_ledger_0")[0]
+        rows = len(self.data)
         return rows + 1
-#        return len(self.data) + 1
 
     def GetNumberCols(self):
         return len(self.data[0])
@@ -781,7 +779,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         if col == self.columns.category.index:
             try:
-                return utils.build_category_string(value, self.cat_data)
+                return utils.build_cat_string(value, self.cat_data)
             except TypeError:
                 return ''
 
@@ -925,7 +923,7 @@ class LedgerGrid(wx.grid.Grid):
         self.parent = parent
         self._setup()
 
-        choiceEditor = wx.grid.GridCellChoiceEditor(self.table.choiceList,
+        choiceEditor = wx.grid.GridCellChoiceEditor(self.table.choicelist,
                                                     allowOthers=True)
 
         for row in range(self.GetNumberRows()):
