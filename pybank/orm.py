@@ -204,7 +204,7 @@ def create_ledger_view():
                                       Payee.name).label('Payee'),
                         Payee.name.label('DownloadedPayee'),
                         TransactionLabel.value.label('TransactionLabel'),
-                        Category.name.label('Category'),
+                        Category.category_id.label('Category'),
                         Memo.text.label('Memo'),
                         Transaction.amount.label('Amount'),
                         ]
@@ -431,9 +431,16 @@ session = Session()
 # ---------------------------------------------------------------------------
 ### ORM Query Functions
 # ---------------------------------------------------------------------------
+@utils.logged
 def query_ledger_view():
-    logging.debug("Quering Ledger View")
+    logging.info("Quering Ledger View")
     return session.query(LedgerView).all()
+
+
+@utils.logged
+def query_category():
+    logging.info("Querying `Category` table")
+    return session.query(Category).all()
 
 # ---------------------------------------------------------------------------
 ### ORM Insert Functions

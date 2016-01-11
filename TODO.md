@@ -68,7 +68,7 @@
       + [ ] Available Balance   # req's OFX
       + Current Ledger Balance
 + [ ] Refactor gui.MainFrame._on_encryption_timer() method
-+ [ ] Get category display working correctly
++ [x] Get category display working correctly
       + It should look like: "Expense:Entertainment:Bars" rather than just
         "Bars".
 + [ ] wx.PopupMenu for right-click menus
