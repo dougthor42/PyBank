@@ -14,8 +14,6 @@ Options:
 # ---------------------------------------------------------------------------
 ### Imports
 # ---------------------------------------------------------------------------
-#import sys
-#import os.path as osp
 import logging
 import functools
 import time
@@ -128,23 +126,6 @@ def logged(func):
     return wrapper
 
 
-#def log_entire_class(cls):
-#    """
-#    Decorator that logs the entry and exit points for each method in
-#    a class.
-#
-#    From David Beazley's "Python 3 Metaprogramming" Talk
-#        http://www.dabeaz.com/py3meta/
-#        PyCon'13 (2014-03-14, Santa Clara, CA)
-#
-#    TODO: Actually get working...
-#    """
-#    for name, val in vars(cls).items():
-#        if callable(val):
-#            setattr(cls, name, logged(val))
-#        return cls
-
-
 def _init_logging(target, level=DEFAULT_LOG_LEVEL):
     """
     Initialize logging to the on-screen gui log text control
@@ -240,83 +221,7 @@ def moneyfmt(value, places=2,
     return ''.join(reversed(result))
 
 
-def build_category_strings(cat_list,
-                           delimiter=".",
-                           parent_item=None,
-                           sent_str=None,
-                           retval=None,
-                           ):
-    """
-    Recursively concatenates categories together and returns a list of them.
-
-    Parameters:
-    -----------
-    cat_list : list of (id, name, parent) tuples
-        The data to create strings from. This must be a list (or list-like)
-        of (id, name, parent_id) tuples (or list-like).
-
-    delimiter: string
-        The string to put between each item.
-
-    parent_item :
-        Only used during recursion.
-
-    sent_str :
-        Only used during recursion
-
-    retlist :
-        Only used during recursion.
-
-    Returns:
-    --------
-    retlist : list of strings
-        A list of dot-notation strings.
-
-    Examples:
-    ---------
-
-    >>> data = [(1, "A", 0), (2, "B", 1), (3, "C", 1), (4, "D", 2),
-    ...         (5, "E", 2), (6, "F", 3), (7, "G", 2), (8, "H", 6),
-    ...         ]
-    >>> build_category_strings(data)
-    ['A', 'A.B', 'A.B.D', 'A.B.E', 'A.B.G', 'A.C', 'A.C.F', 'A.C.F.H']
-
-    """
-    if retval is None:
-        retval = []
-
-    if parent_item is None:
-        parent_item = cat_list[0]
-        retval.append(parent_item[1])
-
-    parent_id = parent_item[0]
-    parent_name = parent_item[1]
-
-    if sent_str is None:
-        sent_str = parent_name
-
-    # Find the children
-    children = [_x for _x in cat_list if _x[2] == parent_id]
-
-    if len(children) == 0:
-        # base case (no children), so we return the full path
-        return ["{}{}{}".format(sent_str, delimiter, parent_name)]
-    else:
-        # children exist so we need to iterate through them.
-        for child in children:
-            # create an incomplete path string and add it to our return value
-            str_to_send = "{}{}{}".format(sent_str, delimiter, child[1])
-            retval.append(str_to_send)
-            # recurse using the current child as the new parent
-            build_category_strings(cat_list,
-                                   delimiter,
-                                   child,
-                                   str_to_send,
-                                   retval)
-        return retval
-
-
-def build_category_string(item, data, delimiter=":", max_nest=10):
+def build_cat_string(item, data, delimiter=":", max_nest=10):
     """
     Builds a single category string from an Adjacency List structure.
 
@@ -355,7 +260,7 @@ def build_category_string(item, data, delimiter=":", max_nest=10):
     ...         (7, "Bank Fees", 1), (8, "Commissions", 2),
     ...         (9, "Salaray", 2), (10, "Bonus", 9), (11, "Holiday", 9),
     ...         ]
-    >>> build_category_strings(10, data)
+    >>> build_cat_strings(10, data)
     Income:Salaray:Bonus
 
     """
@@ -395,11 +300,10 @@ def build_category_string(item, data, delimiter=":", max_nest=10):
     return delimiter.join(reversed(values))
 
 
-# TODO: speedtest this vs original recursive algorithm
-def build_category_strings2(data, delimiter=":", max_nest=10):
+def build_cat_strings(data, delimiter=":", max_nest=10):
     """
     """
-    return list(build_category_string(item[0], data, delimiter, max_nest)
+    return list(build_cat_string(item[0], data, delimiter, max_nest)
                 for item in data)
 
 
@@ -410,26 +314,6 @@ def main():
     docopt(__doc__, version=__version__)
     print("Running utils.py")
 
-    logging.debug("debugging")
-#    logging.info("Info!")
-#    logging.warning("warning: you can't do anything about this")
-#    logging.error("error")
-#    logging.critical("critical")
-#    logging.exception("exception")
-
-    print("End")
-    a = find_data_file('PyBank.py')
-    print(a)
-
-
-
-
-if __name__ == "__main__":
-#    main()
-#
-#    for item in LedgerCols:
-#        print(item)
-#        print(item.index)
     d = decimal.Decimal("1123213.232032")
     print(moneyfmt(d, curr='>'))
 
@@ -447,7 +331,12 @@ if __name__ == "__main__":
             ]
 
 
-    print(build_category_string(10, data))
-    print(build_category_string(7, data, "."))
-    print(build_category_string(5, data, ":"))
-    print(build_category_strings2(data))
+    print(build_cat_string(10, data))
+    print(build_cat_string(7, data, "."))
+    print(build_cat_string(5, data, ":"))
+
+# ---------------------------------------------------------------------------
+### Run module as standalone
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()
