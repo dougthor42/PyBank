@@ -19,7 +19,7 @@ Options:
 # ---------------------------------------------------------------------------
 # Standard Library
 import logging
-#from decimal import Decimal as D
+import decimal
 from decimal import Decimal
 import datetime
 import contextlib
@@ -152,8 +152,13 @@ class SqliteNumeric(sa.types.TypeDecorator):
 
     def process_result_value(self, value, dialect):
         if value is None:
+            logging.info("Value is None")
             return None
-        return Decimal(value)
+        try:
+            return Decimal(value)
+        except decimal.InvalidOperation:
+            logging.error("decimal.InvalidOperation on value `%s`", value)
+            return Decimal('0.00')
 
 
 # ---------------------------------------------------------------------------
@@ -206,7 +211,7 @@ def create_ledger_view():
                         TransactionLabel.value.label('TransactionLabel'),
                         Category.category_id.label('Category'),
                         Memo.text.label('Memo'),
-                        Transaction.amount.label('Amount'),
+                        Transaction.amount.label('amount'),
                         ]
                        )
 
@@ -497,46 +502,26 @@ def insert_payee(name, display_name_id=None, category_id=None):
     session.add(payee)
 
 
-def insert_transaction(account_id=None,
-                       date=None,
-                       enter_date=None,
-                       check_num=None,
-                       amount=None,
-                       payee_id=None,
-                       category_id=None,
-                       transaction_label_id=None,
-                       memo_id=None,
-                       fitid=-1):
-    logging.debug("inserting item to Transaction")
+@utils.logged
+def insert_transaction(insert_dict):
+    logging.info("inserting item to Transaction")
 
     date_fmt = '%Y-%m-%d'
 
+    # make sure that the date and enter_date columns are datetime.Datetime
+    # objects
+    dt = datetime.datetime
     try:
-        if date is None:
-            date = datetime.datetime.today().date()
-        else:
-            date = datetime.datetime.strptime(date, date_fmt).date()
-    except TypeError:
+        insert_dict['date'] = dt.strptime(insert_dict['date'], date_fmt).date()
+    except KeyError:
+        pass
+    except ValueError:
+        logging.error("Invalid date format: `%s`", insert_dict['date'])
+    except:
+        logging.error("An unknown error occured")
         raise
 
-#    try:
-#        if enter_date is None:
-#            enter_date = datetime.datetime.today().date()
-#        else:
-#            enter_date = datetime.datetime.strptime(enter_date, date_fmt).date()
-#    except TypeError:
-#        raise
-
-    trans = Transaction(account_id=account_id,
-                        date=date,
-                        enter_date=enter_date,
-                        check_num=check_num,
-                        amount=amount,
-                        payee_id=payee_id,
-                        category_id=category_id,
-                        transaction_label_id=transaction_label_id,
-                        memo_id=memo_id,
-                        fitid=fitid)
+    trans = Transaction(**insert_dict)
     session.add(trans)
 
 
@@ -670,6 +655,7 @@ def sqlite_iterdump(engine, session):
     #       generator. However, I doubt many DBs will have > 10000 tables...
     if n == 1:
         for name, table in sorted(tables.items()):
+            logging.debug("dumping table %s", name)
             yield str(CreateTable(table).compile(engine)).strip() + ";"
 
             data = session.query(table).all()
