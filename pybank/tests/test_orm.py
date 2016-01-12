@@ -148,6 +148,7 @@ class TestInsertFunctions(unittest.TestCase):
         except Exception as err:
             self.fail("insert_payee raised exception: {}".format(err))
 
+    @unittest.skip("Needs update")
     def test_insert_transaction(self):
         try:
             orm.insert_transaction()
