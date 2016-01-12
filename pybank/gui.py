@@ -19,12 +19,8 @@ Options:
 # ---------------------------------------------------------------------------
 # Standard Library
 import logging
-#import sys
 import decimal
-#import os.path as osp
 from enum import Enum
-#import random
-import datetime
 
 # Third Party
 import wx
@@ -46,7 +42,6 @@ try:
 #    from . import plots
     from . import utils
     from . import crypto
-    from . import gui_utils
     from . import orm
     logging.debug("Imports for gui.py complete (Method: UnitTest)")
 except SystemError:
@@ -58,7 +53,6 @@ except SystemError:
 #        import plots
         import utils
         import crypto
-        import gui_utils
         import orm
         logging.debug("Imports for gui.py complete (Method: Spyder IDE)")
     except ImportError:
@@ -69,7 +63,6 @@ except SystemError:
 #        from pybank import plots
         from pybank import utils
         from pybank import crypto
-        from pybank import gui_utils
         from pybank import orm
         logging.debug("Imports for gui.py complete (Method: Executable)")
 
@@ -827,10 +820,6 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             row_values.append(str(balance))
             self.data.append(row_values)
 
-#        print(list(x for x, _, _, _ in self.columns))
-#        for row in data:
-#            print(row)
-
         # update the summary bar. Need to go to the grandparent.
         try:
             self.parent.parent.summary_bar._update()
@@ -839,6 +828,10 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             # yet so we just ignore the error. LedgerPanel._init_ui() takes
             # care of updating the summary_bar
             pass
+
+        # since we just pulled the data, we know that the data hasn't been
+        # modified yet.
+        self.table.data_is_modified = False
 
     def _get_value(self, row, col):
         """
@@ -919,6 +912,12 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
         try:
             logging.info("Attempting to write data to database")
+            # TODO: do I want to change the logic for row_is_new?
+            #       I can either leave it as it is now, using the ledger to
+            #       determine if a row is new, or I can change it so that
+            #       I query the database with the row value and call it a
+            #       new row iff it doesn't exist in the database.
+            #       I'll have to think about that a bit.
             if self.row_is_new:
                 orm.insert_ledger(acct=1,
                                   date=None,
@@ -931,7 +930,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
                                   memo=None,
                                   fitid=-1,
                                   )
-            else:       # row is updated
+            else:       # row is not new, but rather was updated
                 orm.update_ledger(acct=1,
                                   date=None,
                                   enter_date=None,
@@ -944,14 +943,14 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
                                   fitid=-1,
                                   )
         except TypeError:
+            # TODO: more exact error conditions
             logging.exception("Error writing to database!", stack_info=True)
         else:
             logging.info("DB write successful.")
             logging.debug(orm.session.new)
             logging.debug(orm.session.dirty)
             orm.session.commit()
-            self.parent.summary_bar._update()
-            self.table.data_is_modified = False
+            self._pull_data()
 
 
 class LedgerGrid(wx.grid.Grid):
@@ -1084,43 +1083,44 @@ class LedgerGrid(wx.grid.Grid):
 
         """
         logging.debug("Left-click detected")
-        previous_rc = (self.GetGridCursorRow(), self.GetGridCursorCol())
-        new_rc = (event.GetRow(), event.GetCol())
-
-        # Don't do anything if we haven't moved grid location
-        if previous_rc == new_rc:
-            logging.debug("Cursor didn't move.")
-            return
-
-        self.SetGridCursor(*new_rc)
-
-        logging.debug("previous_rc = {}".format(previous_rc))
-        logging.debug("new_rc = {}".format(new_rc))
-
-        if self.table.data_is_modified and new_rc[0] != previous_rc[0]:
-            # TODO: Fill this out
-            try:
-                logging.info("Attempting to write data to database")
-                orm.insert_ledger(acct=1,
-                                  date=None,
-                                  enter_date=None,
-                                  check_num=None,
-                                  amount="123.4",
-                                  payee=None,
-                                  category=None,
-                                  label=None,
-                                  memo=None,
-                                  fitid=-1,
-                                  )
-            except TypeError:
-                logging.exception("Error writing to database!", stack_info=True)
-            else:
-                logging.info("DB write successful.")
-                logging.debug(orm.session.new)
-                logging.debug(orm.session.dirty)
-                orm.session.commit()
-                self.parent.summary_bar._update()
-                self.table.data_is_modified = False
+        pass
+#        previous_rc = (self.GetGridCursorRow(), self.GetGridCursorCol())
+#        new_rc = (event.GetRow(), event.GetCol())
+#
+#        # Don't do anything if we haven't moved grid location
+#        if previous_rc == new_rc:
+#            logging.debug("Cursor didn't move.")
+#            return
+#
+#        self.SetGridCursor(*new_rc)
+#
+#        logging.debug("previous_rc = {}".format(previous_rc))
+#        logging.debug("new_rc = {}".format(new_rc))
+#
+#        if self.table.data_is_modified and new_rc[0] != previous_rc[0]:
+#            # TODO: Fill this out
+#            try:
+#                logging.info("Attempting to write data to database")
+#                orm.insert_ledger(acct=1,
+#                                  date=None,
+#                                  enter_date=None,
+#                                  check_num=None,
+#                                  amount="123.4",
+#                                  payee=None,
+#                                  category=None,
+#                                  label=None,
+#                                  memo=None,
+#                                  fitid=-1,
+#                                  )
+#            except TypeError:
+#                logging.exception("Error writing to database!", stack_info=True)
+#            else:
+#                logging.info("DB write successful.")
+#                logging.debug(orm.session.new)
+#                logging.debug(orm.session.dirty)
+#                orm.session.commit()
+#                self.parent.summary_bar._update()
+#                self.table.data_is_modified = False
 
 
     def _on_grid_cell_changed(self, event):
