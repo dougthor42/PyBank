@@ -560,6 +560,17 @@ def insert_ledger(*args, **kwargs):
 
 
 # ---------------------------------------------------------------------------
+### ORM Insert Functions
+# ---------------------------------------------------------------------------
+@utils.logged
+def update_ledger(*args, **kwargs):
+    """
+    """
+    logging.info("Updating ledger values")
+    logging.info("But not really because this function is not done yet")
+    pass
+
+# ---------------------------------------------------------------------------
 ### Other Functions
 # ---------------------------------------------------------------------------
 @utils.logged
