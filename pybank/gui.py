@@ -831,7 +831,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         # since we just pulled the data, we know that the data hasn't been
         # modified yet.
-        self.table.data_is_modified = False
+        self.data_is_modified = False
 
     def _get_value(self, row, col):
         """
@@ -862,13 +862,10 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
         logging.info("Setting r{}c{} to `{}`".format(row, col, value))
         try:
-            logging.debug("trying to update row")
-            logging.debug("Previous: {}".format(self.data[row]))
-            self.row_is_new = False
-            self.data[row][col] = value
+            self._update_row(row, col, value)
         except IndexError:
             # add a new row
-            logging.debug("Update failed. Adding new row")
+            logging.info("Update failed. Adding new row")
             self.row_is_new = True
             self.data.append([None] * self.GetNumberCols())
             self.data[row][0] = "-1"
@@ -884,20 +881,15 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             else:
                 self.data[row][col] = value
 
-
             # tell the grid that we've added a row
             logging.debug("GRIDTABLE_NOTIFY_ROWS_APPENDED")
             action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
             msg = wx.grid.GridTableMessage(self, action, 1)
-#            self.GetView().ProcessTableMessage(msg)
-#            self.parent._format_table()
         else:       # run only if no *unhandled* errors
             # tell the grid to display the new values
             logging.debug("GRIDTABLE_REQUEST_VIEW_GET_VALUES")
             action = wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES
             msg = wx.grid.GridTableMessage(self, action)
-#            self.GetView().ProcessTableMessage(msg)
-#            self.parent._format_table()
         finally:    # always runs
             pass
 
@@ -931,17 +923,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
                                   fitid=-1,
                                   )
             else:       # row is not new, but rather was updated
-                orm.update_ledger(acct=1,
-                                  date=None,
-                                  enter_date=None,
-                                  check_num=None,
-                                  amount="123.4",
-                                  payee=None,
-                                  category=None,
-                                  label=None,
-                                  memo=None,
-                                  fitid=-1,
-                                  )
+                self._update_row(row)
         except TypeError:
             # TODO: more exact error conditions
             logging.exception("Error writing to database!", stack_info=True)
@@ -951,6 +933,63 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             logging.debug(orm.session.dirty)
             orm.session.commit()
             self._pull_data()
+
+    def _update_row(self, row, col, value):
+        """
+        Updates a row in the ledger
+        """
+        logging.info("Trying Updating row %s", row)
+        prev = list(self.data[row])         # need list() to force copy
+        logging.info("Previous: %s", prev)
+        self.row_is_new = False
+        self.data[row][col] = value
+        new = self.data[row]
+        logging.info("New Value: %s", self.data[row])
+
+        # create a dict of the colums:values
+        update_dict = {}
+        for i, (p, n) in enumerate(zip(prev, new)):
+            if p != n:
+                col_name = [x.view_name for x in self.columns if x.index == i][0]
+                update_dict[col_name] = n
+
+        logging.info("Update Dict: %s", update_dict)
+
+        if not update_dict:
+            # no values to update, so just return.
+            return
+
+        try:
+            orm.update_transaction(row + 1, update_dict)
+
+#        try:
+#            orm.update_ledger(acct=1,
+#                              date=None,
+#                              enter_date=None,
+#                              check_num=None,
+#                              amount="123.4",
+#                              payee=None,
+#                              category=None,
+#                              label=None,
+#                              memo=None,
+#                              fitid=-1,
+#                              )
+        except TypeError:
+            # TODO: more exact error conditions
+            logging.exception("Error writing to database!", stack_info=True)
+        else:
+            logging.info("DB write successful.")
+            logging.debug(orm.session.new)
+            logging.debug(orm.session.dirty)
+            orm.session.commit()
+            self._pull_data()
+
+    def _insert_row(self, row):
+        """
+        Inserts a new row into the ledger orm table.
+        """
+        logging.info("Inserting row %s", row)
+        pass
 
 
 class LedgerGrid(wx.grid.Grid):
@@ -1083,16 +1122,15 @@ class LedgerGrid(wx.grid.Grid):
 
         """
         logging.debug("Left-click detected")
-        pass
-#        previous_rc = (self.GetGridCursorRow(), self.GetGridCursorCol())
-#        new_rc = (event.GetRow(), event.GetCol())
-#
-#        # Don't do anything if we haven't moved grid location
-#        if previous_rc == new_rc:
-#            logging.debug("Cursor didn't move.")
-#            return
-#
-#        self.SetGridCursor(*new_rc)
+        previous_rc = (self.GetGridCursorRow(), self.GetGridCursorCol())
+        new_rc = (event.GetRow(), event.GetCol())
+
+        # Don't do anything if we haven't moved grid location
+        if previous_rc == new_rc:
+            logging.debug("Cursor didn't move.")
+            return
+
+        self.SetGridCursor(*new_rc)
 #
 #        logging.debug("previous_rc = {}".format(previous_rc))
 #        logging.debug("new_rc = {}".format(new_rc))
