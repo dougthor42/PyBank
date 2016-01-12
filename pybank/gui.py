@@ -928,10 +928,21 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         logging.info("Trying Updating row %s", row)
         prev = list(self.data[row])         # need list() to force copy
         logging.info("Previous: %s", prev)
+
+        # Make sure we write the cateogry ID instead of the string
+        if col == self.columns.category.index:
+            try:
+                # +1 because lists are 0-indexed and my table is 1-indexed
+                value = self.choicelist.index(value) + 1
+            except ValueError:
+                # value not found. For now, lets just use None
+                # TODO: figure out how I want to handle this.
+                value = None
+
         self.row_is_new = False
         self.data[row][col] = value
         new = self.data[row]
-        logging.info("New Value: %s", self.data[row])
+        logging.info("New.....: %s", self.data[row])
         trans_id = self.data[row][self.columns.trans_id.index]
 
         # create a dict of the colums:values
@@ -947,6 +958,13 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         except KeyError:
             pass
 
+        # XXX: Hack while I figure out how to handle some things
+        # if we have a "Category" col, we have to rename it to "category_id"
+        if self.columns.category.view_name in update_dict.keys():
+            temp = update_dict[self.columns.category.view_name]
+            del update_dict[self.columns.category.view_name]
+            update_dict['category_id'] = temp
+
         logging.info("Update Dict: %s", update_dict)
 
         if not update_dict:
@@ -955,19 +973,6 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         try:
             orm.update_transaction(trans_id, update_dict)
-
-#        try:
-#            orm.update_ledger(acct=1,
-#                              date=None,
-#                              enter_date=None,
-#                              check_num=None,
-#                              amount="123.4",
-#                              payee=None,
-#                              category=None,
-#                              label=None,
-#                              memo=None,
-#                              fitid=-1,
-#                              )
         except TypeError:
             # TODO: more exact error conditions
             logging.exception("Error writing to database!", stack_info=True)
@@ -989,21 +994,18 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         # Make sure we write the cateogry ID instead of the string
         if col == self.columns.category.index:
             try:
-                self.choicelist.index(value)
+                # +1 because lists are 0-indexed and my table is 1-indexed
+                value = self.choicelist.index(value) + 1
             except ValueError:
                 # value not found. For now, lets just use None
                 # TODO: figure out how I want to handle this.
-                self.data[row][col] = None
-        else:
-            self.data[row][col] = value
+                value = None
 
         logging.info("New Value: %s", self.data[row])
 
         # create a dict of the colums:values
         insert_dict = {}
         col_name = [x.view_name for x in self.columns if x.index == col][0]
-
-
 
         insert_dict[col_name] = value
 
@@ -1017,6 +1019,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         if self.columns.amount.view_name not in insert_dict.keys():
             insert_dict[self.columns.amount.view_name] = "0"
 
+        # XXX: Hack while I figure out how to handle some things
         # if we have a "Category" col, we have to rename it to "category_id"
         if self.columns.category.view_name in insert_dict.keys():
             temp = insert_dict[self.columns.category.view_name]
@@ -1039,7 +1042,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             logging.debug("New Items: {}".format(orm.session.new))
             logging.debug("Dirty Items: {}".format(orm.session.dirty))
             orm.session.commit()
-#            self._pull_data()
+            self._pull_data()
 
 
 class LedgerGrid(wx.grid.Grid):
