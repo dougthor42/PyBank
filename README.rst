@@ -28,6 +28,7 @@ Contents
 + `Build Status`_
 + `Contents`_
 + `Summary`_
++ `Changelog`_
 + `Features`_
 + `Notes`_
 
@@ -47,8 +48,7 @@ Features
   + Linux: Secret Service
   + Max: OSX Keychain
 
-+ Lightweight storage of data via SQLite
-+ TODO: Encrypt SQLite file
++ Lightweight storage of data via encrypted SQLite
 + Categorize and label transactions
 + Payee renaming
 + Simple plotting features:
@@ -107,3 +107,5 @@ See TODO.md
 .. |DLDay| image:: http://img.shields.io/pypi/dd/wafer_map.svg?style=flat
   :target: https://pypi.python.org/pypi/wafer_map/
   :alt: Number of PyPI downloads per day
+
+.. _Changelog: https://github.com/dougthor42/PyBank/blob/master/CHANGELOG.md
