@@ -388,7 +388,7 @@ class MainFrame(wx.Frame):
         logging.info("Opening file: `{}`".format(path))
 
         self.ledger._setup()
-        self.ledger.table._update_data()
+        self.ledger.table._pull_data()
         self.ledger._format_table()
 
     def _on_open_ofx(self, event):
@@ -727,6 +727,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         # flag for when the data has been changed with respect to the database
         self.data_is_modified = False
+        self.row_is_new = False
 
         # pull the category strings and create the choicelist.
         self.cat_data = [(row.category_id, row.name, row.parent)
@@ -734,7 +735,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         self.choicelist = utils.build_cat_strings(self.cat_data)
 
-        self._update_data()
+        self._pull_data()
 
     # -----------------------------------------------------------------------
     ### Override Methods
@@ -767,27 +768,6 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         """
         return str(self._get_value(row, col))
 
-    def _get_value(self, row, col):
-        """
-        Private logic for the GetValue() override method.
-        """
-#        logging.debug("Getting value of r{}c{}".format(row, column))
-        try:
-            value = self.data[row][col]
-        except IndexError:
-            return ''
-
-        if col == self.columns.category.index:
-            try:
-                return utils.build_cat_string(value, self.cat_data)
-            except TypeError:
-                return ''
-
-        if value is None or value == 'None':
-            return ''
-        else:
-            return str(value)
-
     def SetValue(self, row, col, value):
         """
         Sets the value of a cell.
@@ -795,46 +775,6 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         Override Method.
         """
         self._set_value(row, col, value)
-
-    # for SQLAlchemy backend
-    def _set_value(self, row, col, value):
-        """
-        Updates the data value for a given cell.
-
-        Does not attempt to update the database
-        """
-        logging.info("Setting r{}c{} to `{}`".format(row, col, value))
-        try:
-            logging.debug("trying to update row")
-            logging.debug("Previous: {}".format(self.data[row]))
-            self.data[row][col] = value
-        except IndexError:
-            # add a new row
-            logging.debug("Update failed. Adding new row")
-            self.data.append([None] * self.GetNumberCols())
-            self.data[row][0] = str(int(self.data[row - 1][0]) + 1)
-            self.data[row][col] = value
-
-            # tell the grid that we've added a row
-            logging.debug("GRIDTABLE_NOTIFY_ROWS_APPENDED")
-            action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
-            msg = wx.grid.GridTableMessage(self, action, 1)
-#            self.GetView().ProcessTableMessage(msg)
-#            self.parent._format_table()
-        else:       # run only if no *unhandled* errors
-            # tell the grid to display the new values
-            logging.debug("GRIDTABLE_REQUEST_VIEW_GET_VALUES")
-            action = wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES
-            msg = wx.grid.GridTableMessage(self, action)
-#            self.GetView().ProcessTableMessage(msg)
-#            self.parent._format_table()
-        finally:    # always runs
-            pass
-
-        self.GetView().ProcessTableMessage(msg)
-        self.parent._format_table()
-
-        self.data_is_modified = True
 
     def GetColLabelValue(self, column):
         return self.column_labels[column]
@@ -874,9 +814,8 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 #            balance += decimal.Decimal(row[-2])
 #            row[-1
 
-
     @utils.logged
-    def _update_data(self):
+    def _pull_data(self):
         # grab the table data from the database
         self.data = []
 
@@ -911,6 +850,119 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             # yet so we just ignore the error. LedgerPanel._init_ui() takes
             # care of updating the summary_bar
             pass
+
+    def _get_value(self, row, col):
+        """
+        Private logic for the GetValue() override method.
+        """
+#        logging.debug("Getting value of r{}c{}".format(row, column))
+        try:
+            value = self.data[row][col]
+        except IndexError:
+            return ''
+
+        if col == self.columns.category.index:
+            try:
+                return utils.build_cat_string(value, self.cat_data)
+            except TypeError:
+                return ''
+
+        if value is None or value == 'None':
+            return ''
+        else:
+            return str(value)
+
+    def _set_value(self, row, col, value):
+        """
+        Updates the data value for a given cell.
+
+        Does not attempt to update the database
+        """
+        logging.info("Setting r{}c{} to `{}`".format(row, col, value))
+        try:
+            logging.debug("trying to update row")
+            logging.debug("Previous: {}".format(self.data[row]))
+            self.row_is_new = False
+            self.data[row][col] = value
+        except IndexError:
+            # add a new row
+            logging.debug("Update failed. Adding new row")
+            self.row_is_new = True
+            self.data.append([None] * self.GetNumberCols())
+            self.data[row][0] = "-1"
+
+            # add the data to the data table
+            if col == self.columns.category.index:
+                try:
+                    self.choicelist.index(value)
+                except ValueError:
+                    # value not found. For now, lets just use None
+                    # TODO: figure out how I want to handle this.
+                    self.data[row][col] = None
+            else:
+                self.data[row][col] = value
+
+
+            # tell the grid that we've added a row
+            logging.debug("GRIDTABLE_NOTIFY_ROWS_APPENDED")
+            action = wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED
+            msg = wx.grid.GridTableMessage(self, action, 1)
+#            self.GetView().ProcessTableMessage(msg)
+#            self.parent._format_table()
+        else:       # run only if no *unhandled* errors
+            # tell the grid to display the new values
+            logging.debug("GRIDTABLE_REQUEST_VIEW_GET_VALUES")
+            action = wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES
+            msg = wx.grid.GridTableMessage(self, action)
+#            self.GetView().ProcessTableMessage(msg)
+#            self.parent._format_table()
+        finally:    # always runs
+            pass
+
+        self.GetView().ProcessTableMessage(msg)
+        self.parent._format_table()
+
+        self.data_is_modified = True
+
+    def _send_row(self, row):
+        """
+        Sends a new or modified row to the database
+        """
+        try:
+            logging.info("Attempting to write data to database")
+            if self.row_is_new:
+                orm.insert_ledger(acct=1,
+                                  date=None,
+                                  enter_date=None,
+                                  check_num=None,
+                                  amount="123.4",
+                                  payee=None,
+                                  category=None,
+                                  label=None,
+                                  memo=None,
+                                  fitid=-1,
+                                  )
+            else:       # row is updated
+                orm.update_ledger(acct=1,
+                                  date=None,
+                                  enter_date=None,
+                                  check_num=None,
+                                  amount="123.4",
+                                  payee=None,
+                                  category=None,
+                                  label=None,
+                                  memo=None,
+                                  fitid=-1,
+                                  )
+        except TypeError:
+            logging.exception("Error writing to database!", stack_info=True)
+        else:
+            logging.info("DB write successful.")
+            logging.debug(orm.session.new)
+            logging.debug(orm.session.dirty)
+            orm.session.commit()
+            self.parent.summary_bar._update()
+            self.table.data_is_modified = False
 
 
 class LedgerGrid(wx.grid.Grid):
