@@ -563,6 +563,16 @@ def insert_ledger(*args, **kwargs):
 ### ORM Insert Functions
 # ---------------------------------------------------------------------------
 @utils.logged
+def update_transaction(trans_id, update_dict):
+    """
+    """
+    logging.info("Updating transaction")
+
+    query = session.query(Transaction).filter_by(transaction_id=trans_id)
+    query.update(update_dict)
+
+
+@utils.logged
 def update_ledger(*args, **kwargs):
     """
     """
