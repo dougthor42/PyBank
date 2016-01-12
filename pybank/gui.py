@@ -866,20 +866,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         except IndexError:
             # add a new row
             logging.info("Update failed. Adding new row")
-            self.row_is_new = True
-            self.data.append([None] * self.GetNumberCols())
-            self.data[row][0] = "-1"
-
-            # add the data to the data table
-            if col == self.columns.category.index:
-                try:
-                    self.choicelist.index(value)
-                except ValueError:
-                    # value not found. For now, lets just use None
-                    # TODO: figure out how I want to handle this.
-                    self.data[row][col] = None
-            else:
-                self.data[row][col] = value
+            self._insert_row(row, col, value)
 
             # tell the grid that we've added a row
             logging.debug("GRIDTABLE_NOTIFY_ROWS_APPENDED")
@@ -896,7 +883,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         self.GetView().ProcessTableMessage(msg)
         self.parent._format_table()
 
-        self.data_is_modified = True
+#        self.data_is_modified = True
 
     def _send_row(self, row):
         """
@@ -945,6 +932,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         self.data[row][col] = value
         new = self.data[row]
         logging.info("New Value: %s", self.data[row])
+        trans_id = self.data[row][self.columns.trans_id.index]
 
         # create a dict of the colums:values
         update_dict = {}
@@ -953,6 +941,12 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
                 col_name = [x.view_name for x in self.columns if x.index == i][0]
                 update_dict[col_name] = n
 
+        # make sure we don't try and update the trans_id
+        try:
+            del update_dict[self.columns.trans_id.col_name]
+        except KeyError:
+            pass
+
         logging.info("Update Dict: %s", update_dict)
 
         if not update_dict:
@@ -960,7 +954,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             return
 
         try:
-            orm.update_transaction(row + 1, update_dict)
+            orm.update_transaction(trans_id, update_dict)
 
 #        try:
 #            orm.update_ledger(acct=1,
@@ -979,17 +973,73 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             logging.exception("Error writing to database!", stack_info=True)
         else:
             logging.info("DB write successful.")
-            logging.debug(orm.session.new)
-            logging.debug(orm.session.dirty)
+            logging.debug("New Items: {}".format(orm.session.new))
+            logging.debug("Dirty Items: {}".format(orm.session.dirty))
             orm.session.commit()
             self._pull_data()
 
-    def _insert_row(self, row):
+    def _insert_row(self, row, col, value):
         """
         Inserts a new row into the ledger orm table.
         """
         logging.info("Inserting row %s", row)
-        pass
+        self.row_is_new = True
+        self.data.append([None] * self.GetNumberCols())
+        self.data[row][0] = "-1"
+        # Make sure we write the cateogry ID instead of the string
+        if col == self.columns.category.index:
+            try:
+                self.choicelist.index(value)
+            except ValueError:
+                # value not found. For now, lets just use None
+                # TODO: figure out how I want to handle this.
+                self.data[row][col] = None
+        else:
+            self.data[row][col] = value
+
+        logging.info("New Value: %s", self.data[row])
+
+        # create a dict of the colums:values
+        insert_dict = {}
+        col_name = [x.view_name for x in self.columns if x.index == col][0]
+
+
+
+        insert_dict[col_name] = value
+
+        # make sure we don't try and update the trans_id
+        try:
+            del insert_dict[self.columns.trans_id.view_name]
+        except KeyError:
+            pass
+
+        # make sure that we have an "amount" value
+        if self.columns.amount.view_name not in insert_dict.keys():
+            insert_dict[self.columns.amount.view_name] = "0"
+
+        # if we have a "Category" col, we have to rename it to "category_id"
+        if self.columns.category.view_name in insert_dict.keys():
+            temp = insert_dict[self.columns.category.view_name]
+            del insert_dict[self.columns.category.view_name]
+            insert_dict['category_id'] = temp
+
+        logging.info("Update Dict: %s", insert_dict)
+
+        if not insert_dict:
+            # no values to update, so just return.
+            return
+
+        try:
+            orm.insert_transaction(insert_dict)
+        except TypeError:
+            # TODO: more exact error conditions
+            logging.exception("Error writing to database!", stack_info=True)
+        else:
+            logging.info("DB write successful.")
+            logging.debug("New Items: {}".format(orm.session.new))
+            logging.debug("Dirty Items: {}".format(orm.session.dirty))
+            orm.session.commit()
+#            self._pull_data()
 
 
 class LedgerGrid(wx.grid.Grid):

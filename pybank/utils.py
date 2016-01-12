@@ -76,7 +76,7 @@ class LedgerCols(Enum):
 
     (index, name, view col name, type, width)
     """
-    tid = (0, "tid", "transaction_id", STRING, 30)
+    trans_id = (0, "trans_id", "transaction_id", STRING, 30)
     date = (1, "Date", "date", TEXT, 100)
     enter_date = (2, "Date Entered", "enter_date", TEXT, 100)
     check_num = (3, "CheckNum", "check_num", TEXT, 80)
@@ -85,7 +85,7 @@ class LedgerCols(Enum):
     memo = (6, "Memo", "Memo", TEXT, 150)
     category = (7, "Category", "Category", TEXT, 240)
     label = (8,"Label", "TransactionLabel", TEXT, 160)
-    amount = (9, "Amount", "Amount", TEXT, 80)
+    amount = (9, "Amount", "amount", TEXT, 80)
     balance = (10, "Balance", None, TEXT, 80)
 
     def __init__(self, index, col_name, view_name, col_type, width):
