@@ -170,6 +170,8 @@ class MainFrame(wx.Frame):
                                   "Create a new PyBank file")
         self.mf_open = wx.MenuItem(self.mfile, 102, "&Open\tCtrl+O",
                                    "Open a PyBank file")
+        self.mf_save = wx.MenuItem(self.mfile, 106, "&Save\tCtrl+S",
+                                   "Save the current PyBank file")
         self.mf_close = wx.MenuItem(self.mfile, 104, "&Close\tCtrl+W",
                                     "Close the current PyBank file.")
 
@@ -183,6 +185,7 @@ class MainFrame(wx.Frame):
         # Add menu items to the menu
         self.mfile.Append(self.mf_new)
         self.mfile.Append(self.mf_open)
+        self.mfile.Append(self.mf_save)
         self.mfile.Append(self.mf_close)
         self.mfile.AppendSeparator()
         self.mfile.Append(self.mf_open_ofx)
@@ -317,6 +320,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self._on_close, id=104)
         self.Bind(wx.EVT_MENU, self._on_quit, id=103)
         self.Bind(wx.EVT_MENU, self._on_open_ofx, id=105)
+        self.Bind(wx.EVT_MENU, self._on_save, id=106)
 
         # Edit Menu
 #        self.Bind(wx.EVT_MENU, self._on_edit_menu1)
@@ -349,17 +353,7 @@ class MainFrame(wx.Frame):
         """
         logging.debug("close event fired!")
 
-
-        # Get the required encryption stuff
-        key = crypto.get_key()
-
-        # dump the memory database directly to an encrypted file.
-        dump = orm.sqlite_iterdump(orm.engine, orm.session)
-        dump = "".join(line for line in dump)
-        dump = dump.encode('utf-8')
-
-        new_file = "test_database.pybank"
-        crypto.encrypted_write(new_file, key, dump)
+        save_pybank_file()
 
         self.Destroy()
 
@@ -409,6 +403,11 @@ class MainFrame(wx.Frame):
 
         logging.info("Opening OFX file: `{}`".format(path))
 
+    def _on_save(self, event):
+        """ Saves the current pybank file """
+        logging.info("Saving file...")
+
+        save_pybank_file()
 
     def _on_new(self, event):
         """ Create a new file """
@@ -437,17 +436,7 @@ class MainFrame(wx.Frame):
 
     def _on_encryption_timer(self, event):
         logging.info("Encryption Timer event start")
-
-        # Get the required encryption stuff
-        key = crypto.get_key()
-
-        # dump the memory database directly to an encrypted file.
-        dump = orm.sqlite_iterdump(orm.engine, orm.session)
-        dump = "".join(line for line in dump)
-        dump = dump.encode('utf-8')
-
-        new_file = "test_database.pybank"
-        crypto.encrypted_write(new_file, key, dump)
+        save_pybank_file()
 
     def _on_write_db_timer(self, event):
         logging.debug("Write_db_timer event!")
@@ -1440,6 +1429,26 @@ class LedgerHeaderBar(wx.Panel):
         vbox.Add(self.title_bar, 1, wx.EXPAND)
         self.SetSizer(vbox)
 
+# ---------------------------------------------------------------------------
+### Functions
+# ---------------------------------------------------------------------------
+@utils.logged
+def save_pybank_file(filename="test_database.pybank"):
+    """
+    Save the pybank file by dumping the database to a string and then
+    writing that to an encrypted file.
+    """
+    logging.info("Saving file to '%s'", filename)
+
+    # Get the required encryption stuff
+    key = crypto.get_key()
+
+    # dump the memory database directly to an encrypted file.
+    dump = orm.sqlite_iterdump(orm.engine, orm.session)
+    dump = "".join(line for line in dump)
+    dump = dump.encode('utf-8')
+
+    crypto.encrypted_write(filename, key, dump)
 
 # ---------------------------------------------------------------------------
 ### Run module as standalone
