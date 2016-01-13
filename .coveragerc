@@ -1,14 +1,3 @@
-[run]
-source = pybank
-omit =
-    */python?.?/*
-    */lib-python/?.?/*.py
-    */lib_pypy/_*.py
-    */site-packages/ordereddict.py
-    */site-packages/nose/*
-    */unittest2/*
-    */decrypt_pybank_file.py
-
 [report]
 exclude_lines =
     # Have to re-enable to standard pragma
@@ -19,3 +8,6 @@ exclude_lines =
 
     # Ignore the non-runnable code
     if __name__ == .__main__.:
+
+omit =
+    */tests/*
