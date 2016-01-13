@@ -1,0 +1,21 @@
+[run]
+source = pybank
+omit =
+    */python?.?/*
+    */lib-python/?.?/*.py
+    */lib_pypy/_*.py
+    */site-packages/ordereddict.py
+    */site-packages/nose/*
+    */unittest2/*
+    */decrypt_pybank_file.py
+
+[report]
+exclude_lines =
+    # Have to re-enable to standard pragma
+    pragma: no cover
+
+    # Ignore stuff that isn't typically used.
+    def __repr__
+
+    # Ignore the non-runnable code
+    if __name__ == .__main__.:
