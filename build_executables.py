@@ -48,20 +48,21 @@ packages = [
 
 # included modules
 includes = [
-            "pybank/pbsql",
-            "pybank/plots",
-            "pybank/crypto",
-            "pybank/gui",
-#            "scipy/special/ufuncs_cxx",
-#            "scipy/special/ufuncs",
+            "pybank\\constants",
+            "pybank\\crypto",
+            "pybank\\gui",
+            "pybank\\gui_utils",
+            "pybank\\ofx",
+            "pybank\\orm",
+            "pybank\\parseofx",
+            "pybank\\plots",
+            "pybank\\utils",
             ]
 
 # Files to include (and their destinations)
 include_files = [
                  "pybank\\test_database.db",
                  ("log\\README.txt", "log\\README.txt"),  # (source, dest)
-#                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs.pyd", "_ufuncs.pyd"),
-#                 ("C:\\WinPython34_x64\\python-3.4.3.amd64\\Lib\\site-packages\\scipy\\special\\_ufuncs_cxx.pyd", "_ufuncs_cxx.pyd"),
                  ]
 
 # list of names of files to include when determining dependencies of
