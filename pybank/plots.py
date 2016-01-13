@@ -433,4 +433,3 @@ def main():
 if __name__ == "__main__":
     random.seed(5633)
     main()
-    get_double_click_time()
