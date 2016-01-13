@@ -65,7 +65,7 @@ try:
 #                   __version__,
 #                   )
 #    from . import pbsql
-#    from . import plots
+    from . import constants
     from . import utils
     logging.debug("Imports for crypto.py complete (Method: UnitTest)")
 except SystemError:
@@ -75,7 +75,7 @@ except SystemError:
 #                              __version__,
 #                              )
 #        import pbsql
-#        import plots
+        import constants
         import utils
         logging.debug("Imports for crypto.py complete (Method: Spyder IDE)")
     except ImportError:
@@ -84,7 +84,7 @@ except SystemError:
 #                            __version__,
 #                            )
 #        from pybank import pbsql
-#        from pybank import plots
+        from pybank import constants
         from pybank import utils
         logging.debug("Imports for crypto.py complete (Method: Executable)")
 
@@ -97,7 +97,7 @@ except SystemError:
 # ---------------------------------------------------------------------------
 SERVICE = "Pybank"
 USER = "user"
-
+SALT_FILE = constants.SALT_FILE
 
 # ---------------------------------------------------------------------------
 ### Classes
@@ -269,7 +269,7 @@ def get_key(service=SERVICE, user=USER):
 
 
 @utils.logged
-def get_salt(file="salt.txt"):
+def get_salt(file=SALT_FILE):
     """ Reads the salt file if it exists. Otherwise, creates it. """
     logging.info("Getting or creating salt string.")
     if not os.path.exists(file):

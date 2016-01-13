@@ -39,6 +39,7 @@ try:
     from . import crypto
     from . import utils
     from . import orm
+    from . import constants
     logging.debug("Imports for main.py complete (Method: UnitTest)")
 except SystemError:
     try:
@@ -52,6 +53,7 @@ except SystemError:
         import utils
         import gui_utils
         import orm
+        import constants
         logging.debug("Imports for main.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
@@ -64,12 +66,15 @@ except SystemError:
         from pybank import utils
         from pybank import gui_utils
         from pybank import orm
+        from pybank import constants
         logging.debug("Imports for main.py complete (Method: Executable)")
 
 
 # ---------------------------------------------------------------------------
 ### Module Constants
 # ---------------------------------------------------------------------------
+PYBANK_FILE = constants.PYBANK_FILE
+SALT_FILE = constants.SALT_FILE
 
 # ---------------------------------------------------------------------------
 ### Classes
@@ -86,7 +91,7 @@ def create_new(db_file):
     logging.debug('Prompting user to make a password')
     if not gui_utils.create_pw():   # Use pw = 'pybank' for testing
         logging.debug('User canceled password creation; exiting')
-        return    # this needs to return outside the if statement
+        raise RuntimeError
 
     salt = crypto.get_salt()
     pw = crypto.get_password()
@@ -133,11 +138,15 @@ def main():
     db_file = 'test_database.pybank'
 
     # Check if the database file exists
-    database_file = utils.find_data_file(db_file)
-    logging.info('Checking for existing database: {}'.format(db_file))
+    database_file = utils.find_data_file(PYBANK_FILE)
+    logging.info('Checking for existing database: {}'.format(database_file))
     if not os.path.isfile(database_file):
         logging.warning("database file not found. Creating.")
-        create_new(db_file)
+        try:
+            create_new(database_file)
+        except RuntimeError:
+            # User canceled the creation process, we need to exit.
+            return
     else:
         logging.info('database file found')
         if not gui_utils.prompt_pw():
@@ -151,7 +160,7 @@ def main():
         key = crypto.create_key(peppered_pw, salt)
 
         logging.debug('decrypting database')
-        new_dump = crypto.encrypted_read(db_file, key)
+        new_dump = crypto.encrypted_read(database_file, key)
         new_dump = new_dump.decode('utf-8').split(";")
 #        print(new_dump)
 #        print(type(new_dump))
