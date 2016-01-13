@@ -24,8 +24,9 @@ Transaction matching and download start date = previous download date.
 # TODO: Does Google Wallet have OFX?
 """
 ### Imports #################################################################
-
 # Standard Library
+import logging
+import os.path
 
 # Third Party
 
@@ -49,3 +50,6 @@ __long_descr__ = """/
 """
 
 _logging._setup_logging()
+
+PROGRAM_DIR= os.path.dirname(os.path.abspath(__file__))
+logging.info("Program directory: %s", PROGRAM_DIR)
