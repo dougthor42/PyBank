@@ -64,7 +64,6 @@ except SystemError:
 # ---------------------------------------------------------------------------
 Base = declarative_base()
 engine = sa.create_engine('sqlite:///:memory:', echo=False)
-#engine = sa.create_engine("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\blank_db.sqlite", echo=False)
 
 
 # ---------------------------------------------------------------------------
