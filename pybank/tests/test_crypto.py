@@ -275,10 +275,13 @@ class TestDecryptFile(unittest.TestCase):
         except OSError:
             pass
 
-    @unittest.skip("This is failing and it shouldn't be")
+#    def setUp(self):
+#        self.
+
+#    @unittest.skip("This is failing and it shouldn't be")
     def test_decrypt_file(self):
         try:
-            crypto.decrypt_file(self.encrypted_file, self.key)
+            crypto.decrypt_file(self.encrypted_file, self.key, self.file)
         except crypto.InvalidToken:
             self.fail("decrypt_file raised InvalidToken")
 

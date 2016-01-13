@@ -91,20 +91,20 @@ class TestIterDump(unittest.TestCase):
 
 class TestInsertFunctions(unittest.TestCase):
     """ """
-#    engine = orm.engine
-#    session = orm.session
-#
-#    @classmethod
-#    def setUpClass(cls):
-#        pass
-#
-#    @classmethod
-#    def cleanUpClass(cls):
-#        pass
+    engine = orm.engine
+    session = orm.session
+
+    @classmethod
+    def setUpClass(cls):
+        pass
+
+    @classmethod
+    def cleanUpClass(cls):
+        pass
 
     def test_insert_account_group(self):
         try:
-            orm.insert_account_group("AccountGroup")
+            orm.insert_account_group("NewAccountGroup")
         except Exception as err:
             self.fail("insert_account_group raised exception: {}".format(err))
 
