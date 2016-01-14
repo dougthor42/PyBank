@@ -357,6 +357,7 @@ class TestGetSalt_FileCreated(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        """ Remove the salt file created by get_salt """
         try:
             os.remove(cls.file)
         except OSError:
@@ -366,12 +367,31 @@ class TestGetSalt_FileCreated(unittest.TestCase):
         crypto.get_salt(self.file)
         self.assertTrue(os.path.exists(self.file))
 
+
+class TestGetSalt_FilePopulated(unittest.TestCase):
+    """
+    """
+    file = "temp_salt.txt"
+
+    @classmethod
+    def setUpClass(cls):
+        """ Create the salt file so that we can read it in the test """
+        crypto.get_salt(cls.file)
+
+    @classmethod
+    def tearDownClass(cls):
+        """ Remove the salt file created by setUpClass """
+        try:
+            os.remove(cls.file)
+        except OSError:
+            pass
+
     def test_get_salt_populates_file(self):
         result = crypto.get_salt(self.file)
         self.assertEqual(len(result), 32)
 
 
-class TestGetSale_FileExists(unittest.TestCase):
+class TestGetSalt_FileExists(unittest.TestCase):
     """
     """
     file = "temp_salt.txt"
@@ -379,11 +399,13 @@ class TestGetSale_FileExists(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """ Create a dummy salt file before running the test """
         with open(cls.file, 'wb') as openf:
             openf.write(cls.salt)
 
     @classmethod
     def tearDownClass(cls):
+        """ Remove the dummy salt file after running the test """
         try:
             os.remove(cls.file)
         except OSError:
