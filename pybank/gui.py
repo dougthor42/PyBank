@@ -730,7 +730,10 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         return rows + 1
 
     def GetNumberCols(self):
-        return len(self.data[0])
+        try:
+            return len(self.data[0])
+        except IndexError:
+            return len(self.columns)
 
     def IsEmptyCell(self, row, column):
 #        logging.debug("IsEmptyCell(row={}, col={})".format(row, column))
@@ -1450,7 +1453,10 @@ class LedgerSummaryBar(wx.Panel):
         self.online_balance = decimal.Decimal('0.00')
         self.num_transactions = len(data)
         self.available_balance = decimal.Decimal('0.00')
-        self.current_balance = decimal.Decimal(data[-1][-1])
+        try:
+            self.current_balance = decimal.Decimal(data[-1][-1])
+        except IndexError:
+            self.current_balance = decimal.Decimal('0.00')
 
     @property
     def online_balance(self):

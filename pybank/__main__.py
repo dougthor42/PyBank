@@ -93,25 +93,14 @@ def create_new(db_file):
         logging.debug('User canceled password creation; exiting')
         raise RuntimeError
 
-    salt = crypto.get_salt()
-    pw = crypto.get_password()
-    peppered_pw = crypto.encode_and_pepper_pw(pw)
-    key = crypto.create_key(peppered_pw, salt)
+    key = crypto.get_key()
 
-    crypto.create_password(pw)
     logging.debug('Creating database file')
-    # 1. Create an unencrypted file based on the template
-#        db = pbsql.create_db_sa(":memory:")
-#    db = pbsql.create_db(":memory:")
-#    engine, session = base.create_database()
-    # 2. Dump it, encrypt the dump, and then save the encrypted dump.
-    # Move to pbsql module
+    # 1. Create the DB and dump it
     dump = list(orm.sqlite_iterdump(orm.engine, orm.session))
     dump = "".join(line for line in dump)
     dump = dump.encode('utf-8')
-#    dump = "".join(line for line in db.iterdump())
-#    dump = dump.encode('utf-8')
-    # 3. Encrypt the dump amd save it to a file
+    # 2. Save the dump to an encrypted file.
     crypto.encrypted_write(db_file, key, dump)
 
 
@@ -135,8 +124,6 @@ def main():
     """
     docopt(__doc__, version=__version__)
 
-    db_file = 'test_database.pybank'
-
     # Check if the database file exists
     database_file = utils.find_data_file(PYBANK_FILE)
     logging.info('Checking for existing database: {}'.format(database_file))
@@ -154,27 +141,17 @@ def main():
             return
         logging.debug('creating key')
 
-        salt = crypto.get_salt()
-        pw = crypto.get_password()
-        peppered_pw = crypto.encode_and_pepper_pw(pw)
-        key = crypto.create_key(peppered_pw, salt)
+        key = crypto.get_key()
 
         logging.debug('decrypting database')
         new_dump = crypto.encrypted_read(database_file, key)
         new_dump = new_dump.decode('utf-8').split(";")
-#        print(new_dump)
-#        print(type(new_dump))
-#        return
 
         logging.debug('copying db to memory')
-#        db = pbsql.create_db(":memory:")
         logging.debug('creating database structure')
-#        engine, session = base.create_database()
         logging.debug('starting copy')
         orm.copy_to_sa(orm.engine, orm.session, new_dump)
-#        db.executescript(new_dump)
 
-        # this db object needs to be sent around everywhere.
 
 
     logging.debug('starting gui')
