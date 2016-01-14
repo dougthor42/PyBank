@@ -99,7 +99,7 @@ test_script:
   # Run the project tests
   - ps ls
   - ps ls ..
-  - "%CMD_IN_ENV% python -m green.cmdline -t -vvv pybank"
+  - "%CMD_IN_ENV% python -m green.cmdline -t -vvv --processes 1 pybank"
 
 after_test:
   # Create wheel package and executable

@@ -25,7 +25,7 @@ install:
   - pip install numpy
 
 script:
-  - green pybank -vv --run-coverage
+  - green pybank -vvv --run-coverage --processes 1
 
 after_success:
   # Send coverage information to coveralls.io
