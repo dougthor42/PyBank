@@ -700,11 +700,20 @@ def _test_iterdump_loop(dump_file):
     session.close()
     engine.dispose()
 
+
+def dump_to_file(engine, session, file):
+    """ """
+    dump = list(sqlite_iterdump(engine, session))
+    dump = "".join(line for line in dump)
+    dump = dump.encode('utf-8')
+
+    with open(file, 'wb') as openf:
+        openf.write(dump)
+
 # ---------------------------------------------------------------------------
 ### Run as module
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-#    create_database("sqlite:///C:\\WinPython34\\projects\\github\\PyBank\\pybank\\_a.sqlite")
     dump = list(sqlite_iterdump(engine, session))
     dump = "".join(line for line in dump)
     dump = dump.encode('utf-8')

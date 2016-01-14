@@ -37,56 +37,65 @@ except (SystemError, ImportError):
 THIS_DIR = osp.dirname(osp.abspath(__file__))
 
 
-class TestCopyToSA(unittest.TestCase):
-    """ """
-    engine = orm.engine
-    session = orm.session
-    dump_file = osp.join(THIS_DIR, "data", "temp_dump_file.txt")
-
+class ORMTestCase(unittest.TestCase):
+    """ Creates and destroys the ORM engine and session """
     @classmethod
     def setUpClass(cls):
-        pass
+        cls.engine = orm.engine
+        cls.session = orm.session
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        cls.session.close()
+        cls.engine.dispose()
+
+
+class TestCopyToSA(ORMTestCase):
+    """ """
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()        # make sure to run the parent's setUpClass
+        dump_file = osp.join(THIS_DIR, "data", "temp_dump_file.txt")
+        with open(dump_file, 'rb') as openf:
+            dump = openf.read()
+        cls.dump = dump.decode('utf-8').split(";")
 
     def test_copy_to_sa(self):
-        with open(self.dump_file, 'rb') as openf:
-            dump = openf.read()
-        dump = dump.decode('utf-8').split(";")
         try:
-            orm.copy_to_sa(self.engine, self.session, dump)
+            orm.copy_to_sa(self.engine, self.session, self.dump)
         except Exception as err:
             self.fail("copy_to_sa raised exception: {}".format(err))
 
 
-class TestIterDump(unittest.TestCase):
+@unittest.skip("Needs complete rewrite")
+class TestIterDump(ORMTestCase):
     """ """
-    engine = orm.engine
-    session = orm.session
-    dump_file = osp.join(THIS_DIR, "data", "temp_dump_file.txt")
+    def setUp(self):
+        """ copy the test dump file to the database and also read it """
+        dump_file = osp.join(THIS_DIR, "data", "temp_dump_file.txt")
+        orm.copy_to_sa(self.engine, self.session, dump_file)
 
-    @classmethod
-    def setUpClass(cls):
-        pass
+        with open(dump_file, 'rb') as openf:
+            self.dump = openf.read()
+        self.dump = self.dump.decode('utf-8').split(";")[:-1]
+        self.dump = list(x + ";" for x in self.dump)
 
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-#    @unittest.skip("not ready yet")
     def test_sqlite_iterdump(self):
-        with open(self.dump_file, 'rb') as openf:
-            dump = openf.read()
-        dump = dump.decode('utf-8').split(";")
-        try:
-            orm.copy_to_sa(self.engine, self.session, dump)
-        except Exception as err:
-            self.fail("sqlite_iterdump raised exception: {}".format(err))
-#        new_dump = list(orm.sqlite_iterdump(self.engine, self.session))
+        new_dump = list(orm.sqlite_iterdump(self.engine, self.session))
 #        new_dump = "".join(line for line in new_dump)
-#        new_dump = new_dump.encode('utf-8')
+#        result = new_dump.encode('utf-8')
+        result = list(x for x in new_dump)
+        self.assertEqual(result, self.dump)
+
+
+@unittest.skip("Needs to be written")
+class TestDumpToFile(ORMTestCase):
+    """ """
+    def setUp(self):
+        pass
+
+    def test_dump_to_file(self):
+        pass
 
 
 class TestInsertFunctions(unittest.TestCase):
