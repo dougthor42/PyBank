@@ -307,36 +307,8 @@ def build_cat_strings(data, delimiter=":", max_nest=10):
                 for item in data)
 
 
-def main():
-    """
-    Main entry point
-    """
-    docopt(__doc__, version=__version__)
-    print("Running utils.py")
-
-    d = decimal.Decimal("1123213.232032")
-    print(moneyfmt(d, curr='>'))
-
-    data = [(1, "Expense", 1),
-            (2, "Income", 2),
-            (3, "Auto", 1),
-            (4, "Fees", 3),
-            (5, "Gas", 3),
-            (6, "Insurance", 3),
-            (7, "Bank Fees", 1),
-            (8, "Commissions", 2),
-            (9, "Salaray", 2),
-            (10, "Bonus", 9),
-            (11, "Holiday", 9),
-            ]
-
-
-    print(build_cat_string(10, data))
-    print(build_cat_string(7, data, "."))
-    print(build_cat_string(5, data, ":"))
-
 # ---------------------------------------------------------------------------
 ### Run module as standalone
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    main()
+    pass

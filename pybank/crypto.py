@@ -46,7 +46,6 @@ Options:
 import os
 import logging
 import base64
-import time
 import os.path
 
 # Third Party
@@ -61,29 +60,17 @@ from cryptography.exceptions import InvalidKey
 # Package / Application
 try:
     # Imports used for unittests
-#    from . import (__project_name__,
-#                   __version__,
-#                   )
-#    from . import pbsql
     from . import constants
     from . import utils
     logging.debug("Imports for crypto.py complete (Method: UnitTest)")
 except SystemError:
     try:
         # Imports used by Spyder
-#        from __init__ import (__project_name__,
-#                              __version__,
-#                              )
-#        import pbsql
         import constants
         import utils
         logging.debug("Imports for crypto.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
-#        from pybank import (__project_name__,
-#                            __version__,
-#                            )
-#        from pybank import pbsql
         from pybank import constants
         from pybank import utils
         logging.debug("Imports for crypto.py complete (Method: Executable)")
@@ -308,9 +295,6 @@ def encode_and_pepper_pw(string, pepper=None):
     return string + pepper
 
 
-def main():
-    pass
-
 if __name__ == "__main__":
-    main()
+    pass
 

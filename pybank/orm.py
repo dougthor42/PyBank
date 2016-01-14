@@ -22,7 +22,6 @@ import logging
 import decimal
 from decimal import Decimal
 import datetime
-import contextlib
 import warnings
 
 # Third Party
@@ -37,24 +36,15 @@ from sqlalchemy import text as saText
 # Package / Application
 try:
     # Imports used by unit test runners
-    from . import (__project_name__,
-                   __version__,
-                   )
     from . import utils
     logging.debug("Imports for orm.py complete (Method: UnitTest)")
 except SystemError:
     try:
         # Imports used by Spyder
-        from __init__ import (__project_name__,
-                              __version__,
-                              )
         import utils
         logging.debug("Imports for orm.py complete (Method: Spyder IDE)")
     except ImportError:
          # Imports used by cx_freeze
-        from pybank import (__project_name__,
-                            __version__,
-                            )
         from pybank import utils
         logging.debug("Imports for orm.py complete (Method: Executable)")
 
