@@ -98,19 +98,8 @@ class TestDumpToFile(ORMTestCase):
         pass
 
 
-class TestInsertFunctions(unittest.TestCase):
+class TestInsertFunctions(ORMTestCase):
     """ """
-    engine = orm.engine
-    session = orm.session
-
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    @classmethod
-    def cleanUpClass(cls):
-        pass
-
     def test_insert_account_group(self):
         try:
             orm.insert_account_group("NewAccountGroup")
