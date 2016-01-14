@@ -22,6 +22,11 @@ from pybank import (__version__,
 # turn off logging if we're going to build a distribution
 logging.disable(logging.CRITICAL)
 
+# See https://chriswarrick.com/blog/2014/09/15/python-apps-the-right-way-entry_points-and-scripts/
+# See http://stackoverflow.com/a/9615473/1354930
+entry_points = {'gui_scripts': ['pybank = pybank.__main__:main'],
+                }
+
 setup(
     name=__project_name__,
     version=__version__,
@@ -29,6 +34,7 @@ setup(
     packages=find_packages(),
     author="Douglas Thor",
     url=__project_url__,
+    entry_points = entry_points,
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Environment :: Win32 (MS Windows)",

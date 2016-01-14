@@ -122,6 +122,10 @@ def main():
       + every 2 minutes, copy DB to file, encrypt it.
 
     """
+    msg = "Starting %s v%s, released %s"
+    logging.info(msg, __project_name__, __version__, __released__)
+    logging.info("End of %s program.", __project_name__)
+
     docopt(__doc__, version=__version__)
 
     # Check if the database file exists
@@ -161,8 +165,4 @@ def main():
 
 
 if __name__ == "__main__":
-    msg = "Starting %s v%s, released %s"
-    logging.info(msg, __project_name__, __version__, __released__)
     main()
-    logging.info("End of %s program.", __project_name__)
-
