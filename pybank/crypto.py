@@ -247,6 +247,7 @@ def create_key(password, salt):
 @utils.logged
 def get_key(service=SERVICE, user=USER):
     """ Creates and returns the encryption key. """
+    logging.info("Getting key")
     salt = get_salt()
     pw = get_password(service, user)
     peppered_pw = encode_and_pepper_pw(pw)

@@ -19,13 +19,10 @@ Options:
 ### Imports
 # ---------------------------------------------------------------------------
 # Standard Library
-import sys
 import logging
 import os.path
-import time
 
 # Third-Party
-from docopt import docopt
 
 # Package / Application
 try:
@@ -90,18 +87,35 @@ def create_new(db_file):
     logging.debug('database file not found, an empty one will be created')
     logging.debug('Prompting user to make a password')
     if not gui_utils.create_pw():   # Use pw = 'pybank' for testing
-        logging.debug('User canceled password creation; exiting')
+        logging.warning('User canceled password creation; exiting')
         raise RuntimeError
 
     key = crypto.get_key()
 
-    logging.debug('Creating database file')
+    logging.info('Creating database file')
     # 1. Create the DB and dump it
     dump = list(orm.sqlite_iterdump(orm.engine, orm.session))
     dump = "".join(line for line in dump)
     dump = dump.encode('utf-8')
     # 2. Save the dump to an encrypted file.
     crypto.encrypted_write(db_file, key, dump)
+
+
+def read_pybank_file(pybank_file):
+    """ """
+    logging.info('database file found')
+    if not gui_utils.prompt_pw():
+        logging.warning('User canceled password prompt; exiting')
+        raise RuntimeError
+
+    logging.debug('creating key')
+    key = crypto.get_key()
+
+    logging.debug('decrypting database')
+    new_dump = crypto.encrypted_read(pybank_file, key)
+    new_dump = new_dump.decode('utf-8').split(";")
+
+    orm.copy_to_sa(orm.engine, orm.session, new_dump)
 
 
 @utils.logged
@@ -126,11 +140,10 @@ def main():
     logging.info(msg, __project_name__, __version__, __released__)
     logging.info("End of %s program.", __project_name__)
 
-    docopt(__doc__, version=__version__)
-
     # Check if the database file exists
     database_file = utils.find_data_file(PYBANK_FILE)
     logging.info('Checking for existing database: {}'.format(database_file))
+
     if not os.path.isfile(database_file):
         logging.warning("database file not found. Creating.")
         try:
@@ -139,25 +152,13 @@ def main():
             # User canceled the creation process, we need to exit.
             return
     else:
-        logging.info('database file found')
-        if not gui_utils.prompt_pw():
-            logging.debug('User canceled password prompt; exiting')
+        try:
+            read_pybank_file(database_file)
+        except RuntimeError:
+            # User canceled password process, we need to exit
             return
-        logging.debug('creating key')
 
-        key = crypto.get_key()
-
-        logging.debug('decrypting database')
-        new_dump = crypto.encrypted_read(database_file, key)
-        new_dump = new_dump.decode('utf-8').split(";")
-
-        logging.debug('copying db to memory')
-        logging.debug('creating database structure')
-        logging.debug('starting copy')
-        orm.copy_to_sa(orm.engine, orm.session, new_dump)
-
-
-
+    # Start the main application
     logging.debug('starting gui')
     gui.MainApp()
 

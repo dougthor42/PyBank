@@ -595,6 +595,7 @@ def copy_to_sa(engine, session, dump):
     --------
     None?
     """
+    logging.info('Starting copy to in-memory database')
     for sql in dump:
         if sql.startswith("INSERT"):
             # "None" is not recognized by SQLite when executing SQL, so we
@@ -631,6 +632,7 @@ def sqlite_iterdump(engine, session):
     sql : iterator
         The dump of the SQL.
     """
+    logging.info("dumping database")
     tables = Base.metadata.tables
     n = 0
 
