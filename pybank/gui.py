@@ -476,6 +476,37 @@ class SamplePanel(wx.Panel):
         wx.StaticText(self, -1, label, (5, 5))
 
 
+class SampleLogPanel(wx.Panel):
+    """ Simple test panel to put into the notebook """
+    def __init__(self, parent, colour, label):
+        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
+        self.parent = parent
+        self.SetBackgroundColour(colour)
+
+        title = wx.StaticText(self, -1, label)
+
+        log_style = (wx.TE_MULTILINE
+                     | wx.TE_READONLY
+                     | wx.HSCROLL
+                     )
+
+        log_font = wx.Font(10,
+                           family=wx.MODERN,
+                           style=wx.NORMAL,
+                           weight=wx.NORMAL,
+                           underline=False,
+                           faceName='Consolas',
+                           )
+
+        self.log = wx.TextCtrl(self, -1, "", style=log_style)
+        self.log.SetFont(log_font)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(title, 0, wx.EXPAND)
+        vbox.Add(self.log, 1, wx.EXPAND)
+        self.SetSizer(vbox)
+
+
 class SamplePlotPanel(wx.Panel):
     """
     Example plotting using the built-in wx.lib.plot (wxplot).
@@ -535,8 +566,7 @@ class NotebookPages(Enum):
     summary = 0
     ledger = 1
     plots = 2
-    wxmplot = 3
-    wxlibplot = 4
+    log = 3
 
 
 class MainNotebook(wx.Notebook):
@@ -560,14 +590,18 @@ class MainNotebook(wx.Notebook):
 
     def _init_ui(self):
         """ Initialize UI components """
-        p0 = SamplePanel(self, "yellow", "Summary Page")
-        self.AddPage(p0, "Summary")
+        summary_page = SamplePanel(self, "yellow", "Summary Page")
+        self.AddPage(summary_page, "Summary")
 
         self.ledger_page = LedgerPanel(self)
         self.AddPage(self.ledger_page, "Ledger")
 
-        p4 = SamplePlotPanel(self, "orange", "Plotting with wx.lib.plot")
-        self.AddPage(p4, "Even more stuff")
+        plots_page = SamplePlotPanel(self, "cyan", "Plotting (wx.lib.plot)")
+        self.AddPage(plots_page, "Even more stuff")
+
+        self.log_page = SampleLogPanel(self, "pink", "Sample logging page")
+        self.AddPage(self.log_page, "Logs")
+        utils._init_logging(self.log_page.log, logging.WARNING)
 
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._on_page_changed)
 #        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self._on_page_changing)

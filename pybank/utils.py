@@ -23,7 +23,6 @@ import decimal
 from enum import Enum, unique
 
 # Third-Party
-from docopt import docopt
 import wx.grid
 
 # Package / Application
