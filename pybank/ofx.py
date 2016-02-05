@@ -28,6 +28,7 @@ from os import urandom
 
 # Third-Party
 from docopt import docopt
+import requests
 
 # Package / Application
 try:
@@ -283,39 +284,7 @@ def list_accounts():
     """
     Lists accouts at the institution
     """
-    logging.debug("Listing accounts")
-    ofx_client = Client()
-
-    acct_str = LIST_ACCTS_STR.format(dtclient=now(),
-                                     uname=prompt_user(),
-                                     pw=prompt_password(),
-                                     fileid=ofx_uid(),
-                                     trnuid=ofx_uid(),
-                                     )
-
-    b = ofx_client.post(acct_str)
-
-    c = str(b, encoding='utf-8')
-    for _line in c.split("\r\n"):
-        logging.debug(_line)
-    # TODO: trick OFXParse into thinking we have a file
-    # for now, just save a file and then read it.
-#    import io
-#    with io.StringIO(str(b, encoding='utf-8'), newline='\r\n') as openf:
-#        o = ofxparse.OfxParser.parse(openf)
-
-#    with open("temp.ofx", 'wb') as openf:
-#        openf.write(b)
-#    with open("temp.ofx", 'rb') as openf:
-#        o = ofxparse.OfxParser.parse(openf)
-#    print(o.account)
-#    print(o.account.number)
-
-    d = ParseOFX(c)
-    d.parse_accounts()
-    logging.debug(d.descr)
-
-    return b
+    pass
 
 
 def choose_institution():
@@ -329,273 +298,25 @@ def download_accounts():
     """
     Download the accounts at a given institution
     """
-    pass
+    query = LIST_ACCTS_STR.format(dtclient=now(),
+                                  uname=prompt_user(),
+                                  pw=prompt_password(),
+                                  fileid=ofx_uid(),
+                                  trnuid=ofx_uid(),
+                                  )
 
+    import requests
 
-# ---------------------------------------------------------------------------
-### Re-implementing ofxclient
-# ---------------------------------------------------------------------------
-#
-#   Original code Copyright (c) 2012 David Bartle
-#
-#   https://github.com/captin411/ofxclient
-#
-#   Slightly modified by D. Thor, May 2015
-#
-#   Modifications include but not limited to:
-#
-#   + Updated for Python 3.3+
-#   + Additional docstrings and comments
-#
-# ---------------------------------------------------------------------------
-def ofx_uid():
-    return str(uuid.uuid4().hex)
+    headers = {"Content-type": "application/x-ofx",
+               "Accept": "*/*, application/x-ofx",
+               }
 
+    a = requests.post("https://ofxdc.wellsfargo.com/ofx/process.ofx",
+                  query,
+                  headers=headers)
 
-class Client(object):
-    """
-    """
-    def __init__(self,
-                 institution=None,
-                 inst_id=ofx_uid(),
-                 app_id=DEFAULT_APP_ID,
-                 app_version=DEFAULT_APP_VERSION,
-                 ofx_version=DEFAULT_OFX_VERSION,
-                 ):
-        self.institution = institution
-        self.inst_id = inst_id
-        self.app_id = app_id
-        self.app_version = app_version
-        self.ofx_version = ofx_version
-        self.cookie = 3
-
-    def authenticated_query(self,
-                            with_message=None,
-                            username=None,
-                            password=None,
-                            ):
-        """
-        Run an authenticated query.
-
-        Parameters:
-        -----------
-        with_message : string, optional
-            Additional message to append to the contents.
-
-        username : string, optional
-            Username to authenticate with. If ``None``, defaults to the
-            username stored in self.institution
-
-        password : string, optional
-            Password to authenticate with. If ``None``, defaults to the
-            password stored in self.institution
-
-        Returns:
-        --------
-        The results from the query.
-
-        """
-        u = username or self.institution.username
-        p = password or self.institution.password
-
-        contents = ['OFX', self._signOn(username=u, password=p)]
-        if with_message:
-            contents.append(with_message)
-        return str.join(LINE_ENDING, [self.header(), _tag(*contents)])
-
-    def bank_account_query(self, number, date, account_type, bank_id):
-        """
-        Query the checking or savings account statements.
-
-        Parameters:
-        -----------
-        number : string
-            the account number
-        date : string
-            The date start string. Will pull transactsion from this date
-            onward. Formatted as ``YYYYMMDDHHMMSS``
-        account_type : string
-            The account type to query.
-        bank_id :
-            The bank id.
-
-        Returns:
-        --------
-        OFX-formatted string of transactions for the given account.
-
-        """
-        return self.authenticated_query(self._bareq(number,
-                                                    date,
-                                                    account_type,
-                                                    bank_id),
-                                        )
-
-    def account_list_query(self, date='19700101000000'):
-        """
-        Query the account list
-
-        Parameters:
-        -----------
-        date : string
-            The date to query accounts from. Date format is
-            ``YYYYMMDDHHMMSS``, so ``2015-03-02 12:57:36` would be formatted
-            as ``20150302125736``.
-
-            I *think* that any accounts created before this date will
-            not be returned.
-
-        Returns:
-        --------
-        OFX-formatted string of accounts at a given institution.
-
-        """
-        return self.authenticated_query(self._acctreq(date))
-
-    def post(self, query):
-        """
-        Execute (POST) the query to the website.
-        """
-        o = urllib.parse.urlparse("https://ofxdc.wellsfargo.com/ofx/process.ofx")
-        host = o.netloc
-        selector = o.path
-        conn = http.client.HTTPSConnection(host)
-        conn.request("POST", selector, query,
-                  {"Content-type": "application/x-ofx",
-                   "Accept": "*/*, application/x-ofx"},
-                   )
-        res = conn.getresponse()
-        response = res.read()
-        res.close()
-        return response
-
-    def next_cookie(self):
-        """
-        Increment the cookie number.
-        """
-        self.cookie += 1
-        return str(self.cookie)
-
-    def header(self):
-        parts = ["OFXHEADER:100",
-                 "DATA:OFXSGML",
-                 "VERSION:{}".format(int(self.ofx_version)),
-                 "SECURITY:NONE",
-                 "ENCODING:USASCII",
-                 "CHARSET:1252",
-                 "COMPRESSION:NONE",
-                 "OLDFILEUID:NONE",
-                 "NEWFILEUID:{}".format(ofx_uid()),
-                 "",
-                 ]
-        return str.join(LINE_ENDING, parts)
-
-    def _signOn(self, username=None, password=None):
-        """
-        Generate signon message
-        """
-        u = username or self.institution.username
-        p = password or self.institution.password
-        fidata = [_field("ORG", self.institution.org)]
-        if self.institution.id:
-            fidata.append(_field("FID", self.institution.id))
-
-        client_uid = ''
-        if str(self.ofx_version) == '103':
-            client_uid = _field('CLIENTUID', self.id)
-
-        return _tag("SIGNONMSGSRQV1",
-                    _tag("SONRQ",
-                         _field("DTCLIENT", now()),
-                         _field("USERID", u),
-                         _field("USERPASS", p),
-                         _field("LANGUAGE", "ENG"),
-                         _tag("FI", *fidata),
-                         _field("APPID", self.app_id),
-                         _field("APPVER", self.app_version),
-                         client_uid
-                         ))
-
-    def _acctreq(self, dtstart):
-        """
-        Accounts Request
-
-        Gets a list of accounts as an OFX-formatted string.
-        """
-        req = _tag("ACCTINFORQ", _field("DTACCTUP", dtstart))
-        return self._message("SIGNUP", "ACCTINFO", req)
-
-    # this is from _ccreq below and reading page 176 of the latest OFX doc.
-    def _bareq(self, acctid, dtstart, accttype, bankid):
-        """
-        Bank Account Request
-
-        Returns the bank statement as an OFX-formatted string
-        """
-        req = _tag("STMTRQ",
-                   _tag("BANKACCTFROM",
-                        _field("BANKID", bankid),
-                        _field("ACCTID", acctid),
-                        _field("ACCTTYPE", accttype)),
-                   _tag("INCTRAN",
-                        _field("DTSTART", dtstart),
-                        _field("INCLUDE", "Y")))
-        return self._message("BANK", "STMT", req)
-
-    def _ccreq(self, acctid, dtstart):
-        """
-        Credit Card Request
-
-        Returns the credit card statement as an OFX-formatted string.
-        """
-        req = _tag("CCSTMTRQ",
-                   _tag("CCACCTFROM", _field("ACCTID", acctid)),
-                   _tag("INCTRAN",
-                        _field("DTSTART", dtstart),
-                        _field("INCLUDE", "Y")))
-        return self._message("CREDITCARD", "CCSTMT", req)
-
-    def _invstreq(self, brokerid, acctid, dtstart):
-        """
-        Investment Request
-
-        Returns investment account statement as an OFX-formatted string.
-        """
-        req = _tag("INVSTMTRQ",
-                   _tag("INVACCTFROM",
-                        _field("BROKERID", brokerid),
-                        _field("ACCTID", acctid)),
-                   _tag("INCTRAN",
-                        _field("DTSTART", dtstart),
-                        _field("INCLUDE", "Y")),
-                   _field("INCOO", "Y"),
-                   _tag("INCPOS",
-                        _field("DTASOF", now()),
-                        _field("INCLUDE", "Y")),
-                   _field("INCBAL", "Y"))
-        return self._message("INVSTMT", "INVSTMT", req)
-
-    def _message(self, msgType, trnType, request):
-        return _tag(msgType+"MSGSRQV1",
-                    _tag(trnType+"TRNRQ",
-                         _field("TRNUID", ofx_uid()),
-                         _field("CLTCOOKIE", self.next_cookie()),
-                         request))
-
-
-def _field(tag, value):
-    return "<"+tag+">"+value
-
-
-def _tag(tag, *contents):
-    return str.join(LINE_ENDING, ["<"+tag+">"]+list(contents)+["</"+tag+">"])
-
-
-def now():
-    return time.strftime("%Y%m%d%H%M%S", time.localtime())
-
-# ---------------------------------------------------------------------------
-### End Re-implementing ofxclient
-# ---------------------------------------------------------------------------
+    print(a)
+    print(a.text)
 
 
 def main():
@@ -644,6 +365,4 @@ def main():
 if __name__ == "__main__":
 #    main()
 #    list_accounts()
-    pass
-
-
+#    pass

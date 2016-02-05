@@ -145,14 +145,15 @@
       + I did some work on this based on ofxclient
       + Don't actually save the OFX file if I can avoid it
         + Use a stream directly to the parser.
+      + Use `requests`...
 + [ ] Decide on OFX Parser
-      + ofxclient: last updated Mar 2013, really a cmd-line util, but does
-        seem to include a parser
+      + ofxclient: last updated ~~Mar 2013~~ Mar 2016, really a cmd-line util,
+        but does seem to include a parser
         + https://github.com/captin411/ofxclient
-      + ofxparse: last updated Aug 2015. Is actually a parser and apparently
+      + ofxparse: last updated Apr 2016. Is actually a parser and apparently
         supports Python3
         + https://github.com/jseutter/ofxparse
-      + ofxtools: last updated Oct 2015. I vaguely recall thinking that this
+      + ofxtools: last updated Mar 2016. I vaguely recall thinking that this
         was my best bet, especially since it also has some SQLAlchemy support.
         I think one problem I has with it was that it relies on a config
         file for the downloading... hmm...

@@ -4,6 +4,10 @@ PyBank
 Personal accounting software. Alternative to the likes of Quicken, iBank,
 Mint.com, and GnuCash.
 
+**NOTE:** This is still a work in progress. As of 2016-02-05, the ledger, database, and
+encryption appears to be working, but not much else. I do not have a scheduled release
+date yet.
+
 
 Build Status
 ------------

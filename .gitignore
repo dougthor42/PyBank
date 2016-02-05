@@ -70,3 +70,5 @@ _sqlalchemy_db.db
 crypto_PyBank.db
 temp.ofx
 test_database.db
+secret.txt
+log/
