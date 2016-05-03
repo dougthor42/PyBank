@@ -65,10 +65,15 @@ salt.txt
 
 # Possibly contains personal info
 # (though I'm pretty sure I cleaned all these files already)
-PyBank.db
-_sqlalchemy_db.db
-crypto_PyBank.db
 temp.ofx
-test_database.db
+*.sqlite
 secret.txt
+*.pybank
+*.db
+*.accdb
+*.mwb
+*.bak
+__delete_me__.py
+encryption benchmark.xlsx
+_TestDB_comparison_dump.txt
 log/
