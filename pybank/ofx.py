@@ -11,20 +11,46 @@ Options:
     -h --help           # Show this screen.
     --version           # Show version.
 
+Summary:
+--------
+This module handles authentication and connection to the OFX servers as well
+as parsing the downloaded OFX data.
+
+Details:
+--------
+See: https://crackstation.net/hashing-security.htm
+
+
+Since ofxclient seems like it's not being ported to Python3 *and* because
+it's not quite how I'd want user to authenticate, I think that I will have
+to roll my own version. Using the source code will help:
+https://github.com/captin411/ofxclient/blob/master/ofxclient/client.py
+
+
+Let's see here...
+Usernames will be stored in the database.
+Passwords will be stored using keyring, which saves them in the host OS's
+password manager.
+I think this means that I don't have to salt and hash passwords...
+
+
+Expected Contents:
+------------------
+download_data :
+    downloads transaction data
+
 """
 # ---------------------------------------------------------------------------
 ### Imports
 # ---------------------------------------------------------------------------
 # Standard Library
-import sys
+import os
 import os.path as osp
 import uuid
-import http.client
-import urllib.parse
 import time
 import getpass
 import logging
-from os import urandom
+import json
 
 # Third-Party
 from docopt import docopt
@@ -52,14 +78,16 @@ except SystemError:
 
 
 # ---------------------------------------------------------------------------
-### Module Constants
+### Constants
 # ---------------------------------------------------------------------------
 # This is black magic - I've no idea where it comes from.
 DEFAULT_APP_ID = 'QWIN'
 DEFAULT_APP_VERSION = '2200'
 DEFAULT_OFX_VERSION = '102'
 LINE_ENDING = "\r\n"
-
+OFX_HEADERS = {"Content-type": "application/x-ofx",
+               "Accept": "*/*, application/x-ofx",
+               }
 
 # TODO: AMEX: authentication failed: Your request could not be processed
 #       because you supplied an invalid identification code or your
@@ -199,41 +227,14 @@ NEWFILEUID:{fileid}
 
 
 # ---------------------------------------------------------------------------
-### Module Functions
+### Functions
 # ---------------------------------------------------------------------------
-
-def docstring():
-    """
-Summary:
---------
-This module handles authentication and connection to the OFX servers as well
-as parsing the downloaded OFX data.
-
-Details:
---------
-See: https://crackstation.net/hashing-security.htm
+def ofx_uid():
+    return str(uuid.uuid4().hex)
 
 
-Since ofxclient seems like it's not being ported to Python3 *and* because
-it's not quite how I'd want user to authenticate, I think that I will have
-to roll my own version. Using the source code will help:
-https://github.com/captin411/ofxclient/blob/master/ofxclient/client.py
-
-
-Let's see here...
-Usernames will be stored in the database.
-Passwords will be stored using keyring, which saves them in the host OS's
-password manager.
-I think this means that I don't have to salt and hash passwords...
-
-
-Expected Contents:
-------------------
-download_data :
-    downloads transaction data
-
-"""
-    pass
+def now():
+    return time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
 def prompt_password():
@@ -251,72 +252,61 @@ def prompt_user():
     return input("Username: ")
 
 
-def download_transactions():
+def download_transactions(url, user, pw, routing, acct_num):
     """
     Actually downlaods the transactions
     """
-    a = Client()
-    b = a.post(CHECKING.format(dtclient=now(),
-                               uname=prompt_user(),
-                               pw=prompt_password(),
-                               fileid=ofx_uid(),
-                               trnuid=ofx_uid(),
-                               routing="000000000",
-                               acct_num="0000000000",
-                               )
-               )
-    for _l in str(b, encoding='utf-8').split("\r\n"):
-        logging.debug(_l)
-    return b
+    query = CHECKING.format(dtclient=now(),
+                            uname=user,
+                            pw=pw,
+                            fileid=ofx_uid(),
+                            trnuid=ofx_uid(),
+                            routing=routing,
+                            acct_num=acct_num,
+                            )
+
+    b = requests.post(url, query, headers=OFX_HEADERS)
+
+    print(b)
+    print(b.text)
+
+    return b.text
 
 
-def create_account():
-    """
-    Creates an account.
-
-    Accounts consist of an institution and account number. This function
-    should add to the SQLite `acct` table.
-    """
-    pass
-
-
-def list_accounts():
-    """
-    Lists accouts at the institution
-    """
-    pass
-
-
-def choose_institution():
-    """
-    Choose an institution.
-    """
-    pass
-
-
-def download_accounts():
+def download_accounts(url, user, pw):
     """
     Download the accounts at a given institution
     """
     query = LIST_ACCTS_STR.format(dtclient=now(),
-                                  uname=prompt_user(),
-                                  pw=prompt_password(),
+                                  uname=user,
+                                  pw=pw,
                                   fileid=ofx_uid(),
                                   trnuid=ofx_uid(),
                                   )
 
-    import requests
-
-    headers = {"Content-type": "application/x-ofx",
-               "Accept": "*/*, application/x-ofx",
-               }
-
-    a = requests.post("https://ofxdc.wellsfargo.com/ofx/process.ofx",
-                  query,
-                  headers=headers)
+    a = requests.post(url, query, headers=OFX_HEADERS)
 
     print(a)
     print(a.text)
+
+    return a.text
+
+
+def get_secrets():
+    """
+    """
+    cwd = os.getcwd()
+    fn = "secret.json"
+    if "PyBank\\pybank" in cwd:
+        fp = osp.join(cwd, fn)
+    elif "PyBank" in cwd:
+        fp = osp.join(cwd, "pybank", fn)
+    else:
+        fp = osp.join(r"C:\WinPython34_x64\projects\github\PyBank\pybank", fn)
+
+    with open(fp, 'r') as openf:
+        data = json.load(openf)
+    return data
 
 
 def main():
@@ -337,32 +327,20 @@ def main():
     """
     docopt(__doc__, version=__version__)
 
-    a = Client()
-    b = a.post(LIST_ACCTS_STR.format(dtclient=now(),
-                                     uname=prompt_user(),
-                                     pw=prompt_password(),
-                                     fileid=ofx_uid(),
-                                     trnuid=ofx_uid(),
-                                     )
-               )
-    print(b)
-    for _l in str(b, encoding='utf-8').split("\r\n"):
-        print(_l)
-    print("======================================")
-    d = download_transactions()
-    with open("temp.ofx", 'wb') as openf:
-        openf.write(d)
-    with open("temp.ofx", 'r') as openf:
-        o = ParseOFX(openf)
-    print(o.accounts)
-    print(o.statement)
+    secrets = get_secrets()
+    bank = "a"
 
+    user = prompt_user()
+    pw = prompt_password()
 
-#from ofxtools import OFXClient
-#import ofxtools
-#from ofxtools import OFXTree
+    url = secrets[bank]['url']
+    acct_num = secrets[bank]['acct_num']
+    routing = secrets[bank]['routing']
+
+    download_accounts(url, user, pw)
+
+    download_transactions(url, user, pw, routing, acct_num)
+
 
 if __name__ == "__main__":
-#    main()
-#    list_accounts()
-#    pass
+    main()

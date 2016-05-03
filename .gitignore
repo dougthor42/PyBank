@@ -67,7 +67,7 @@ salt.txt
 # (though I'm pretty sure I cleaned all these files already)
 temp.ofx
 *.sqlite
-secret.txt
+secret.json
 *.pybank
 *.db
 *.accdb
