@@ -60,6 +60,9 @@ target/
 ### Project-Specific Items ###
 ##############################
 
+# Virtual Environment
+pybank_venv/
+
 # Cryptography
 salt.txt
 
