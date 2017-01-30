@@ -1,0 +1,13 @@
+[[source]]
+verify_ssl = true
+url = "https://pypi.python.org/simple"
+
+[packages]
+ofxtools = "*"
+wheel = "*"
+docopt = "*"
+cryptography = "*"
+keyring = "*"
+beautifulsoup4 = "*"
+lxml = "*"
+SQLAlchemy = "*"
