@@ -80,15 +80,13 @@ OFX_HEADERS = {"Content-type": "application/x-ofx",
 
 
 CHECKING = """
-OFXHEADER:100
-DATA:OFXSGML
-VERSION:102
-SECURITY:NONE
-ENCODING:USASCII
-CHARSET:1252
-COMPRESSION:NONE
-OLDFILEUID:NONE
-NEWFILEUID:{fileid}
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?OFX
+  OFXHEADER="200"
+  VERSION="220"
+  SECURITY="NONE"
+  OLDFILEUID="NONE"
+  NEWFILEUID="{fileid}"?>
 
 <OFX>
     <SIGNONMSGSRQV1>
@@ -207,7 +205,6 @@ NEWFILEUID:{fileid}
 </OFX>
 """
 
-
 # ---------------------------------------------------------------------------
 ### Functions
 # ---------------------------------------------------------------------------
@@ -239,17 +236,17 @@ def format_date(date):
     Formats the date to something that OFX likes.
     """
     return date.strftime("%Y%m%d")
-    
+
 
 def download_transactions(url, user, pw, routing, acct_num, since=None):
     """
     Actually downlaods the transactions
     """
-    
+
     if since is None:
         since = dt.date.today() - dt.date.day(30)
         since = format_date(since)
-    
+
     query = CHECKING.format(dtclient=now(),
                             uname=user,
                             pw=pw,

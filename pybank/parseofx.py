@@ -712,13 +712,47 @@ class Header(object):
             # TODO: fill in later
             raise KeyError
 
+    @property
+    def ofx_string(self):
+        xml = """
+            <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+            <?OFX
+                OFXHEADER="200"
+                VERSION="220"
+                SECURITY="NONE"
+                OLDFILEUID="NONE"
+                NEWFILEUID="{fileid}"
+            ?>
+        """
 
-#class SignOnMessageResponse(object):
-#    """
-#    An OFX SignOnMessageResponse (SIGNONMSGSRSV1) object
-#    """
-#    def __init__(self):
-#        self.sonrs = SignOnResponse()
+        xml = xml.format(fileid=self.new_file_id)
+
+        return xml
+
+
+class SignOnMessageResponse(object):
+    """
+    An OFX SignOnMessageResponse (SIGNONMSGSRSV1) object
+    """
+    def __init__(self):
+        self.sonrs = SignOnResponse()
+        self.version = 1        # for OFX v2.2, this must be 1. ss2.4.8
+        self.message_set = "SIGNON"
+
+    @property
+    def ofx_string(self):
+        xml = """
+        <{msg_set}MSGSRQV{vers}>
+        {data}
+        </{msg_set}MSGSRQV{vers}>
+        """
+        xml = xml.format(
+            msg_set=self.message_set,
+            vers=self.version,
+            data=self.sonrs.ofx_string,
+        )
+
+        return xml
 
 
 class SignOnResponse(object):
@@ -754,6 +788,32 @@ class SignOnRequest(object):
         self.fi = FinancialInstitution()    # XXX: Might remove?
         self.app_id = None
         self.app_version = None
+
+    @property
+    def ofx_string(self):
+        """ """
+        xml = """
+        <SONRQ>
+            <DTCLIENT>{dtclient}</DTCLIENT>
+            <USERID>{uname}</USERID>
+            <USERPASS>{pw}<USERPASS>
+            <LANGUAGE>ENG</LANGUAGE>
+            {fi}
+            <APPID>{appid}</APPID>
+            <APPVER>{appver}</APPVER>
+        </SONRQ>
+        """
+
+        xml = xml.format(
+            dtclient=self.dt_client,
+            uname=self.user_id,
+            pw=self.user_password,
+            fi=self.fi.ofx_string,
+            appid=self.app_id,
+            appver=self.appver,
+        )
+
+        return xml
 
 
 #class SignUpMessageResponse(object):
@@ -1102,6 +1162,20 @@ class FinancialInstitution(object):
     def __init__(self):
         self.org = None
         self.fid = None
+
+    @property
+    def ofx_string(self):
+        """"""
+
+        xml = """
+        <FI>
+        <ORG>WF</ORG>
+        <FID>3000</FID>
+        </FI>
+        """
+        xml = xml.format(org=self.org, fid=self.fid)
+
+        return xml
 
 
 
