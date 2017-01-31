@@ -14,12 +14,26 @@ Options:
 """
 
 # Standard Library
-import sys
-import unittest
-import unittest.mock as mock
-import os.path as osp
+import datetime as dt
 
 # Third-Party
+import pytest
 
 # Package / Application
 from pybank import ofx
+
+
+class TestFormatDate(object):
+    
+    def test_format_date(self):
+        date = dt.date(2017, 1, 30)
+        assert ofx.format_date(date) == "170130"
+        date = dt.date(2020, 12, 1)
+        assert ofx.format_date(date) == "201201"
+        date = dt.date(1999, 12, 31)
+        assert ofx.format_date(date) == "991231"
+        
+    def test_format_date_invalid(self):
+        date = "Hello!"
+        with pytest.raises(AttributeError):
+            ofx.format_date(date)

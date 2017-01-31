@@ -51,6 +51,7 @@ import time
 import getpass
 import logging
 import json
+import datetime as dt
 
 # Third-Party
 import requests
@@ -115,7 +116,7 @@ NEWFILEUID:{fileid}
                     <ACCTTYPE>CHECKING
                 </BANKACCTFROM>
                 <INCTRAN>
-                    <DTSTART>20150413
+                    <DTSTART>{since}
                     <INCLUDE>Y
                 </INCTRAN>
             </STMTRQ>
@@ -233,10 +234,22 @@ def prompt_user():
     return input("Username: ")
 
 
-def download_transactions(url, user, pw, routing, acct_num):
+def format_date(date):
+    """
+    Formats the date to something that OFX likes.
+    """
+    return date.strftime("%y%m%d")
+    
+
+def download_transactions(url, user, pw, routing, acct_num, since=None):
     """
     Actually downlaods the transactions
     """
+    
+    if since is None:
+        since = dt.date.today() - dt.date.day(30)
+        since = format_date(since)
+    
     query = CHECKING.format(dtclient=now(),
                             uname=user,
                             pw=pw,
@@ -244,6 +257,7 @@ def download_transactions(url, user, pw, routing, acct_num):
                             trnuid=ofx_uid(),
                             routing=routing,
                             acct_num=acct_num,
+                            since=since,
                             )
 
     b = requests.post(url, query, headers=OFX_HEADERS)
