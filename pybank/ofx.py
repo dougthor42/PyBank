@@ -238,7 +238,7 @@ def format_date(date):
     """
     Formats the date to something that OFX likes.
     """
-    return date.strftime("%y%m%d")
+    return date.strftime("%Y%m%d")
     
 
 def download_transactions(url, user, pw, routing, acct_num, since=None):

@@ -27,11 +27,11 @@ class TestFormatDate(object):
     
     def test_format_date(self):
         date = dt.date(2017, 1, 30)
-        assert ofx.format_date(date) == "170130"
+        assert ofx.format_date(date) == "20170130"
         date = dt.date(2020, 12, 1)
-        assert ofx.format_date(date) == "201201"
+        assert ofx.format_date(date) == "20201201"
         date = dt.date(1999, 12, 31)
-        assert ofx.format_date(date) == "991231"
+        assert ofx.format_date(date) == "19991231"
         
     def test_format_date_invalid(self):
         date = "Hello!"
