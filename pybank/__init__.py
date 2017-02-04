@@ -45,6 +45,7 @@ __version__ = "0.0.2.1"
 __released__ = "2015-12-31"
 __project_url__ = "https://github.com/dougthor42/PyBank"
 __project_name__ = "PyBank"
+__package_name__ = "pybank"
 __description__ = "Finance tracking software"
 __long_descr__ = """/
 """
