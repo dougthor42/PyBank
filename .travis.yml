@@ -3,7 +3,10 @@ language: python
 sudo: false
 
 python:
+  - "2.7"
   - "3.4"
+  - "3.5"
+  - "3.6"
 
 notifications:
   email: false
@@ -13,12 +16,10 @@ before_install:
 
 install:
   - echo "-----install-----"
-  # Make sure I'm in the correct directory after all that before_install crap
-  - cd /home/travis/build/dougthor42/PyBank/
 
   # Start the install of everything
   - pip install --upgrade pip wheel
-  - "pip install install --pre -f https://wxpython.org/Phoenix/snapshot-builds wxPython_Phoenix"
+  - "pip install --pre -f https://wxpython.org/Phoenix/snapshot-builds wxPython_Phoenix"
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - pip install coveralls
