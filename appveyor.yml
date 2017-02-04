@@ -1,15 +1,3 @@
-# This file taken directly from DRMaclver's hypothesis package.
-# https://github.com/DRMacIver/hypothesis
-# I will edit accordingly once I get my project going
-#
-# Also taken from
-# https://github.com/ogrisel/python-appveyor-demo/blob/master/appveyor.yml
-
-#   - Minimal appveyor.yml file is an empty file. All sections are optional.
-#   - Indent each level of configuration with 2 spaces. Do not use tabs!
-#   - All section names are case-sensitive.
-#   - Section names should be unique on each level.
-
 ### ----------------------
 ### General Configuration
 ### ----------------------
@@ -21,106 +9,57 @@ skip_tags: true
 
 environment:
   global:
-    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
-    # /E:ON and /V:ON options are not enabled in the batch script intepreter
-    # See: http://stackoverflow.com/a/13751649/163740
-    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
+    WXPYTHON_SNAPSHOTS: "https://wxpython.org/Phoenix/snapshot-builds"
 
   matrix:
-#    - PYTHON: "C:\\Python27"
-#      PYTHON_VERSION: "2.7.8"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.13"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python27-x64"
-#      PYTHON_VERSION: "2.7.8"
-#      PYTHON_ARCH: "64"
-#
-#    - PYTHON: "C:\\Python33"
-#      PYTHON_VERSION: "3.3.5"
-#      PYTHON_ARCH: "32"
-#
-#    - PYTHON: "C:\\Python33-x64"
-#      PYTHON_VERSION: "3.3.5"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python27-x64"
+      PYTHON_VERSION: "2.7.13"
+      PYTHON_ARCH: "64"
 
-   - PYTHON: "C:\\Python34"
-     PYTHON_VERSION: "3.4.3"
-     PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.2"
+      PYTHON_ARCH: "32"
 
-#   - PYTHON: "C:\\Python34-x64"
-#     PYTHON_VERSION: "3.4.3"
-#     PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.2"
+      PYTHON_ARCH: "64"
 
-init:
-  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.0"
+      PYTHON_ARCH: "64"
 
 install:
-  - ECHO "Filesystem root:"
-  - ps: new-item "C:\\temp" -itemtype directory
-  - ps: ls "C:\\"
-
-  - ECHO "Powershell Version:"
-  - ps: $PSVersionTable.PSVersion
-
-#  - ECHO "Installed SDKs:"
-#  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
-
-  # Install Python (from the official .msi of http://python.org) and pip when
-  # not already installed.
-  - "powershell ./appveyor/install.ps1"
-
-  # also install 7-zip, needed for extracting wxPython
-  - "powershell ./appveyor/get-7zip.ps1"
-
-  # Prepend newly installed Python to the PATH of this build (this cannot be
-  # done from inside the powershell script as it would require to restart
-  # the parent CMD process).
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-
   # Check that we have the expected version and architecture for Python
-  - "python --version"
-  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - "%PYTHON%\\python.exe --version"
 
   # install dependencies
-#  - "%CMD_IN_ENV% pip install --upgrade pip"       # Doesn't like this :-(
-  - "%CMD_IN_ENV% pip install --upgrade --pre build_reqs/numpy-1.9.2-cp34-none-win32.whl"
-  - "%CMD_IN_ENV% pip install --upgrade --pre build_reqs/lxml-3.4.4-cp34-none-win32.whl"
-  - "%CMD_IN_ENV% pip install --upgrade --pre build_reqs/python_Levenshtein-0.12.0-cp34-none-win32.whl"
-  #- "%CMD_IN_ENV% pip install --upgrade --pre build_reqs/pyxDamerauLevenshtein-1.3.2-cp34-none-win32.whl"
-  #- "%CMD_IN_ENV% pip install --upgrade --pre http://wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-3.0.3.dev1836+f764b32-cp34-none-win32.whl"
-  - "%CMD_IN_ENV% pip install http://dougthor42.github.io/tools/wxPython-3.0.3-cp34-none-win32.whl"
-  #- "%CMD_IN_ENV% pip install http://www.lfd.uci.edu/~gohlke/pythonlibs/3i673h27/matplotlib-1.4.3-cp34-none-win32.whl"
-  - "%CMD_IN_ENV% pip install -r requirements.txt"
-  - "%CMD_IN_ENV% pip install -r dev-requirements.txt"
+  - "%PYTHON%\\python.exe -m pip install --upgrade pip wheel"
+
+
+  - "%PYTHON%\\python.exe -m pip install --only-binary :all: --pre -f %WXPYTHON_SNAPSHOTS% wxPython_Phoenix"
+  - "%PYTHON%\\python.exe -m pip install --only-binary :all: numpy lxml"
+
+  - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
+  - "%PYTHON%\\python.exe -m pip install -r dev-requirements.txt"
 
 
 build: off  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Run the project tests
-  - ps ls
-  - ps ls ..
-  - "%CMD_IN_ENV% python -m green.cmdline -t -vvv --processes 1 pybank"
+  - "%PYTHON%\\python.exe -m green -vvv --processes 1 pybank"
 
-after_test:
-  # Create wheel package and executable
-  - ps: ls
-  - ps: ls ..
-  - "%CMD_IN_ENV% python setup.py bdist_wheel"
-  #- "%CMD_IN_ENV% python build_executables.py build"
-
-  # Create a .zip of the build
-  - ps: ls
-  #- ps: ls "build"
-  #- ps: ls "dist"
-  #- "7z a PyBank.zip .\\build\\exe.win32-3.4\\"
-
-artifacts:
-  # Upload the wheel and EXE to AppVeyor
-  - path: dist\PyBank-0.0.1-py3-none-any.whl
-    name: PyBank-0.0.1-py3-none-any.whl
-    type: whl
-
-  #- path: PyBank.zip
-  #  name: PyBank
-  #  type: zip
+#after_test:
+#  # if tests OK, create whl package
+#  - "%PYTHON%\\python.exe setup.py bdist_wheel"
+#
+#artifacts:
+#  # Upload the wheel and EXE to AppVeyor
+#  - path: dist\*.whl
+#    type: whl
+#
+#  - path: dist\*.tar.gz
