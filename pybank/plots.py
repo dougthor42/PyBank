@@ -32,7 +32,6 @@ import wx.lib.plot as wxplot
 import numpy as np
 
 # Package / Application
-from pybank import __version__
 from . import utils
 
 

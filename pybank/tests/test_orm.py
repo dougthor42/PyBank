@@ -13,16 +13,13 @@ Options:
 
 """
 # Standard Library
-import sys
 import unittest
 import os.path as osp
 
 # Third-Party
-from docopt import docopt
 
 # Package / Application
 from .. import orm
-from ..__init__ import __version__
 
 
 THIS_DIR = osp.dirname(osp.abspath(__file__))
@@ -155,15 +152,3 @@ class TestInsertFunctions(ORMTestCase):
             orm.insert_ledger()
         except Exception as err:
             self.fail("insert_ledger raise exception: {}".format(err))
-
-
-def main():
-    """
-    Main entry point
-    """
-    docopt(__doc__, version=__version__)
-    unittest.main(verbosity=2)
-
-
-if __name__ == "__main__":
-    main()

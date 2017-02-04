@@ -53,12 +53,9 @@ import logging
 import json
 
 # Third-Party
-from docopt import docopt
 import requests
 
 # Package / Application
-from .parseofx import ParseOFX
-from pybank import __version__
 
 
 # ---------------------------------------------------------------------------
@@ -309,8 +306,6 @@ def main():
     ------
     RuntimeError
     """
-    docopt(__doc__, version=__version__)
-
     secrets = get_secrets()
     bank = "a"
 
