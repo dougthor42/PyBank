@@ -5,3 +5,5 @@ colorama
 green
 coverage
 cx-freeze
+sphinx
+sphinx_rtd_theme

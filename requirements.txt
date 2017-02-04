@@ -1,8 +1,10 @@
-wheel
-lxml >= 3.4
-beautifulsoup4
-docopt
+#wxPython_Phoenix (see appveyor.yml)
+numpy
 keyring
-sqlalchemy
 cryptography
-ofxtools
+sqlalchemy
+requests
+beautifulsoup4
+
+# remove later:
+docopt

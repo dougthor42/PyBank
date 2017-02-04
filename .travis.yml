@@ -13,16 +13,14 @@ before_install:
 
 install:
   - echo "-----install-----"
-  # Make sure I'm in the correct directory after all that before_install crap
-  - cd /home/travis/build/dougthor42/PyBank/
 
   # Start the install of everything
-  - pip install --upgrade pip
-  - pip install http://dougthor42.github.io/tools/wxPython-3.0.3-cp34-cp34m-linux_x86_64.whl
+  - pip install --upgrade pip wheel
+  - pip install https://github.com/dougthor42/dougthor42.github.io/raw/master/tools/wxPython_Phoenix-3.0.3.dev1956%2Baab2833-cp34-cp34m-linux_x86_64.whl
+  #- "pip install --pre -f https://wxpython.org/Phoenix/snapshot-builds wxPython_Phoenix"
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - pip install coveralls
-  - pip install wheel
   - pip install numpy
 
 script:
