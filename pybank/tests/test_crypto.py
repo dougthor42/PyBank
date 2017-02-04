@@ -25,17 +25,8 @@ from docopt import docopt
 import keyring
 
 # Package / Application
-try:
-    from .. import crypto
-    from ..__init__ import __version__
-except (SystemError, ImportError):
-    if __name__ == "__main__":
-        # Allow module to be run as script
-        print("Running module as script")
-        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import crypto
-    else:
-        raise
+from .. import crypto
+from ..__init__ import __version__
 
 
 class TestCreateKey(unittest.TestCase):

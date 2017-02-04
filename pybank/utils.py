@@ -26,22 +26,8 @@ from enum import Enum, unique
 import wx.grid
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import __version__
-    from . import constants
-    logging.debug("Imports for utils.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        from __init__ import __version__
-        import constants
-        logging.debug("Imports for utils.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import __version__
-        from pybank import constants
-        logging.debug("Imports for utils.py complete (Method: Executable)")
+from . import constants
+
 
 # ---------------------------------------------------------------------------
 ### Module Constants

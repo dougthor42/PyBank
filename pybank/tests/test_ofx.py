@@ -23,18 +23,7 @@ import os.path as osp
 from docopt import docopt
 
 # Package / Application
-try:
-    from .. import ofx
-except (SystemError, ImportError):
-    if __name__ == "__main__":
-        # Allow module to be run as script
-        print("Running module as script")
-        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import ofx
-    else:
-        raise
-
-
+from .. import ofx
 
 
 def main():

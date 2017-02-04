@@ -34,37 +34,12 @@ except ImportError:
     import wx.lib.agw.foldpanelbar as fpb
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import (__project_name__,
-                   __version__,
-                   )
-#    from . import plots
-    from . import utils
-    from . import crypto
-    from . import orm
-    logging.debug("Imports for gui.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        from __init__ import (__project_name__,
-                              __version__,
-                              )
-#        import plots
-        import utils
-        import crypto
-        import orm
-        logging.debug("Imports for gui.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import (__project_name__,
-                            __version__,
-                            )
-#        from pybank import plots
-        from pybank import utils
-        from pybank import crypto
-        from pybank import orm
-        logging.debug("Imports for gui.py complete (Method: Executable)")
+from pybank import (__project_name__,
+                    __version__,
+                    )
+from . import utils
+from . import crypto
+from . import orm
 
 
 # ---------------------------------------------------------------------------

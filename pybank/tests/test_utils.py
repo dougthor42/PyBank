@@ -27,17 +27,7 @@ from decimal import Decimal as D
 from docopt import docopt
 
 # Package / Application
-try:
-    from .. import utils
-except (SystemError, ImportError):
-    if __name__ == "__main__":
-        # Allow module to be run as script
-        print("Running module as script")
-        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import utils
-    else:
-        raise
-
+from .. import utils
 
 
 class TestBuildCategoryString(unittest.TestCase):

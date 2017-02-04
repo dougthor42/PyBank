@@ -21,17 +21,8 @@ import os.path as osp
 from docopt import docopt
 
 # Package / Application
-try:
-    from .. import orm
-    from ..__init__ import __version__
-except (SystemError, ImportError):
-    if __name__ == "__main__":
-        # Allow module to be run as script
-        print("Running module as script")
-        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import orm
-    else:
-        raise
+from .. import orm
+from ..__init__ import __version__
 
 
 THIS_DIR = osp.dirname(osp.abspath(__file__))

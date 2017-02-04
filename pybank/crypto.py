@@ -58,22 +58,8 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.exceptions import InvalidKey
 
 # Package / Application
-try:
-    # Imports used for unittests
-    from . import constants
-    from . import utils
-    logging.debug("Imports for crypto.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        import constants
-        import utils
-        logging.debug("Imports for crypto.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import constants
-        from pybank import utils
-        logging.debug("Imports for crypto.py complete (Method: Executable)")
+from . import constants
+from . import utils
 
 
 # TODO: Once pysqlcipher gets to python3, switch to that.

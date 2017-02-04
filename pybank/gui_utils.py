@@ -28,22 +28,9 @@ import time
 import wx
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import crypto
-    from . import utils
-    logging.debug("Imports for gui_utils.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        import crypto
-        import utils
-        logging.debug("Imports for gui_utils.py complete (Method: Spyder IDE)")
-    except ImportError:
-        # Imports used by cx_freeze
-        from pybank import crypto
-        from pybank import utils
-        logging.debug("Imports for gui.py complete (Method: Executable)")
+from . import crypto
+from . import utils
+
 
 # ---------------------------------------------------------------------------
 ### Module Constants

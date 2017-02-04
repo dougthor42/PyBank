@@ -73,19 +73,7 @@ from docopt import docopt
 from bs4 import BeautifulSoup
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import __version__
-    logging.debug("Imports for parseofx.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        from __init__ import __version__
-        logging.debug("Imports for parseofx.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import __version__
-        logging.debug("Imports for parseofx.py complete (Method: Executable)")
+from pybank import __version__
 
 
 # ---------------------------------------------------------------------------

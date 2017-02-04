@@ -25,46 +25,16 @@ import os.path
 # Third-Party
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import (__project_name__,
-                   __version__,
-                   __released__,
-                   )
-    from . import gui
-    from . import gui_utils
-    from . import crypto
-    from . import utils
-    from . import orm
-    from . import constants
-    logging.debug("Imports for main.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        from __init__ import (__project_name__,
-                              __version__,
-                              __released__,
-                              )
-        import gui
-        import crypto
-        import utils
-        import gui_utils
-        import orm
-        import constants
-        logging.debug("Imports for main.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import (__project_name__,
-                            __version__,
-                            __released__,
-                            )
-        from pybank import gui
-        from pybank import crypto
-        from pybank import utils
-        from pybank import gui_utils
-        from pybank import orm
-        from pybank import constants
-        logging.debug("Imports for main.py complete (Method: Executable)")
+from pybank import (__project_name__,
+               __version__,
+               __released__,
+               )
+from . import gui
+from . import gui_utils
+from . import crypto
+from . import utils
+from . import orm
+from . import constants
 
 
 # ---------------------------------------------------------------------------
