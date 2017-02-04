@@ -32,18 +32,10 @@ import os.path
 
 # Package / Application
 from . import _logging
+from pybank.__about__ import *      # OK because I define __all__
 
 
 ### Package Constants #######################################################
-__version__ = "0.0.2.1"
-__released__ = "2015-12-31"
-__project_url__ = "https://github.com/dougthor42/PyBank"
-__project_name__ = "PyBank"
-__package_name__ = "pybank"
-__description__ = "Finance tracking software"
-__long_descr__ = """/
-"""
-
 _logging._setup_logging()
 
 PROGRAM_DIR= os.path.dirname(os.path.abspath(__file__))

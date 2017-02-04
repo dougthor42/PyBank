@@ -25,10 +25,10 @@ import os.path
 # Third-Party
 
 # Package / Application
-from pybank import (__project_name__,
-               __version__,
-               __released__,
-               )
+from pybank import (__package_name__,
+                    __version__,
+                    __released__,
+                    )
 from . import gui
 from . import gui_utils
 from . import crypto
@@ -107,8 +107,8 @@ def main():
 
     """
     msg = "Starting %s v%s, released %s"
-    logging.info(msg, __project_name__, __version__, __released__)
-    logging.info("End of %s program.", __project_name__)
+    logging.info(msg, __package_name__, __version__, __released__)
+    logging.info("End of %s program.", __package_name__)
 
     # Check if the database file exists
     database_file = utils.find_data_file(PYBANK_FILE)
