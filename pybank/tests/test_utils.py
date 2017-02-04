@@ -15,29 +15,15 @@ Options:
 
 
 # Standard Library
-import sys
-import os
 import unittest
 import unittest.mock as mock
 import os.path as osp
-import sqlite3
 from decimal import Decimal as D
 
 # Third-Party
-from docopt import docopt
 
 # Package / Application
-try:
-    from .. import utils
-except (SystemError, ImportError):
-    if __name__ == "__main__":
-        # Allow module to be run as script
-        print("Running module as script")
-        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import utils
-    else:
-        raise
-
+from .. import utils
 
 
 class TestBuildCategoryString(unittest.TestCase):
@@ -151,16 +137,3 @@ class TestMoneyFmt(unittest.TestCase):
             with self.subTest(seperator_sym=sep):
                 result = utils.moneyfmt(value, sep=sep)
                 self.assertEqual(result, expected)
-
-
-def main():
-    """
-    Main entry point
-    """
-    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
-    unittest.main(verbosity=2)
-
-
-if __name__ == "__main__":
-    main()
-

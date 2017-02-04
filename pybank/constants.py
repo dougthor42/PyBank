@@ -15,14 +15,7 @@ import os.path
 from wx import Colour
 
 ## Package / Application
-try:
-    from . import PROGRAM_DIR
-except SystemError:
-    try:
-        from __init__ import PROGRAM_DIR
-    except ImportError:
-        from pybank import PROGRAM_DIR
-
+from pybank import PROGRAM_DIR
 
 
 LEDGER_COLOR_1 = Colour(255, 255, 255, 255)

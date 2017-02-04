@@ -5,6 +5,3 @@ cryptography
 sqlalchemy
 requests
 beautifulsoup4
-
-# remove later:
-docopt

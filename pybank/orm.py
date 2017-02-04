@@ -34,19 +34,7 @@ from sqlalchemy.schema import CreateTable
 from sqlalchemy import text as saText
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import utils
-    logging.debug("Imports for orm.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        import utils
-        logging.debug("Imports for orm.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import utils
-        logging.debug("Imports for orm.py complete (Method: Executable)")
+from . import utils
 
 
 # ---------------------------------------------------------------------------

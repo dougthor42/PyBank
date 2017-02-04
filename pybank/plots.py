@@ -32,22 +32,8 @@ import wx.lib.plot as wxplot
 import numpy as np
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import __version__
-    from . import utils
-    logging.debug("Imports for plots.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        from __init__ import __version__
-        import utils
-        logging.debug("Imports for plots.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import __version__
-        from pybank import utils
-        logging.debug("Imports for plots.py complete (Method: Executable)")
+from . import utils
+
 
 # ---------------------------------------------------------------------------
 ### Functions required for Module Constants

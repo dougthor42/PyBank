@@ -31,13 +31,7 @@ import os.path
 # Third Party
 
 # Package / Application
-try:
-    from . import _logging
-except SystemError:
-    try:
-        import _logging
-    except ImportError:
-        from pybank import _logging
+from . import _logging
 
 
 ### Package Constants #######################################################

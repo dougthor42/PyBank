@@ -13,7 +13,6 @@ Options:
 
 """
 # Standard Library
-import sys
 import unittest
 import unittest.mock as mock
 import os
@@ -21,21 +20,10 @@ import os.path as osp
 import logging
 
 # Third-Party
-from docopt import docopt
 import keyring
 
 # Package / Application
-try:
-    from .. import crypto
-    from ..__init__ import __version__
-except (SystemError, ImportError):
-    if __name__ == "__main__":
-        # Allow module to be run as script
-        print("Running module as script")
-        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import crypto
-    else:
-        raise
+from .. import crypto
 
 
 class TestCreateKey(unittest.TestCase):
@@ -414,15 +402,3 @@ class TestGetSalt_FileExists(unittest.TestCase):
     def test_get_salt_file_already_exists(self):
         result = crypto.get_salt(self.file)
         self.assertEqual(result, self.salt)
-
-
-def main():
-    """
-    Main entry point
-    """
-    docopt(__doc__, version=__version__)    # TODO: pull VERSION from __init__
-    unittest.main(verbosity=2)
-
-
-if __name__ == "__main__":
-    main()

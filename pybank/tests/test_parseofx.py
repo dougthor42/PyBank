@@ -14,7 +14,6 @@ Options:
 """
 
 # Standard Library
-import sys
 import unittest
 import unittest.mock as mock
 import os.path as osp
@@ -22,20 +21,10 @@ import io
 import datetime
 
 # Third-Party
-from docopt import docopt
 from bs4 import BeautifulSoup
 
 # Package / Application
-try:
-    from .. import parseofx
-except (SystemError, ImportError):
-    if __name__ == "__main__":
-        # Allow module to be run as script
-        print("Running module as script")
-        sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-        import parseofx
-    else:
-        raise
+from .. import parseofx
 
 
 """
@@ -365,15 +354,3 @@ class TestConvertDatetime(unittest.TestCase):
             with self.subTest(malformed_str=dt_str):
                 with self.assertRaises(ValueError):
                     parseofx.convert_datetime(dt_str)
-
-
-def main():
-    """
-    Main entry point
-    """
-    docopt(__doc__, version="0.0.1")    # TODO: pull VERSION from __init__
-    unittest.main(verbosity=1)
-
-
-if __name__ == "__main__":
-    main()

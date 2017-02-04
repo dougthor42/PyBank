@@ -59,7 +59,6 @@ Other Items:
 ### Imports
 # ---------------------------------------------------------------------------
 # Standard Library
-import sys
 import io
 import re
 import datetime
@@ -69,23 +68,9 @@ import os.path as osp
 from enum import Enum
 
 # Third-Party
-from docopt import docopt
 from bs4 import BeautifulSoup
 
 # Package / Application
-try:
-    # Imports used by unit test runners
-    from . import __version__
-    logging.debug("Imports for parseofx.py complete (Method: UnitTest)")
-except SystemError:
-    try:
-        # Imports used by Spyder
-        from __init__ import __version__
-        logging.debug("Imports for parseofx.py complete (Method: Spyder IDE)")
-    except ImportError:
-         # Imports used by cx_freeze
-        from pybank import __version__
-        logging.debug("Imports for parseofx.py complete (Method: Executable)")
 
 
 # ---------------------------------------------------------------------------
@@ -1287,7 +1272,6 @@ EXAMPLE_OFX_ACCOUNT_LIST_OPEN = """
 
 def main():
     """ Code to run when module called directly, just some quick checks. """
-    docopt(__doc__, version=__version__)
     file = "tests\\data\\rs_checking.ofx"
 
     with open(file, 'r') as openf:
