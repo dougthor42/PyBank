@@ -1,16 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Cryptography components of PyBank
-
-Created on Tue Sep 15 16:06:32 2015
-
-Usage:
-    crypto.py
-
-Options:
-    -h --help           # Show this screen.
-    --version           # Show version.
-
+Cryptography components of PyBank.
 """
     # Add a pepper. Not really useful since this is open-source, but /shrug.
     # TODO: look into alternate pepper solution
@@ -82,7 +72,19 @@ SALT_FILE = constants.SALT_FILE
 # ---------------------------------------------------------------------------
 @utils.logged
 def encrypted_read(file, key):
-    """ Reads an encrypted file """
+    """
+    Read an encrypted file.
+
+    Parameters
+    ----------
+    file : str
+    key : str
+
+    Returns
+    -------
+    d : bytes
+        The decrypted data.
+    """
     logging.info("opening encrypted file `{}`".format(file))
     with open(file, 'rb') as openf:
         data = openf.read()
@@ -105,7 +107,19 @@ def encrypted_read(file, key):
 
 @utils.logged
 def encrypted_write(file, key, data):
-    """ Writes to an encrypted file """
+    """
+    Write to an encrypted file.
+
+    Parameters
+    ----------
+    file : str
+    key : str
+    data : bytes
+
+    Returns
+    -------
+    None
+    """
     logging.info("writing encrypted file `{}`".format(file))
     f = Fernet(key)
     logging.debug("encrypting...")
@@ -116,15 +130,26 @@ def encrypted_write(file, key, data):
     with open(file, 'wb') as openf:
         openf.write(encrypted_data)
     logging.debug("complete")
-    return
 
 
 @utils.logged
 def encrypt_file(file, key, copy=False):
     """
-    Encrypts a given file.
+    Encrypt a given file.
 
-    If copy is True, creates a copy of the file with a .crypto extension
+    Parameters
+    ----------
+    file : str
+        The file to encrypt.
+    key : str
+        The key to use for encryption.
+    copy : bool, optional
+        If True, create a copy of the file with a ``.crypto`` extension
+        rather than overwriting ``file``.
+
+    Returns
+    -------
+    None
     """
     # First we need to read in the file's contents
     with open(file, 'rb') as openf:
@@ -137,14 +162,24 @@ def encrypt_file(file, key, copy=False):
     else:
         encrypted_write(file, key, decrypted_data)
 
-    return
-
 
 @utils.logged
 def decrypt_file(file, key, new_file=None):
     """
-    Decrypts a given file, overwriting the original unless
-    new_file is given.
+    Decrypt a given file, overwriting the original unless new_file is given.
+
+    Parameters
+    ----------
+    file : str
+        The file to decrypt
+    key : str
+        The key to use for decryption
+    new_file : str, optional
+        If not ``None``, then saves the decrypted ``file`` to ``new_file``.
+
+    Returns
+    -------
+    None
     """
     if new_file is None:
         new_file = file
@@ -152,17 +187,45 @@ def decrypt_file(file, key, new_file=None):
     with open(new_file, 'wb') as openf:
         openf.write(encrypted_read(file, key))
 
-    return
-
 
 @utils.logged
 def get_password(service=SERVICE, user=USER):
+    """
+    Get the user's password from the keyring.
+
+    Parameters
+    ----------
+    service : str
+        The service to get a password for.
+    user : str
+        The user to get a password for.
+
+    Returns
+    -------
+    password : str
+    """
     return keyring.get_password(service, user)
 
 
 @utils.logged
 def check_password(password, service=SERVICE, user=USER):
-    """ Checks a password against the keyring """
+    """
+    Check a password against the keyring.
+
+    Parameters
+    ----------
+    password : str
+        The password the check.
+    service : str
+        The service to get a password for.
+    user : str
+        The user to get a password for.
+
+    Returns
+    -------
+    bool
+        ``True`` if passwords match, otherwise ``False``.
+    """
     password = password.encode('utf-8')
     pw = get_password(service, user).encode('utf-8')
     return password == pw
@@ -170,20 +233,62 @@ def check_password(password, service=SERVICE, user=USER):
 
 @utils.logged
 def create_password(password, service=SERVICE, user=USER):
-    """ Creates a new password for PyBank in the keyring """
+    """
+    Create a new password for PyBank in the keyring.
+
+    Parameters
+    ----------
+    password : str
+        The password the check.
+    service : str
+        The service to get a password for.
+    user : str
+        The user to get a password for.
+
+    Returns
+    -------
+    None
+    """
     keyring.set_password(service, user, password)
     return
 
 
 @utils.logged
 def check_password_exists(service=SERVICE, user=USER):
-    """ Verify that a password for PyBank exists in the keyring """
+    """
+    Verify that a password for PyBank exists in the keyring.
+
+    Parameters
+    ----------
+    service : str
+        The service to get a password for.
+    user : str
+        The user to get a password for.
+
+    Returns
+    -------
+    bool
+        ``True`` if the password exists, otherwise ``False``.
+    """
     return bool(keyring.get_password(service, user))
 
 
 @utils.logged
 def delete_password(service=SERVICE, user=USER):
-    """ Delete a password from the keyring """
+    """
+    Delete a password from the keyring.
+
+    Parameters
+    ----------
+    service : str
+        The service to get a password for.
+    user : str
+        The user to get a password for.
+
+    Returns
+    -------
+    None
+    """
     keyring.delete_password(service, user)
 
 
@@ -194,8 +299,8 @@ def create_key(password, salt):
 
     Uses the PBKDF2HMAC key-derivation function.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     password : bytes
         The password to use as the base of the key derivation function. This
         should be peppered.
@@ -203,13 +308,13 @@ def create_key(password, salt):
     salt : bytes
         A salt to use. This should be 16 bytes minimum, 32 or 64 preferred.
 
-    Returns:
-    --------
+    Returns
+    -------
     key : bytes
         A URL-safe base64-encoded 32-byte key. This **must** be kept secret.
 
-    Notes:
-    ------
+    Notes
+    -----
     See:
 
     + https://cryptography.io/en/latest/fernet
@@ -232,7 +337,21 @@ def create_key(password, salt):
 
 @utils.logged
 def get_key(service=SERVICE, user=USER):
-    """ Creates and returns the encryption key. """
+    """
+    Create and return the encryption key.
+
+    Parameters
+    ----------
+    service : str
+        The service to get a password for.
+    user : str
+        The user to get a password for.
+
+    Returns
+    -------
+    key : str
+        The encryption key.
+    """
     logging.info("Getting key")
     salt = get_salt()
     pw = get_password(service, user)
@@ -244,7 +363,19 @@ def get_key(service=SERVICE, user=USER):
 
 @utils.logged
 def get_salt(file=SALT_FILE):
-    """ Reads the salt file if it exists. Otherwise, creates it. """
+    """
+    Read the salt file if it exists. Otherwise, creates it.
+
+    Parameters
+    ----------
+    file : str
+        The file that contains the salt string.
+
+    Returns
+    -------
+    salt : str
+        The read (or generated) salt.
+    """
     logging.info("Getting or creating salt string.")
     if not os.path.exists(file):
         logging.warning("salt file DNE - creating")
@@ -260,7 +391,19 @@ def get_salt(file=SALT_FILE):
 
 @utils.logged
 def encode_and_pepper_pw(string, pepper=None):
-    """ Encodes a string as binary and adds a pepper """
+    """
+    Encode a string as binary and adds a pepper.
+
+    Parameters
+    ----------
+    string : str
+    pepper : str, optional
+        If None, use a fixed pepper listed below.
+
+    Returns
+    -------
+    string : bytes
+    """
     logging.info("Encoding and peppering string")
     if pepper is None:
         pepper = b'\xf3J\xe6U\xf6mSpz\x01\x01\x1b\xcd\xe3\x89\xea'
