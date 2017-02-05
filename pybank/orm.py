@@ -418,12 +418,44 @@ def query_category():
 ### ORM Insert Functions
 # ---------------------------------------------------------------------------
 def insert_account_group(name):
+    """
+    Insert a new account group.
+
+    Parameters
+    ----------
+    name : str
+        The name of the account group to add.
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to AccountGroup".format(name))
     acct_group = AccountGroup(name=name)
     session.add(acct_group)
 
 
 def insert_account(name, acct_num, user, institution_id, acct_group=None):
+    """
+    Insert a new account.
+
+    Parameters
+    ----------
+    name : str
+        The name of the account to add.
+    acct_num : str
+        The account number.
+    user : str
+        The user name for the bank.
+    institution_id : int
+        The ``id`` of the institution to link this account to.
+    acct_group : int, optional
+        What group this account belongs to.
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to Account".format(name))
     acct = Account(account_num=acct_num,
                    name=name,
@@ -434,18 +466,62 @@ def insert_account(name, acct_num, user, institution_id, acct_group=None):
 
 
 def insert_category(name, parent):
+    """
+    Insert a new category.
+
+    Parameters
+    ----------
+    name : str
+        The name of the category to add.
+    parent : int
+        The ``id`` of the parent category that this category belongs to.
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to Category".format(name))
     cat = Category(name=name, parent=parent)
     session.add(cat)
 
 
 def insert_display_name(name):
+    """
+    Insert a new display name.
+
+    Parameters
+    ----------
+    name : str
+        The name of the display name to add.
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to DisplayName".format(name))
     display_name = DisplayName(name=name)
     session.add(display_name)
 
 
 def insert_institution(name, fid=None, org=None, url=None, broker=None):
+    """
+    Insert a new institution.
+
+    Parameters
+    ----------
+    name : str
+        The name of the institution to add.
+    fid : str, optional
+        The Financial Institution ID defined by OFX.
+    url : str, optional
+        The OFX download url.
+    broker : str, optional
+        ???
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to Institution".format(name))
     institution = Institution(name=name,
                               fid=fid,
@@ -456,12 +532,40 @@ def insert_institution(name, fid=None, org=None, url=None, broker=None):
 
 
 def insert_memo(text):
+    """
+    Insert a new memo.
+
+    Parameters
+    ----------
+    text : str
+        The text of the memo.
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to Memo".format(text))
     memo = Memo(text=text)
     session.add(memo)
 
 
 def insert_payee(name, display_name_id=None, category_id=None):
+    """
+    Insert a new payee.
+
+    Parameters
+    ----------
+    name : str
+        The name of the payee to add.
+    display_name_id : int, optional
+        The default display name to be shown for this payee.
+    category_id : int, optional
+        The default category for this payee.
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to Payee".format(name))
     payee = Payee(name=name,
                   display_name_id=display_name_id,
@@ -471,6 +575,18 @@ def insert_payee(name, display_name_id=None, category_id=None):
 
 @utils.logged
 def insert_transaction(insert_dict):
+    """
+    Insert a new transaction.
+
+    Parameters
+    ----------
+    insert_dict : dict
+        The transaction dictionary.
+
+    Returns
+    -------
+    None
+    """
     logging.info("inserting item to Transaction")
 
     date_fmt = '%Y-%m-%d'
@@ -493,6 +609,18 @@ def insert_transaction(insert_dict):
 
 
 def insert_transaction_label(value):
+    """
+    Insert a new transaction_label.
+
+    Parameters
+    ----------
+    value : str
+        The string value for the transaction label.
+
+    Returns
+    -------
+    None
+    """
     logging.debug("inserting '{}' to AccountGroup".format(value))
     trans_label = TransactionLabel(value=value)
     session.add(trans_label)
@@ -517,6 +645,18 @@ def insert_ledger(*args, **kwargs):
 @utils.logged
 def update_transaction(trans_id, update_dict):
     """
+    Update a transaction with new values.
+
+    Parameters
+    ----------
+    trans_id : int
+        The ``id`` of the transaction to update.
+    update_dict : dict
+        The new values to use.
+
+    Returns
+    -------
+    None
     """
     logging.info("Updating transaction")
 
@@ -524,20 +664,22 @@ def update_transaction(trans_id, update_dict):
     query.update(update_dict)
 
 
-@utils.logged
-def update_ledger(*args, **kwargs):
-    """
-    """
-    logging.info("Updating ledger values")
-    logging.info("But not really because this function is not done yet")
-    pass
-
 # ---------------------------------------------------------------------------
 ### Other Functions
 # ---------------------------------------------------------------------------
 @utils.logged
 def create_database():
+    """
+    Create the database.
 
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
 #    engine = sa.create_engine(engine_str, echo=False)
     Base.metadata.create_all(engine)
 
@@ -550,28 +692,28 @@ def create_database():
 @utils.logged
 def copy_to_sa(engine, session, dump):
     """
+    Copy...
+
     We know that our SQLite database will have the same structure as
     the SQLAlchemy ORM. So we just have to iterate through everything, copying
     data over.
 
     The engine and the session must already be created.
 
-    Parameters:
-    -----------
-    engine: SQLAlchemy.engine.Engine object
-        The engine to work on
-
-    session: SQLAlchemy.orm.session.Session object
-        The session to work on
-
+    Parameters
+    ----------
+    engine : :class:`SQLAlchemy.engine.Engine`
+        The engine to work on.
+    session : :class:`SQLAlchemy.orm.session.Session`
+        The session to work on.
     dump : iterable
         A list or generator object that contains strings for table creation
-        and data. Typically the result of `sqlite_iterdump()` or
-        `sqlite3.iterdump()`.
+        and data. Typically the result of :func:`sqlite_iterdump()` or
+        ``sqlite3.iterdump()``.
 
-    Returns:
-    --------
-    None?
+    Returns
+    -------
+    None
     """
     logging.info('Starting copy to in-memory database')
     for sql in dump:
@@ -590,23 +732,24 @@ def sqlite_iterdump(engine, session):
     Returns an iterator to dump the database in an SQL text format.
 
     The only (known) difference is that row data values have spaces
-    between columns while sqlite's `iterdump()` does not.
+    between columns while sqlite's ``iterdump()`` does not.
 
-    **NOTE: THIS FUNCTION IS SPECIALISED FOR PYBANK AND THE 1 VIEW THAT
-    IT CONTAINS. IT WILL MOST NOT WORK ON A GENERIC DATABASE.**
+    .. warning::
+       This function is specialized for PyBank and the single view that
+       it contains. It will most likely not work for a generic database.
 
-    The SQLAlchemy declaritive base class `Base` must be imported already.
+    .. note::
+       The SQLAlchemy declaritive base class `Base` must be imported already.
 
-    Parameters:
-    -----------
-    engine: SQLAlchemy.engine.Engine object
-        The engine to work on
+    Parameters
+    ----------
+    engine : :class:`SQLAlchemy.engine.Engine`
+        The engine to work on.
+    session : :class:`SQLAlchemy.orm.session.Session`
+        The session to work on.
 
-    session: SQLAlchemy.orm.session.Session object
-        The session to work on
-
-    Returns:
-    --------
+    Returns
+    -------
     sql : iterator
         The dump of the SQL.
     """
