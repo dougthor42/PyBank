@@ -16,7 +16,7 @@ install:
 
   # Start the install of everything
   - pip install --upgrade pip wheel
-  - pip install https://github.com/dougthor42/dougthor42.github.io/raw/master/tools/wxPython_Phoenix-3.0.3.dev1956%2Baab2833-cp34-cp34m-linux_x86_64.whl
+  - pip install https://gitlab.com/dougthor42/wxPython_Phoenix-wheels/raw/master/ubuntu-15.10-server-amd64/wxPython_Phoenix-3.0.3.dev1956+aab2833-cp34-cp34m-linux_x86_64.whl
   #- "pip install --pre -f https://wxpython.org/Phoenix/snapshot-builds wxPython_Phoenix"
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
