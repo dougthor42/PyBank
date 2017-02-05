@@ -75,7 +75,6 @@ secret.json
 *.pybank
 *.db
 *.accdb
-*.mwb
 *.bak
 __delete_me__.py
 encryption benchmark.xlsx

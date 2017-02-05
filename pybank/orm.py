@@ -3,16 +3,6 @@
 Base for the SQLAlchemy Object Relational Mapper (ORM).
 
 Contains all of the default table constructors used by PyBank.
-
-Created on Sun Dec  6 20:31:06 2015
-
-Usage:
-    sa_orm_base.py
-
-Options:
-    -h --help           # Show this screen.
-    --version           # Show version.
-
 """
 # ---------------------------------------------------------------------------
 ### Imports
