@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyBank constants
-
-Created on Tue May 26 12:34:58 2015
-
-@author: dthor
-
+Holds the default values for constants use by PyBank.
 """
 ### Imports #################################################################
 # Standard Library

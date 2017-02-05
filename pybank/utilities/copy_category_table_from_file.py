@@ -82,7 +82,7 @@ def write_to_db(items, delim):
     conn.close()
 
 if __name__ == "__main__":
-    with open("../../doc/categories.txt") as openf:
+    with open("../../docs/categories.txt") as openf:
         data = [line for line in openf]
 
     a = thing(data, ":")
