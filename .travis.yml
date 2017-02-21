@@ -2,8 +2,11 @@ language: python
 
 sudo: false
 
-python:
-  - "3.4"
+matrix:
+  include:
+  - python: "3.5"
+    env:
+      - WXPYTHON_SNAPSHOTS=https://wxpython.org/Phoenix/snapshot-builds/linux/gtk3/ubuntu-16.04/
 
 notifications:
   email: false
@@ -16,8 +19,7 @@ install:
 
   # Start the install of everything
   - pip install --upgrade pip wheel
-  - pip install https://gitlab.com/dougthor42/wxPython_Phoenix-wheels/raw/master/ubuntu-15.10-server-amd64/wxPython_Phoenix-3.0.3.dev1956+aab2833-cp34-cp34m-linux_x86_64.whl
-  #- "pip install --pre -f https://wxpython.org/Phoenix/snapshot-builds wxPython_Phoenix"
+  - "pip install --only-binary :all: --pre -f $WXPYTHON_SNAPSHOTS wxPython_Phoenix"
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - pip install coveralls
