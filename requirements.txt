@@ -1,7 +1,8 @@
-#wxPython_Phoenix (see appveyor.yml)
-numpy
-keyring
-cryptography
-sqlalchemy
-requests
-beautifulsoup4
+wxPython >= 4.0.0a1
+numpy == 1.12.1
+keyring == 10.3.2
+cryptography == 1.8.1
+sqlalchemy == 1.1.9
+requests == 2.13.0
+lxml == 3.7.3
+beautifulsoup4 == 4.5.3

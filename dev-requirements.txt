@@ -1,7 +1,3 @@
-nose
-nose-cov
-python-termstyle
-colorama
 green
 coverage
 cx-freeze
