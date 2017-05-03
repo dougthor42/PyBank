@@ -40,6 +40,7 @@ from pybank import (__project_name__,
 from . import utils
 from . import crypto
 from . import orm
+from . import queries
 
 
 # ---------------------------------------------------------------------------
@@ -722,7 +723,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
 
         # pull the category strings and create the choicelist.
         self.cat_data = [(row.category_id, row.name, row.parent)
-                          for row in orm.query_category()]
+                          for row in queries.query_category()]
 
         self.choicelist = utils.build_cat_strings(self.cat_data)
 
@@ -818,7 +819,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
         # TODO: I hate this - come up with an alternate solution
         starting_bal = decimal.Decimal(200)
         balance = starting_bal
-        for row_num, row_data in enumerate(orm.query_ledger_view()):
+        for row_num, row_data in enumerate(queries.query_ledger_view()):
             data_dict = row_data.__dict__
             row_values = []
             for item in self.columns:
@@ -910,7 +911,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             #       new row iff it doesn't exist in the database.
             #       I'll have to think about that a bit.
             if self.row_is_new:
-                orm.insert_ledger(acct=1,
+                queries.insert_ledger(acct=1,
                                   date=None,
                                   enter_date=None,
                                   check_num=None,
@@ -984,7 +985,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             return
 
         try:
-            orm.update_transaction(trans_id, update_dict)
+            queries.update_transaction(trans_id, update_dict)
         except TypeError:
             # TODO: more exact error conditions
             logging.exception("Error writing to database!", stack_info=True)
@@ -1045,7 +1046,7 @@ class LedgerGridBaseTable(wx.grid.GridTableBase):
             return
 
         try:
-            orm.insert_transaction(insert_dict)
+            queries.insert_transaction(insert_dict)
         except TypeError:
             # TODO: more exact error conditions
             logging.exception("Error writing to database!", stack_info=True)
@@ -1204,7 +1205,7 @@ class LedgerGrid(wx.grid.Grid):
 #            # TODO: Fill this out
 #            try:
 #                logging.info("Attempting to write data to database")
-#                orm.insert_ledger(acct=1,
+#                queries.insert_ledger(acct=1,
 #                                  date=None,
 #                                  enter_date=None,
 #                                  check_num=None,
@@ -1550,7 +1551,7 @@ def save_pybank_file(filename="test_database.pybank"):
     key = crypto.get_key()
 
     # dump the memory database directly to an encrypted file.
-    dump = orm.sqlite_iterdump(orm.engine, orm.session)
+    dump = queries.sqlite_iterdump(orm.engine, orm.session)
     dump = "".join(line for line in dump)
     dump = dump.encode('utf-8')
 

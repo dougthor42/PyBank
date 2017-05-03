@@ -62,7 +62,7 @@ target/
 
 # Virtual Environment
 pybank_venv/
-.venv
+.venv*/
 
 # Cryptography
 salt.txt

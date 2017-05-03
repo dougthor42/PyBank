@@ -34,6 +34,7 @@ from . import gui_utils
 from . import crypto
 from . import utils
 from . import orm
+from . import queries
 from . import constants
 
 
@@ -85,7 +86,7 @@ def read_pybank_file(pybank_file):
     new_dump = crypto.encrypted_read(pybank_file, key)
     new_dump = new_dump.decode('utf-8').split(";")
 
-    orm.copy_to_sa(orm.engine, orm.session, new_dump)
+    queries.copy_to_sa(orm.engine, orm.session, new_dump)
 
 
 @utils.logged
