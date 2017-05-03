@@ -572,8 +572,8 @@ class MainNotebook(wx.Notebook):
         self.ledger_page = LedgerPanel(self)
         self.AddPage(self.ledger_page, "Ledger")
 
-        plots_page = SamplePlotPanel(self, "cyan", "Plotting (wx.lib.plot)")
-        self.AddPage(plots_page, "Even more stuff")
+#        plots_page = SamplePlotPanel(self, "cyan", "Plotting (wx.lib.plot)")
+#        self.AddPage(plots_page, "Even more stuff")
 
         self.log_page = SampleLogPanel(self, "pink", "Sample logging page")
         self.AddPage(self.log_page, "Logs")
