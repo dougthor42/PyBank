@@ -24,7 +24,7 @@ import datetime
 from bs4 import BeautifulSoup
 
 # Package / Application
-from .. import parseofx
+from pybank import parseofx
 
 
 """

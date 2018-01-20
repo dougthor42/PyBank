@@ -23,7 +23,7 @@ import logging
 import keyring
 
 # Package / Application
-from .. import crypto
+from pybank import crypto
 
 
 class TestCreateKey(unittest.TestCase):

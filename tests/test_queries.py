@@ -10,8 +10,8 @@ import os.path as osp
 # Third-Party
 
 # Package / Application
-from .. import orm
-from .. import queries
+from pybank import orm
+from pybank import queries
 
 THIS_DIR = osp.dirname(osp.abspath(__file__))
 

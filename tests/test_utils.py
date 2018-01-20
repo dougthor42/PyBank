@@ -23,7 +23,7 @@ from decimal import Decimal as D
 # Third-Party
 
 # Package / Application
-from .. import utils
+from pybank import utils
 
 
 class TestBuildCategoryString(unittest.TestCase):
