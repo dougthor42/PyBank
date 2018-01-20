@@ -1,5 +1,6 @@
-green
+pytest
 coverage
+pytest-cov
 cx-freeze
 sphinx
 sphinx_rtd_theme
