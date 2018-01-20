@@ -6,7 +6,7 @@ matrix:
   include:
   - python: "3.5"
     env:
-      - WXPYTHON_SNAPSHOTS=https://wxpython.org/Phoenix/snapshot-builds/linux/gtk3/ubuntu-16.04/
+      - WXPYTHON_SNAPSHOTS=https://wxpython.org/Phoenix/snapshot-builds/linux/gtk3/ubuntu-14.04/
 
 notifications:
   email: false
