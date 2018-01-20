@@ -19,7 +19,7 @@ install:
 
   # Start the install of everything
   - pip install --upgrade pip wheel
-  - "pip install --only-binary :all: --pre -f $WXPYTHON_SNAPSHOTS wxPython_Phoenix"
+  - "pip install --only-binary :all: --pre -f $WXPYTHON_SNAPSHOTS wxPython"
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - pip install coveralls
