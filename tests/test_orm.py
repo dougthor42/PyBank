@@ -19,7 +19,7 @@ import os.path as osp
 # Third-Party
 
 # Package / Application
-from .. import orm
+from pybank import orm
 
 
 THIS_DIR = osp.dirname(osp.abspath(__file__))

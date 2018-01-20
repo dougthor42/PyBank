@@ -22,4 +22,4 @@ import os.path as osp
 # Third-Party
 
 # Package / Application
-from .. import ofx
+from pybank import ofx
