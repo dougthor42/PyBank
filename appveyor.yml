@@ -39,7 +39,7 @@ build: off  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Run the project tests
-  - pytest -ra
+  - "%PYTHON%\\python.exe -m pytest -ra"
 
 #after_test:
 #  # if tests OK, create whl package
