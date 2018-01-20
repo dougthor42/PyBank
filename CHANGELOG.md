@@ -12,46 +12,16 @@ different ``MAJOR`` version to use the same .pybank file, but I also don't
 plan on disallowing it.
 
 
-## Contents:
-
-1. [Contents](#Contents)
-+  [Releases](#Releases)
-  + [1.0](#1.0)
-+  [Pre-Release](#Pre-Release)
-  + [0.1](#0.1)
-+  [Beta](#Beta)
-  + [0.0.1](#0.0.1)
-+  [Alpha](#Alpha)
-  + [0.0.0.1](#0.0.0.1)
-
-
-## Release
-
-#### 1.0
-
+### v1.0.0 (date): name
 + Things
 + stuff
 
 
-## Pre-Release
-
-#### 0.1
-
+### v0.1.0 (date): name
 + Things
 + stuff
 
 
-## Beta
-
-#### 0.0.1
-
-+ Things
-+ stuff
-
-
-## Alpha
-
-#### 0.0.0.1
-
+### v0.0.1 (date): name
 + Things
 + stuff
