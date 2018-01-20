@@ -54,6 +54,18 @@ SALT_FILE = constants.SALT_FILE
 @utils.logged
 def create_new(db_file):
     """
+    Create a new database file from scratch.
+
+    This should:
+    1. Create a new database
+    2. Initialize it with default data (such as the categories)
+    3. Dump it
+    4. Save the dump to an encrypted file.
+
+    Note that 1 and 2 could be handled by keeping a dummy, empty, initialized
+    database around, but for some reason I'm not fond of that idea. Perhaps
+    it's because a user could delete that file? It would allow them to easily
+    edit the "template", though, which could be a nice feature...
     """
     logging.debug('database file not found, an empty one will be created')
     logging.debug('Prompting user to make a password')
@@ -73,7 +85,9 @@ def create_new(db_file):
 
 
 def read_pybank_file(pybank_file):
-    """ """
+    """
+    Read an existing pybank file upon program start.
+    """
     logging.info('database file found')
     if not gui_utils.prompt_pw():
         logging.warning('User canceled password prompt; exiting')
