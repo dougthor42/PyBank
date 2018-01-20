@@ -464,7 +464,7 @@ def convert_datetime(ofx_dt):
 
     """
     # Get the time zone
-    tz_type = re.search("\[(?P<tz>[-+]?\d+\.?\d*)\:\w*\]$", ofx_dt)
+    tz_type = re.search(r"\[(?P<tz>[-+]?\d+\.?\d*)\:\w*\]$", ofx_dt)
     if tz_type is not None:
         tz = float(tz_type.group('tz'))
     else:
