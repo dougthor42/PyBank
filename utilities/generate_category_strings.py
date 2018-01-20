@@ -4,16 +4,8 @@ Created on Mon Dec  7 22:47:34 2015
 
 @author: dthor
 """
+import types
 
-# See http://www.usrsb.in/blog/blog/2012/08/12/bouncing-pythons
-#             -generators-with-a-trampoline/
-
-# 1. This technique only works for tail-recursive functions. The recursive
-#    call *must* be the last thing the function does.
-# 2. The translation to a trampolined generator is easy! Just turn the
-#    return statements into yield expression.
-# 3. Although this will protect your stack, creating a generator for
-#    each call is probably slow.
 
 def countdown(start):
     print(start)
@@ -31,8 +23,17 @@ def countdown_gen(start):
         yield countdown_gen(start - 1)
 
 
-import types
 def trampoline(generator, *args, **kwargs):
+    """
+    See http://www.usrsb.in/blog/blog/2012/08/12/bouncing-pythons-generators-with-a-trampoline/
+
+    1. This technique only works for tail-recursive functions. The recursive
+       call *must* be the last thing the function does.
+    2. The translation to a trampolined generator is easy! Just turn the
+       return statements into yield expression.
+    3. Although this will protect your stack, creating a generator for
+       each call is probably slow.
+    """
     g = generator(*args, **kwargs)
     while isinstance(g, types.GeneratorType):
         g = next(g)
@@ -94,7 +95,6 @@ def build_category_strings(cat_list,
 
     parent_id = parent_item[0]
     parent_name = parent_item[1]
-
 
     if sent_str is None:
         sent_str = parent_name
