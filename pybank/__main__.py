@@ -65,7 +65,7 @@ def create_new(db_file):
 
     logging.info('Creating database file')
     # 1. Create the DB and dump it
-    dump = list(orm.sqlite_iterdump(orm.engine, orm.session))
+    dump = list(queries.sqlite_iterdump(orm.engine, orm.session))
     dump = "".join(line for line in dump)
     dump = dump.encode('utf-8')
     # 2. Save the dump to an encrypted file.
